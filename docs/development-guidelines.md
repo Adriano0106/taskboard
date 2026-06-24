@@ -62,8 +62,11 @@ Antes de implementar qualquer funcionalidade:
 4. Sugira a estrutura de dados quando necessário
 5. Evite implementar tudo de uma vez
 6. Prefira pequenas entregas incrementais
-7. Não crie abstrações desnecessárias
-8. Mantenha o código simples, legível e tipado
+7. Commits pequenos durante o desenvolvimento são obrigatórios
+8. Não acumule mudanças para commitar apenas no final
+9. Separe documentação, configuração, backend, frontend, testes e manutenção em commits distintos quando forem atividades diferentes
+10. Não crie abstrações desnecessárias
+11. Mantenha o código simples, legível e tipado
 
 Ao gerar código:
 

@@ -4,6 +4,8 @@
 
 - Faça entregas pequenas e incrementais.
 - Evite commits longos que misturam assuntos diferentes.
+- É obrigatório commitar durante o desenvolvimento, separando cada avanço lógico em um commit próprio.
+- Não acumule várias atividades para commitar apenas no final.
 - Antes de implementar uma feature, liste a abordagem e os arquivos principais afetados.
 - Prefira código simples, tipado e fácil de manter.
 - Não crie abstrações antes de existir repetição ou complexidade real.
@@ -16,6 +18,8 @@ Use mensagens objetivas com um destes tipos:
 - `fix`: correção de bug
 - `chore`: configuração, infraestrutura ou manutenção
 - `docs`: documentação
+
+Commits devem ser pequenos, frequentes e separados por contexto. Documentação, configuração, backend, frontend, testes e ajustes de manutenção devem ficar em commits diferentes sempre que forem atividades distintas.
 
 Exemplos:
 
