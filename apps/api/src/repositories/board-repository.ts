@@ -22,6 +22,18 @@ export interface KanbanBoard {
   columns: KanbanColumn[]
 }
 
+export interface KanbanTaskDetail {
+  id: string
+  friendlyId: string
+  title: string
+  description: string | null
+  boardName: string
+  columnName: string
+  assigneeName: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export class BoardError extends Error {
   constructor(message: string) {
     super(message)
@@ -34,6 +46,35 @@ export interface CreateKanbanTaskInput {
   userId: string
   columnId: string
   title: string
+}
+
+export interface MoveKanbanTaskInput {
+  companyId: string
+  userId: string
+  taskId: string
+  columnId: string
+  position: number
+}
+
+export interface KanbanColumnInput {
+  companyId: string
+  userId: string
+  name: string
+}
+
+export interface UpdateKanbanColumnInput extends KanbanColumnInput {
+  columnId: string
+}
+
+export interface DeleteKanbanColumnInput {
+  companyId: string
+  userId: string
+  columnId: string
+}
+
+export interface GetKanbanTaskDetailInput {
+  companyId: string
+  taskId: string
 }
 
 export async function getOrCreateCompanyKanbanBoard(
@@ -214,6 +255,234 @@ export async function createTaskInCompanyKanbanBoard(
   })
 
   return mapBoardToKanbanBoard(updatedBoard)
+}
+
+export async function moveTaskInCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: MoveKanbanTaskInput,
+): Promise<KanbanBoard> {
+  const board = await getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
+  const targetColumn = board.columns.find((column) => column.id === input.columnId)
+  const movingTask = board.columns
+    .flatMap((column) => column.tasks)
+    .find((task) => task.id === input.taskId)
+
+  if (!targetColumn) {
+    throw new BoardError('Column does not belong to the current board')
+  }
+
+  if (!movingTask) {
+    throw new BoardError('Task does not belong to the current board')
+  }
+
+  const updatedBoard = await prisma.$transaction(async (transaction) => {
+    const boardTasks = await transaction.task.findMany({
+      where: {
+        boardId: board.id,
+      },
+      orderBy: {
+        position: 'asc',
+      },
+    })
+    const taskIdsByColumn = new Map<string, string[]>()
+
+    for (const column of board.columns) {
+      taskIdsByColumn.set(
+        column.id,
+        boardTasks
+          .filter((task) => task.columnId === column.id && task.id !== input.taskId)
+          .map((task) => task.id),
+      )
+    }
+
+    const targetTaskIds = taskIdsByColumn.get(input.columnId) ?? []
+    const insertionIndex = Math.min(Math.max(input.position - 1, 0), targetTaskIds.length)
+    targetTaskIds.splice(insertionIndex, 0, input.taskId)
+    taskIdsByColumn.set(input.columnId, targetTaskIds)
+
+    for (const [columnId, taskIds] of taskIdsByColumn.entries()) {
+      for (const [taskIndex, taskId] of taskIds.entries()) {
+        await transaction.task.update({
+          where: {
+            id: taskId,
+          },
+          data: {
+            columnId,
+            position: taskIndex + 1,
+          },
+        })
+      }
+    }
+
+    return transaction.board.findUniqueOrThrow({
+      where: {
+        id: board.id,
+      },
+      include: boardInclude,
+    })
+  })
+
+  return mapBoardToKanbanBoard(updatedBoard)
+}
+
+export async function createColumnInCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: KanbanColumnInput,
+): Promise<KanbanBoard> {
+  const board = await getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
+  const lastColumnPosition = Math.max(...board.columns.map((column) => column.position))
+
+  const updatedBoard = await prisma.$transaction(async (transaction) => {
+    await transaction.boardColumn.create({
+      data: {
+        name: input.name.trim(),
+        position: lastColumnPosition + 1,
+        boardId: board.id,
+      },
+    })
+
+    return transaction.board.findUniqueOrThrow({
+      where: {
+        id: board.id,
+      },
+      include: boardInclude,
+    })
+  })
+
+  return mapBoardToKanbanBoard(updatedBoard)
+}
+
+export async function renameColumnInCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: UpdateKanbanColumnInput,
+): Promise<KanbanBoard> {
+  const board = await getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
+  const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
+
+  if (!column) {
+    throw new BoardError('Column does not belong to the current board')
+  }
+
+  const updatedBoard = await prisma.$transaction(async (transaction) => {
+    await transaction.boardColumn.update({
+      where: {
+        id: input.columnId,
+      },
+      data: {
+        name: input.name.trim(),
+      },
+    })
+
+    return transaction.board.findUniqueOrThrow({
+      where: {
+        id: board.id,
+      },
+      include: boardInclude,
+    })
+  })
+
+  return mapBoardToKanbanBoard(updatedBoard)
+}
+
+export async function deleteColumnFromCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: DeleteKanbanColumnInput,
+): Promise<KanbanBoard> {
+  const board = await getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
+  const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
+
+  if (!column) {
+    throw new BoardError('Column does not belong to the current board')
+  }
+
+  if (board.columns.length <= 1) {
+    throw new BoardError('Board must keep at least one column')
+  }
+
+  if (column.tasks.length > 0) {
+    throw new BoardError('Only empty columns can be deleted')
+  }
+
+  const updatedBoard = await prisma.$transaction(async (transaction) => {
+    await transaction.boardColumn.delete({
+      where: {
+        id: input.columnId,
+      },
+    })
+
+    const remainingColumns = board.columns
+      .filter((boardColumn) => boardColumn.id !== input.columnId)
+      .sort((firstColumn, secondColumn) => firstColumn.position - secondColumn.position)
+
+    for (const [columnIndex, remainingColumn] of remainingColumns.entries()) {
+      await transaction.boardColumn.update({
+        where: {
+          id: remainingColumn.id,
+        },
+        data: {
+          position: columnIndex + 1,
+        },
+      })
+    }
+
+    return transaction.board.findUniqueOrThrow({
+      where: {
+        id: board.id,
+      },
+      include: boardInclude,
+    })
+  })
+
+  return mapBoardToKanbanBoard(updatedBoard)
+}
+
+export async function getKanbanTaskDetail(
+  prisma: PrismaClient,
+  input: GetKanbanTaskDetailInput,
+): Promise<KanbanTaskDetail> {
+  const task = await prisma.task.findFirst({
+    where: {
+      id: input.taskId,
+      board: {
+        department: {
+          companyId: input.companyId,
+        },
+      },
+    },
+    include: {
+      assignee: true,
+      board: true,
+      column: true,
+    },
+  })
+
+  if (!task) {
+    throw new BoardError('Task does not belong to the current company')
+  }
+
+  return {
+    id: task.id,
+    friendlyId: task.friendlyId,
+    title: task.title,
+    description: task.description,
+    boardName: task.board.name,
+    columnName: task.column.name,
+    assigneeName: task.assignee?.name ?? null,
+    createdAt: task.createdAt.toISOString(),
+    updatedAt: task.updatedAt.toISOString(),
+  }
 }
 
 async function findFirstCompanyBoard(prisma: PrismaClient, companyId: string) {
