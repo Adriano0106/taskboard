@@ -209,6 +209,22 @@ input:focus {
   gap: 12px;
 }
 
+.task-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.task-form input {
+  min-height: 40px;
+}
+
+.task-form .secondary-button {
+  min-height: 40px;
+  padding: 0 12px;
+}
+
 .column article {
   display: grid;
   gap: 8px;

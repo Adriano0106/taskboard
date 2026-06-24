@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import {
   type AuthSession,
   type KanbanBoard,
+  createTask,
   getCurrentKanbanBoard,
   getCurrentSession,
   login,
@@ -18,6 +19,7 @@ export function App() {
   const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isKanbanLoading, setIsKanbanLoading] = useState(false)
+  const [creatingTaskColumnId, setCreatingTaskColumnId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
 
@@ -113,6 +115,40 @@ export function App() {
     setKanbanStatusMessage('')
   }
 
+  async function handleCreateTask(formEvent: FormEvent<HTMLFormElement>, columnId: string) {
+    formEvent.preventDefault()
+
+    if (!session?.token) {
+      return
+    }
+
+    const formData = new FormData(formEvent.currentTarget)
+    const title = String(formData.get('title') ?? '').trim()
+
+    if (!title) {
+      return
+    }
+
+    setCreatingTaskColumnId(columnId)
+    setKanbanStatusMessage('')
+
+    try {
+      const updatedBoard = await createTask(session.token, {
+        columnId,
+        title,
+      })
+
+      setKanbanBoard(updatedBoard)
+      formEvent.currentTarget.reset()
+    } catch (error) {
+      setKanbanStatusMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel criar a task',
+      )
+    } finally {
+      setCreatingTaskColumnId(null)
+    }
+  }
+
   if (session) {
     return (
       <main className="app-shell">
@@ -151,6 +187,27 @@ export function App() {
               {kanbanBoard.columns.map((column) => (
                 <div className="column" key={column.id}>
                   <h2>{column.name}</h2>
+                  <form
+                    className="task-form"
+                    onSubmit={(event) => handleCreateTask(event, column.id)}
+                  >
+                    <input
+                      name="title"
+                      type="text"
+                      minLength={2}
+                      placeholder="Nova task"
+                      aria-label={`Nova task em ${column.name}`}
+                      disabled={creatingTaskColumnId === column.id}
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="secondary-button"
+                      disabled={creatingTaskColumnId === column.id}
+                    >
+                      {creatingTaskColumnId === column.id ? 'Criando...' : 'Adicionar'}
+                    </button>
+                  </form>
                   <div className="task-list">
                     {column.tasks.length > 0 ? (
                       column.tasks.map((task) => (

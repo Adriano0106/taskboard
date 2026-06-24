@@ -48,6 +48,11 @@ export interface KanbanBoard {
   columns: KanbanColumn[]
 }
 
+export interface CreateTaskPayload {
+  title: string
+  columnId: string
+}
+
 export async function registerAccount(payload: RegisterAccountPayload): Promise<AuthSession> {
   return sendRequest<AuthSession>('/auth/register', {
     method: 'POST',
@@ -77,6 +82,16 @@ export async function getCurrentKanbanBoard(token: string): Promise<KanbanBoard>
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  })
+}
+
+export async function createTask(token: string, payload: CreateTaskPayload): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>('/boards/current/tasks', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
   })
 }
 
