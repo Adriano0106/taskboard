@@ -33,6 +33,7 @@ fix: valida credenciais inválidas no login
 ## Estilo de código
 
 - Use TypeScript em todo o projeto.
+- Use UTF-8 como codificação padrão para todos os arquivos versionados.
 - Use indentação com 2 espaços.
 - Não use ponto e vírgula.
 - Use nomes auto descritivos, mesmo que sejam mais extensos.

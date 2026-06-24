@@ -73,6 +73,7 @@ Antes de implementar qualquer funcionalidade:
 Ao gerar código:
 
 - Usar TypeScript
+- Usar UTF-8 como codificação padrão dos arquivos
 - Usar nomes auto descritivos
 - Evitar variáveis genéricas como i, j, data, item quando o contexto puder ser mais claro
 - Usar tabulação com 2 espaços
