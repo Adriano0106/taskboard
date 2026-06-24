@@ -30,6 +30,12 @@ npm run dev:api
 npm run dev:web
 ```
 
+Se algum processo local ficar preso segurando portas de desenvolvimento, rode:
+
+```bash
+npm run dev:stop
+```
+
 PostgreSQL local usa a porta `5432` por padrão. Se a porta estiver ocupada, altere no `.env`:
 
 ```bash

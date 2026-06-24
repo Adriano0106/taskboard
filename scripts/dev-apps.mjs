@@ -116,8 +116,17 @@ function prefixLines(applicationName, chunk) {
 
 function stopApplications() {
   for (const runningApplication of runningApplications) {
-    if (!runningApplication.killed) {
-      runningApplication.kill()
+    if (runningApplication.killed) {
+      continue
+    }
+
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', String(runningApplication.pid), '/T', '/F'], {
+        stdio: 'ignore',
+        shell: true,
+      })
+    } else {
+      runningApplication.kill('SIGTERM')
     }
   }
 }
