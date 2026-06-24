@@ -22,6 +22,20 @@ export interface KanbanBoard {
   columns: KanbanColumn[]
 }
 
+export class BoardError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BoardError'
+  }
+}
+
+export interface CreateKanbanTaskInput {
+  companyId: string
+  userId: string
+  columnId: string
+  title: string
+}
+
 export async function getOrCreateCompanyKanbanBoard(
   prisma: PrismaClient,
   input: {
@@ -141,6 +155,65 @@ export async function getOrCreateCompanyKanbanBoard(
   })
 
   return mapBoardToKanbanBoard(createdBoard)
+}
+
+export async function createTaskInCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: CreateKanbanTaskInput,
+): Promise<KanbanBoard> {
+  const board = await getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
+  const targetColumn = board.columns.find((column) => column.id === input.columnId)
+
+  if (!targetColumn) {
+    throw new BoardError('Column does not belong to the current board')
+  }
+
+  const updatedBoard = await prisma.$transaction(async (transaction) => {
+    const boardWithNextNumber = await transaction.board.update({
+      where: {
+        id: board.id,
+      },
+      data: {
+        nextTaskNumber: {
+          increment: 1,
+        },
+      },
+    })
+    const sequenceNumber = boardWithNextNumber.nextTaskNumber - 1
+    const lastTaskInColumn = await transaction.task.findFirst({
+      where: {
+        boardId: board.id,
+        columnId: input.columnId,
+      },
+      orderBy: {
+        position: 'desc',
+      },
+    })
+
+    await transaction.task.create({
+      data: {
+        friendlyId: `${board.key}-${sequenceNumber}`,
+        sequenceNumber,
+        title: input.title.trim(),
+        boardId: board.id,
+        columnId: input.columnId,
+        position: (lastTaskInColumn?.position ?? 0) + 1,
+        assigneeId: input.userId,
+      },
+    })
+
+    return transaction.board.findUniqueOrThrow({
+      where: {
+        id: board.id,
+      },
+      include: boardInclude,
+    })
+  })
+
+  return mapBoardToKanbanBoard(updatedBoard)
 }
 
 async function findFirstCompanyBoard(prisma: PrismaClient, companyId: string) {
