@@ -2,6 +2,7 @@ import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import Fastify from 'fastify'
 import { authRoutes } from './http/routes/auth-routes.js'
+import { boardRoutes } from './http/routes/board-routes.js'
 import { companyRoutes } from './http/routes/company-routes.js'
 import { healthRoutes } from './http/routes/health-routes.js'
 import { userRoutes } from './http/routes/user-routes.js'
@@ -33,6 +34,7 @@ export async function buildApp(options: BuildAppOptions) {
   await app.register(authRoutes, {
     userRepository,
   })
+  await app.register(boardRoutes)
   await app.register(userRoutes)
   await app.register(companyRoutes)
 
