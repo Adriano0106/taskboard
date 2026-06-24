@@ -31,6 +31,8 @@ Estrutura conceitual:
 
 Regras importantes:
 
+- O PostgreSQL local deve tentar usar a porta 5432 primeiro
+- Se a porta 5432 estiver ocupada, usar 5433 como fallback documentado no `.env`
 - As colunas do quadro devem ser configuráveis por board
 - Cada board pode ter nomes de colunas diferentes
 - Tasks devem usar identificador amigável, como DEV-50 ou SUP-120

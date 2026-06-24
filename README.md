@@ -23,6 +23,19 @@ API: `http://localhost:3333`
 
 Web: `http://localhost:5173`
 
+PostgreSQL local usa a porta `5432` por padrão. Se a porta estiver ocupada, altere no `.env`:
+
+```bash
+POSTGRES_HOST_PORT="5433"
+DATABASE_URL="postgresql://taskboard:taskboard@localhost:5433/taskboard?schema=public"
+```
+
+Depois recrie o container:
+
+```bash
+docker compose up -d postgres
+```
+
 ## Scripts
 
 - `npm run dev`: inicia os workspaces em modo desenvolvimento
