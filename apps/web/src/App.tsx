@@ -1,5 +1,12 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { type AuthSession, getCurrentSession, login, registerAccount } from './api.js'
+import {
+  type AuthSession,
+  type KanbanBoard,
+  getCurrentKanbanBoard,
+  getCurrentSession,
+  login,
+  registerAccount,
+} from './api.js'
 
 type AuthMode = 'login' | 'register'
 
@@ -8,8 +15,11 @@ const sessionStorageKey = 'taskboard.session'
 export function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
+  const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isKanbanLoading, setIsKanbanLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
+  const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
 
   useEffect(() => {
     if (!session?.token) {
@@ -29,6 +39,29 @@ export function App() {
       .catch(() => {
         localStorage.removeItem(sessionStorageKey)
         setSession(null)
+        setKanbanBoard(null)
+      })
+  }, [session?.token])
+
+  useEffect(() => {
+    if (!session?.token) {
+      return
+    }
+
+    setIsKanbanLoading(true)
+    setKanbanStatusMessage('')
+
+    getCurrentKanbanBoard(session.token)
+      .then((board) => {
+        setKanbanBoard(board)
+      })
+      .catch((error) => {
+        setKanbanStatusMessage(
+          error instanceof Error ? error.message : 'Nao foi possivel carregar o quadro',
+        )
+      })
+      .finally(() => {
+        setIsKanbanLoading(false)
       })
   }, [session?.token])
 
@@ -75,7 +108,9 @@ export function App() {
   function handleLogout() {
     localStorage.removeItem(sessionStorageKey)
     setSession(null)
+    setKanbanBoard(null)
     setStatusMessage('')
+    setKanbanStatusMessage('')
   }
 
   if (session) {
@@ -86,7 +121,7 @@ export function App() {
             <p className="eyebrow">TaskBoard</p>
             <h1>{session.company.name}</h1>
             <p className="muted">
-              Sessão ativa para {session.user.name} com perfil {session.company.role}.
+              Sessao ativa para {session.user.name} com perfil {session.company.role}.
             </p>
           </div>
           <button type="button" className="secondary-button" onClick={handleLogout}>
@@ -94,29 +129,48 @@ export function App() {
           </button>
         </section>
 
-        <section className="kanban-preview" aria-label="Prévia do quadro">
-          <div className="column">
-            <h2>A fazer</h2>
-            <article>
-              <strong>TB-1</strong>
-              <span>Configurar autenticação inicial</span>
-            </article>
-          </div>
-          <div className="column">
-            <h2>Em progresso</h2>
-            <article>
-              <strong>TB-2</strong>
-              <span>Preparar base multiempresa</span>
-            </article>
-          </div>
-          <div className="column">
-            <h2>Concluído</h2>
-            <article>
-              <strong>TB-3</strong>
-              <span>Definir regras de desenvolvimento</span>
-            </article>
-          </div>
-        </section>
+        {isKanbanLoading ? <p className="surface-message">Carregando quadro...</p> : null}
+
+        {kanbanStatusMessage ? (
+          <p className="surface-message error-message">{kanbanStatusMessage}</p>
+        ) : null}
+
+        {kanbanBoard ? (
+          <>
+            <section className="board-header">
+              <div>
+                <p className="eyebrow">{kanbanBoard.key}</p>
+                <h2>{kanbanBoard.name}</h2>
+                {kanbanBoard.description ? (
+                  <p className="muted">{kanbanBoard.description}</p>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="kanban-preview" aria-label="Quadro Kanban">
+              {kanbanBoard.columns.map((column) => (
+                <div className="column" key={column.id}>
+                  <h2>{column.name}</h2>
+                  <div className="task-list">
+                    {column.tasks.length > 0 ? (
+                      column.tasks.map((task) => (
+                        <article key={task.id}>
+                          <strong>{task.friendlyId}</strong>
+                          <span>{task.title}</span>
+                          {task.assigneeName ? (
+                            <small>Responsavel: {task.assigneeName}</small>
+                          ) : null}
+                        </article>
+                      ))
+                    ) : (
+                      <p className="empty-column">Sem cards nesta coluna</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </section>
+          </>
+        ) : null}
       </main>
     )
   }
@@ -130,7 +184,7 @@ export function App() {
           <p className="muted">Acesse sua empresa e prepare seus quadros de trabalho.</p>
         </div>
 
-        <div className="mode-switch" aria-label="Modo de autenticação">
+        <div className="mode-switch" aria-label="Modo de autenticacao">
           <button
             type="button"
             className={authMode === 'login' ? 'active' : ''}

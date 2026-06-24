@@ -26,6 +26,28 @@ export interface LoginPayload {
   password: string
 }
 
+export interface KanbanTaskCard {
+  id: string
+  friendlyId: string
+  title: string
+  assigneeName: string | null
+}
+
+export interface KanbanColumn {
+  id: string
+  name: string
+  position: number
+  tasks: KanbanTaskCard[]
+}
+
+export interface KanbanBoard {
+  id: string
+  key: string
+  name: string
+  description: string | null
+  columns: KanbanColumn[]
+}
+
 export async function registerAccount(payload: RegisterAccountPayload): Promise<AuthSession> {
   return sendRequest<AuthSession>('/auth/register', {
     method: 'POST',
@@ -42,6 +64,15 @@ export async function login(payload: LoginPayload): Promise<AuthSession> {
 
 export async function getCurrentSession(token: string): Promise<Omit<AuthSession, 'token'>> {
   return sendRequest<Omit<AuthSession, 'token'>>('/auth/me', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function getCurrentKanbanBoard(token: string): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>('/boards/current/kanban', {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,

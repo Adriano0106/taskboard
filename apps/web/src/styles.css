@@ -39,7 +39,8 @@ button {
 }
 
 .auth-panel,
-.workspace {
+.workspace,
+.board-header {
   width: min(100%, 520px);
   border: 1px solid #d5dde6;
   border-radius: 8px;
@@ -175,13 +176,18 @@ input:focus {
   margin: 0 auto;
 }
 
-.workspace {
+.workspace,
+.board-header {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   padding: 28px;
+}
+
+.board-header {
+  box-shadow: none;
 }
 
 .kanban-preview {
@@ -196,6 +202,11 @@ input:focus {
   border-radius: 8px;
   background: #f8fafc;
   padding: 18px;
+}
+
+.task-list {
+  display: grid;
+  gap: 12px;
 }
 
 .column article {
@@ -215,6 +226,22 @@ input:focus {
 .column span {
   color: #334155;
   line-height: 1.45;
+}
+
+.column small {
+  color: #637083;
+  font-weight: 700;
+}
+
+.surface-message,
+.empty-column {
+  margin: 0;
+  border: 1px solid #d5dde6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+  color: #637083;
+  font-weight: 700;
 }
 
 @media (max-width: 760px) {
