@@ -5,7 +5,9 @@
   "type": "module",
   "workspaces": ["apps/api", "apps/web"],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "node scripts/dev-apps.mjs",
+    "dev:api": "npm run dev --workspace @taskboard/api",
+    "dev:web": "npm run dev --workspace @taskboard/web",
     "build": "npm run build --workspaces --if-present",
     "lint": "biome check .",
     "format": "biome format --write .",

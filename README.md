@@ -23,6 +23,13 @@ API: `http://localhost:3333`
 
 Web: `http://localhost:5173`
 
+O comando `npm run dev` inicia backend e frontend juntos. Para rodar separadamente:
+
+```bash
+npm run dev:api
+npm run dev:web
+```
+
 PostgreSQL local usa a porta `5432` por padrão. Se a porta estiver ocupada, altere no `.env`:
 
 ```bash
