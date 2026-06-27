@@ -1,6 +1,8 @@
+@use './styles/colors' as colors;
+
 :root {
-  color: #17202a;
-  background: #eef2f6;
+  color: colors.$text-strong;
+  background: colors.$surface-page;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   font-synthesis: none;
@@ -40,18 +42,20 @@ input:disabled {
 .auth-page {
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, rgba(46, 125, 111, 0.18), transparent 42%),
-    linear-gradient(315deg, rgba(30, 93, 153, 0.16), transparent 36%), #eef2f6;
+  background:
+    linear-gradient(135deg, colors.$brand-focus, transparent 42%),
+    linear-gradient(315deg, rgba(colors.$brand-secondary, 0.16), transparent 36%),
+    colors.$surface-page;
 }
 
 .auth-panel,
 .workspace,
 .board-header {
   width: min(100%, 520px);
-  border: 1px solid #d5dde6;
+  border: 1px solid colors.$border-default;
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 18px 50px rgba(23, 32, 42, 0.08);
+  background: colors.$surface-panel;
+  box-shadow: 0 18px 50px colors.$shadow-soft;
 }
 
 .auth-panel {
@@ -62,7 +66,7 @@ input:disabled {
 
 .eyebrow {
   margin: 0 0 8px;
-  color: #2e7d6f;
+  color: colors.$brand-primary;
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -88,7 +92,7 @@ h2 {
 
 .muted {
   margin-bottom: 0;
-  color: #637083;
+  color: colors.$text-muted;
   line-height: 1.6;
 }
 
@@ -97,23 +101,23 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
   border-radius: 8px;
-  background: #e7edf3;
+  background: colors.$surface-soft;
   padding: 4px;
-}
 
-.mode-switch button {
-  min-height: 42px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #637083;
-  font-weight: 700;
-}
+  button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: colors.$text-muted;
+    font-weight: 700;
 
-.mode-switch button.active {
-  background: #ffffff;
-  color: #17202a;
-  box-shadow: 0 4px 14px rgba(23, 32, 42, 0.08);
+    &.active {
+      background: colors.$surface-panel;
+      color: colors.$text-strong;
+      box-shadow: 0 4px 14px colors.$shadow-soft;
+    }
+  }
 }
 
 form {
@@ -124,7 +128,7 @@ form {
 label {
   display: grid;
   gap: 8px;
-  color: #334155;
+  color: colors.$text-default;
   font-size: 0.92rem;
   font-weight: 700;
 }
@@ -132,16 +136,16 @@ label {
 input {
   min-height: 46px;
   width: 100%;
-  border: 1px solid #c8d2dd;
+  border: 1px solid colors.$border-strong;
   border-radius: 8px;
   padding: 0 14px;
-  color: #17202a;
-  background: #ffffff;
-}
+  color: colors.$text-strong;
+  background: colors.$surface-panel;
 
-input:focus {
-  border-color: #2e7d6f;
-  outline: 3px solid rgba(46, 125, 111, 0.18);
+  &:focus {
+    border-color: colors.$brand-primary;
+    outline: 3px solid colors.$brand-focus;
+  }
 }
 
 .primary-button,
@@ -154,32 +158,30 @@ input:focus {
 }
 
 .primary-button {
-  color: #ffffff;
-  background: #2e7d6f;
-}
-
-.primary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
+  color: colors.$surface-panel;
+  background: colors.$brand-primary;
 }
 
 .secondary-button {
-  color: #17202a;
-  background: #e7edf3;
+  color: colors.$text-strong;
+  background: colors.$surface-soft;
 }
 
 .error-message {
   margin: 0;
-  color: #b42318;
+  color: colors.$danger;
   font-weight: 700;
 }
 
 .app-shell {
   display: grid;
-  align-content: start;
-  gap: 24px;
-  max-width: 1180px;
-  margin: 0 auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 16px;
+  max-width: none;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 72% 18%, rgba(colors.$brand-primary, 0.12), transparent 22%),
+    linear-gradient(135deg, colors.$surface-page 0%, colors.$surface-board 100%);
 }
 
 .workspace,
@@ -189,7 +191,13 @@ input:focus {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 28px;
+  padding: 18px 20px;
+}
+
+.workspace {
+  h1 {
+    font-size: 1.45rem;
+  }
 }
 
 .board-header {
@@ -205,22 +213,46 @@ input:focus {
 }
 
 .kanban-preview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  display: flex;
+  align-items: flex-start;
   gap: 16px;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 4px 20px;
+  scroll-padding-inline: 4px;
 }
 
 .column {
+  display: flex;
+  flex: 0 0 304px;
+  max-height: calc(100vh - 238px);
   min-height: 320px;
-  border: 1px solid #d5dde6;
+  flex-direction: column;
+  border: 1px solid colors.$border-default;
   border-radius: 8px;
-  background: #f8fafc;
-  padding: 18px;
-}
+  background: colors.$surface-column;
+  padding: 12px;
 
-.column.is-over {
-  border-color: #2e7d6f;
-  background: #eef8f5;
+  &.is-over {
+    border-color: colors.$brand-primary;
+    background: colors.$surface-column-hover;
+  }
+
+  strong {
+    color: colors.$brand-primary;
+    font-size: 0.8rem;
+  }
+
+  span {
+    color: colors.$text-default;
+    line-height: 1.45;
+  }
+
+  small {
+    color: colors.$text-muted;
+    font-weight: 700;
+  }
 }
 
 .column-title-form {
@@ -228,19 +260,19 @@ input:focus {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   margin-bottom: 8px;
-}
 
-.column-title-form input {
-  min-height: 40px;
-  border-color: transparent;
-  background: transparent;
-  padding: 0;
-  font-weight: 800;
-}
+  input {
+    min-height: 40px;
+    border-color: transparent;
+    background: transparent;
+    padding: 0;
+    font-weight: 800;
 
-.column-title-form input:focus {
-  background: #ffffff;
-  padding: 0 10px;
+    &:focus {
+      background: colors.$surface-panel;
+      padding: 0 10px;
+    }
+  }
 }
 
 .icon-button,
@@ -249,8 +281,8 @@ input:focus {
   border: 0;
   border-radius: 8px;
   padding: 0 10px;
-  background: #e7edf3;
-  color: #334155;
+  background: colors.$surface-soft;
+  color: colors.$text-default;
   font-weight: 800;
 }
 
@@ -261,18 +293,20 @@ input:focus {
 
 .column-rule {
   margin-bottom: 14px;
-  border: 1px dashed #c8d2dd;
+  border: 1px dashed colors.$border-strong;
   border-radius: 8px;
   padding: 10px;
-  color: #637083;
+  color: colors.$text-muted;
   font-size: 0.88rem;
   font-weight: 700;
 }
 
 .task-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-height: 76px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .task-form {
@@ -280,54 +314,39 @@ input:focus {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   margin-bottom: 14px;
-}
 
-.task-form input {
-  min-height: 40px;
-}
+  input,
+  .secondary-button {
+    min-height: 40px;
+  }
 
-.task-form .secondary-button {
-  min-height: 40px;
-  padding: 0 12px;
+  .secondary-button {
+    padding: 0 12px;
+  }
 }
 
 .task-card {
   display: grid;
   gap: 8px;
-  border: 1px solid #d5dde6;
+  border: 1px solid colors.$border-default;
   border-radius: 8px;
-  background: #ffffff;
-  padding: 14px;
+  background: colors.$surface-panel;
+  padding: 12px;
   text-align: left;
   touch-action: none;
-}
 
-.task-card:hover {
-  border-color: #2e7d6f;
-}
+  &:hover {
+    border-color: colors.$brand-primary;
+  }
 
-.task-card.is-dragging {
-  opacity: 0.45;
+  &.is-dragging {
+    opacity: 0.45;
+  }
 }
 
 .task-card-overlay {
   width: 280px;
-  box-shadow: 0 18px 50px rgba(23, 32, 42, 0.18);
-}
-
-.column strong {
-  color: #2e7d6f;
-  font-size: 0.8rem;
-}
-
-.column span {
-  color: #334155;
-  line-height: 1.45;
-}
-
-.column small {
-  color: #637083;
-  font-weight: 700;
+  box-shadow: 0 18px 50px colors.$shadow-medium;
 }
 
 .modal-backdrop {
@@ -335,7 +354,7 @@ input:focus {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(23, 32, 42, 0.38);
+  background: colors.$overlay;
   padding: 20px;
   z-index: 20;
 }
@@ -344,10 +363,11 @@ input:focus {
   display: grid;
   gap: 20px;
   width: min(100%, 620px);
+  border: 0;
   border-radius: 8px;
-  background: #ffffff;
+  background: colors.$surface-panel;
   padding: 24px;
-  box-shadow: 0 24px 70px rgba(23, 32, 42, 0.24);
+  box-shadow: 0 24px 70px colors.$shadow-strong;
 }
 
 .modal-header {
@@ -355,11 +375,11 @@ input:focus {
   align-items: start;
   justify-content: space-between;
   gap: 18px;
-}
 
-.modal-header h2 {
-  margin-bottom: 0;
-  font-size: 1.15rem;
+  h2 {
+    margin-bottom: 0;
+    font-size: 1.15rem;
+  }
 }
 
 .task-detail-list {
@@ -367,23 +387,23 @@ input:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin: 0;
-}
 
-.task-detail-list div {
-  display: grid;
-  gap: 4px;
-}
+  div {
+    display: grid;
+    gap: 4px;
+  }
 
-.task-detail-list dt {
-  color: #637083;
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
+  dt {
+    color: colors.$text-muted;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
 
-.task-detail-list dd {
-  margin: 0;
-  color: #17202a;
+  dd {
+    margin: 0;
+    color: colors.$text-strong;
+  }
 }
 
 .task-detail-description {
@@ -393,11 +413,11 @@ input:focus {
 .surface-message,
 .empty-column {
   margin: 0;
-  border: 1px solid #d5dde6;
+  border: 1px solid colors.$border-default;
   border-radius: 8px;
-  background: #ffffff;
+  background: colors.$surface-panel;
   padding: 14px;
-  color: #637083;
+  color: colors.$text-muted;
   font-weight: 700;
 }
 
@@ -407,11 +427,7 @@ input:focus {
     padding: 16px;
   }
 
-  .workspace {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
+  .workspace,
   .board-header {
     align-items: stretch;
     flex-direction: column;
@@ -423,8 +439,9 @@ input:focus {
     grid-template-columns: 1fr;
   }
 
-  .kanban-preview {
-    grid-template-columns: 1fr;
+  .column {
+    flex-basis: 288px;
+    max-height: calc(100vh - 310px);
   }
 
   .task-detail-list {
