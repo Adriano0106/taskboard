@@ -259,6 +259,16 @@ input:focus {
   margin-bottom: 14px;
 }
 
+.column-rule {
+  margin-bottom: 14px;
+  border: 1px dashed #c8d2dd;
+  border-radius: 8px;
+  padding: 10px;
+  color: #637083;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .task-list {
   display: grid;
   gap: 12px;

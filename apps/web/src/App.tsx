@@ -394,9 +394,10 @@ export function App() {
 
             <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
               <section className="kanban-preview" aria-label="Quadro Kanban">
-                {kanbanBoard.columns.map((column) => (
+                {kanbanBoard.columns.map((column, columnIndex) => (
                   <KanbanColumnView
                     column={column}
+                    canCreateTask={columnIndex === 0}
                     deletingColumnId={deletingColumnId}
                     editingColumnId={editingColumnId}
                     creatingTaskColumnId={creatingTaskColumnId}
@@ -490,6 +491,7 @@ export function App() {
 
 interface KanbanColumnViewProps {
   column: KanbanColumn
+  canCreateTask: boolean
   creatingTaskColumnId: string | null
   deletingColumnId: string | null
   editingColumnId: string | null
@@ -501,6 +503,7 @@ interface KanbanColumnViewProps {
 
 function KanbanColumnView({
   column,
+  canCreateTask,
   creatingTaskColumnId,
   deletingColumnId,
   editingColumnId,
@@ -541,24 +544,28 @@ function KanbanColumnView({
       >
         Remover coluna vazia
       </button>
-      <form className="task-form" onSubmit={(event) => onCreateTask(event, column.id)}>
-        <input
-          name="title"
-          type="text"
-          minLength={2}
-          placeholder="Nova task"
-          aria-label={`Nova task em ${column.name}`}
-          disabled={creatingTaskColumnId === column.id}
-          required
-        />
-        <button
-          type="submit"
-          className="secondary-button"
-          disabled={creatingTaskColumnId === column.id}
-        >
-          {creatingTaskColumnId === column.id ? 'Criando...' : 'Adicionar'}
-        </button>
-      </form>
+      {canCreateTask ? (
+        <form className="task-form" onSubmit={(event) => onCreateTask(event, column.id)}>
+          <input
+            name="title"
+            type="text"
+            minLength={2}
+            placeholder="Nova task"
+            aria-label={`Nova task em ${column.name}`}
+            disabled={creatingTaskColumnId === column.id}
+            required
+          />
+          <button
+            type="submit"
+            className="secondary-button"
+            disabled={creatingTaskColumnId === column.id}
+          >
+            {creatingTaskColumnId === column.id ? 'Criando...' : 'Adicionar'}
+          </button>
+        </form>
+      ) : (
+        <p className="column-rule">Novos cards entram pela primeira coluna.</p>
+      )}
       <SortableContext
         items={column.tasks.map((task) => task.id)}
         strategy={verticalListSortingStrategy}

@@ -64,7 +64,7 @@ export async function boardRoutes(app: FastifyInstance) {
       return reply.status(201).send(board)
     } catch (error) {
       if (error instanceof BoardError) {
-        return reply.status(404).send({
+        return reply.status(409).send({
           message: error.message,
         })
       }

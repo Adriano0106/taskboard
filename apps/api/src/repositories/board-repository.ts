@@ -207,9 +207,14 @@ export async function createTaskInCompanyKanbanBoard(
     userId: input.userId,
   })
   const targetColumn = board.columns.find((column) => column.id === input.columnId)
+  const firstColumn = board.columns[0]
 
   if (!targetColumn) {
     throw new BoardError('Column does not belong to the current board')
+  }
+
+  if (!firstColumn || targetColumn.id !== firstColumn.id) {
+    throw new BoardError('New tasks can only be created in the first board column')
   }
 
   const updatedBoard = await prisma.$transaction(async (transaction) => {
