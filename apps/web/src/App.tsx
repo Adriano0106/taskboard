@@ -27,6 +27,7 @@ import {
   moveTask,
   registerAccount,
   renameColumn,
+  reorderColumn,
 } from './api.js'
 
 type AuthMode = 'login' | 'register'
@@ -59,9 +60,11 @@ export function App() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isKanbanLoading, setIsKanbanLoading] = useState(false)
   const [isTaskDetailLoading, setIsTaskDetailLoading] = useState(false)
+  const [isColumnOrganizerOpen, setIsColumnOrganizerOpen] = useState(false)
   const [creatingTaskColumnId, setCreatingTaskColumnId] = useState<string | null>(null)
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
   const [deletingColumnId, setDeletingColumnId] = useState<string | null>(null)
+  const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
   const sensors = useSensors(
@@ -166,10 +169,12 @@ export function App() {
     setKanbanStatusMessage('')
   }
 
-  async function handleCreateTask(formEvent: FormEvent<HTMLFormElement>, columnId: string) {
+  async function handleCreateTask(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
 
-    if (!session?.token) {
+    const firstColumn = kanbanBoard?.columns[0]
+
+    if (!session?.token || !firstColumn) {
       return
     }
 
@@ -180,12 +185,12 @@ export function App() {
       return
     }
 
-    setCreatingTaskColumnId(columnId)
+    setCreatingTaskColumnId(firstColumn.id)
     setKanbanStatusMessage('')
 
     try {
       const updatedBoard = await createTask(session.token, {
-        columnId,
+        columnId: firstColumn.id,
         title,
       })
 
@@ -209,7 +214,6 @@ export function App() {
 
     const formData = new FormData(formEvent.currentTarget)
     const name = String(formData.get('name') ?? '').trim()
-    const position = Number(formData.get('position') ?? 1)
 
     if (!name) {
       return
@@ -220,7 +224,7 @@ export function App() {
     try {
       const updatedBoard = await createColumn(session.token, {
         name,
-        position,
+        position: (kanbanBoard?.columns.length ?? 0) + 1,
       })
 
       setKanbanBoard(updatedBoard)
@@ -281,6 +285,29 @@ export function App() {
       )
     } finally {
       setDeletingColumnId(null)
+    }
+  }
+
+  async function handleReorderColumn(columnId: string, position: number) {
+    if (!session?.token) {
+      return
+    }
+
+    setReorderingColumnId(columnId)
+    setKanbanStatusMessage('')
+
+    try {
+      const updatedBoard = await reorderColumn(session.token, columnId, {
+        position,
+      })
+
+      setKanbanBoard(updatedBoard)
+    } catch (error) {
+      setKanbanStatusMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel reorganizar as colunas',
+      )
+    } finally {
+      setReorderingColumnId(null)
     }
   }
 
@@ -387,38 +414,60 @@ export function App() {
                   <p className="muted">{kanbanBoard.description}</p>
                 ) : null}
               </div>
-              {canManageColumns ? (
-                <form className="column-create-form" onSubmit={handleCreateColumn}>
-                  <input name="name" type="text" minLength={2} placeholder="Nova coluna" required />
-                  <select name="position" aria-label="Posicao da nova coluna">
-                    {Array.from(
-                      { length: kanbanBoard.columns.length + 1 },
-                      (_, optionIndex) => optionIndex + 1,
-                    ).map((positionOption) => (
-                      <option key={`column-position-${positionOption}`} value={positionOption}>
-                        Posicao {positionOption}
-                      </option>
-                    ))}
-                  </select>
-                  <button type="submit" className="secondary-button">
-                    Adicionar coluna
+              <div className="board-actions">
+                <form className="task-create-form" onSubmit={handleCreateTask}>
+                  <input
+                    name="title"
+                    type="text"
+                    minLength={2}
+                    placeholder="Adicionar nova tarefa"
+                    aria-label="Adicionar nova tarefa"
+                    disabled={!kanbanBoard.columns[0] || creatingTaskColumnId !== null}
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="secondary-button"
+                    disabled={!kanbanBoard.columns[0] || creatingTaskColumnId !== null}
+                  >
+                    {creatingTaskColumnId ? 'Criando...' : 'Adicionar nova tarefa'}
                   </button>
                 </form>
-              ) : null}
+                {canManageColumns ? (
+                  <div className="column-management">
+                    <form className="column-create-form" onSubmit={handleCreateColumn}>
+                      <input
+                        name="name"
+                        type="text"
+                        minLength={2}
+                        placeholder="Nova coluna"
+                        required
+                      />
+                      <button type="submit" className="secondary-button">
+                        Adicionar coluna
+                      </button>
+                    </form>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setIsColumnOrganizerOpen(true)}
+                    >
+                      Reorganizar colunas
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </section>
 
             <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
               <section className="kanban-preview" aria-label="Quadro Kanban">
-                {kanbanBoard.columns.map((column, columnIndex) => (
+                {kanbanBoard.columns.map((column) => (
                   <KanbanColumnView
                     column={column}
-                    canCreateTask={columnIndex === 0}
                     canManageColumns={canManageColumns}
                     deletingColumnId={deletingColumnId}
                     editingColumnId={editingColumnId}
-                    creatingTaskColumnId={creatingTaskColumnId}
                     key={column.id}
-                    onCreateTask={handleCreateTask}
                     onDeleteColumn={handleDeleteColumn}
                     onOpenTask={handleOpenTask}
                     onRenameColumn={handleRenameColumn}
@@ -439,6 +488,15 @@ export function App() {
             taskDetail={selectedTaskDetail}
             title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
             onClose={() => setSelectedTaskDetail(null)}
+          />
+        ) : null}
+
+        {isColumnOrganizerOpen && kanbanBoard ? (
+          <ColumnOrganizerDialog
+            columns={kanbanBoard.columns}
+            reorderingColumnId={reorderingColumnId}
+            onClose={() => setIsColumnOrganizerOpen(false)}
+            onReorderColumn={handleReorderColumn}
           />
         ) : null}
       </main>
@@ -507,12 +565,9 @@ export function App() {
 
 interface KanbanColumnViewProps {
   column: KanbanColumn
-  canCreateTask: boolean
   canManageColumns: boolean
-  creatingTaskColumnId: string | null
   deletingColumnId: string | null
   editingColumnId: string | null
-  onCreateTask: (formEvent: FormEvent<HTMLFormElement>, columnId: string) => void
   onDeleteColumn: (column: KanbanColumn) => void
   onOpenTask: (taskId: string) => void
   onRenameColumn: (formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) => void
@@ -520,12 +575,9 @@ interface KanbanColumnViewProps {
 
 function KanbanColumnView({
   column,
-  canCreateTask,
   canManageColumns,
-  creatingTaskColumnId,
   deletingColumnId,
   editingColumnId,
-  onCreateTask,
   onDeleteColumn,
   onOpenTask,
   onRenameColumn,
@@ -571,28 +623,6 @@ function KanbanColumnView({
           <span>Estrutura gerenciada por admins</span>
         </div>
       )}
-      {canCreateTask ? (
-        <form className="task-form" onSubmit={(event) => onCreateTask(event, column.id)}>
-          <input
-            name="title"
-            type="text"
-            minLength={2}
-            placeholder="Nova task"
-            aria-label={`Nova task em ${column.name}`}
-            disabled={creatingTaskColumnId === column.id}
-            required
-          />
-          <button
-            type="submit"
-            className="secondary-button"
-            disabled={creatingTaskColumnId === column.id}
-          >
-            {creatingTaskColumnId === column.id ? 'Criando...' : 'Adicionar'}
-          </button>
-        </form>
-      ) : (
-        <p className="column-rule">Novos cards entram pela primeira coluna.</p>
-      )}
       <SortableContext
         items={column.tasks.map((task) => task.id)}
         strategy={verticalListSortingStrategy}
@@ -613,6 +643,110 @@ function KanbanColumnView({
         </div>
       </SortableContext>
     </div>
+  )
+}
+
+interface ColumnOrganizerDialogProps {
+  columns: KanbanColumn[]
+  reorderingColumnId: string | null
+  onClose: () => void
+  onReorderColumn: (columnId: string, position: number) => void
+}
+
+function ColumnOrganizerDialog({
+  columns,
+  reorderingColumnId,
+  onClose,
+  onReorderColumn,
+}: ColumnOrganizerDialogProps) {
+  const columnOrganizerSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+  )
+
+  function handleColumnDragEnd(event: DragEndEvent) {
+    if (!event.over || event.active.id === event.over.id) {
+      return
+    }
+
+    const targetColumnIndex = columns.findIndex((column) => column.id === String(event.over?.id))
+
+    if (targetColumnIndex < 0) {
+      return
+    }
+
+    onReorderColumn(String(event.active.id), targetColumnIndex + 1)
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <dialog className="task-detail-modal column-organizer-dialog" open>
+        <div className="modal-header">
+          <div>
+            <p className="eyebrow">Quadro</p>
+            <h2>Reorganizar colunas</h2>
+          </div>
+          <button type="button" className="icon-button" onClick={onClose}>
+            Fechar
+          </button>
+        </div>
+
+        <DndContext sensors={columnOrganizerSensors} onDragEnd={handleColumnDragEnd}>
+          <SortableContext
+            items={columns.map((column) => column.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="column-organizer-list">
+              {columns.map((column) => (
+                <SortableColumnOrderRow
+                  column={column}
+                  isReordering={reorderingColumnId === column.id}
+                  key={column.id}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </dialog>
+    </div>
+  )
+}
+
+interface SortableColumnOrderRowProps {
+  column: KanbanColumn
+  isReordering: boolean
+}
+
+function SortableColumnOrderRow({ column, isReordering }: SortableColumnOrderRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: column.id,
+    data: {
+      type: 'column',
+      columnId: column.id,
+    } satisfies ColumnDragData,
+  })
+
+  const rowStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <button
+      type="button"
+      className={isDragging ? 'column-order-row is-dragging' : 'column-order-row'}
+      disabled={isReordering}
+      ref={setNodeRef}
+      style={rowStyle}
+      {...attributes}
+      {...listeners}
+    >
+      <span>{column.name}</span>
+      <small>{isReordering ? 'Reorganizando...' : 'Arraste para ordenar'}</small>
+    </button>
   )
 }
 

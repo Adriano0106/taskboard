@@ -208,11 +208,23 @@ select {
   box-shadow: none;
 }
 
+.board-actions {
+  display: grid;
+  width: min(100%, 680px);
+  gap: 10px;
+}
+
+.task-create-form,
 .column-create-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 140px auto;
+  grid-template-columns: minmax(180px, 1fr) auto;
   gap: 8px;
-  min-width: min(100%, 560px);
+}
+
+.column-management {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
 }
 
 .kanban-preview {
@@ -310,16 +322,6 @@ select {
   margin-bottom: 14px;
 }
 
-.column-rule {
-  margin-bottom: 14px;
-  border: 1px dashed colors.$border-strong;
-  border-radius: 8px;
-  padding: 10px;
-  color: colors.$text-muted;
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
 .task-list {
   display: grid;
   gap: 10px;
@@ -341,6 +343,52 @@ select {
 
   .secondary-button {
     padding: 0 12px;
+  }
+}
+
+.column-organizer-dialog {
+  max-width: 420px;
+}
+
+.column-organizer-list {
+  display: grid;
+  gap: 8px;
+}
+
+.column-order-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 48px;
+  border: 1px solid colors.$border-default;
+  border-radius: 6px;
+  background: colors.$surface-panel;
+  padding: 0 12px;
+  color: colors.$text-default;
+  cursor: grab;
+  text-align: left;
+
+  span {
+    overflow: hidden;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: colors.$text-muted;
+    font-size: 0.74rem;
+    font-weight: 800;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &.is-dragging {
+    border-color: colors.$brand-primary;
+    box-shadow: 0 10px 24px colors.$shadow-soft;
+    opacity: 0.72;
   }
 }
 
@@ -452,7 +500,9 @@ select {
     flex-direction: column;
   }
 
+  .task-create-form,
   .column-create-form,
+  .column-management,
   .task-form,
   .column-title-form {
     grid-template-columns: 1fr;
