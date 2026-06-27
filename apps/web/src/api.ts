@@ -173,12 +173,13 @@ export async function deleteColumn(token: string, columnId: string): Promise<Kan
 }
 
 async function sendRequest<ResponseBody>(path: string, init: RequestInit): Promise<ResponseBody> {
+  const requestHeaders = {
+    ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+    ...init.headers,
+  }
   const response = await fetch(`${apiUrl}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init.headers,
-    },
+    headers: requestHeaders,
   })
 
   if (!response.ok) {
