@@ -70,6 +70,10 @@ export interface MoveTaskPayload {
   position: number
 }
 
+export interface ReorderColumnPayload {
+  position: number
+}
+
 export interface ColumnPayload {
   name: string
   position?: number
@@ -156,6 +160,20 @@ export async function renameColumn(
   payload: ColumnPayload,
 ): Promise<KanbanBoard> {
   return sendRequest<KanbanBoard>(`/boards/current/columns/${columnId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function reorderColumn(
+  token: string,
+  columnId: string,
+  payload: ReorderColumnPayload,
+): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(`/boards/current/columns/${columnId}/reorder`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`,
