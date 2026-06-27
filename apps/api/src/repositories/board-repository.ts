@@ -72,6 +72,14 @@ export interface UpdateKanbanColumnInput {
   name: string
 }
 
+export interface ReorderKanbanColumnInput {
+  columnId: string
+  companyId: string
+  companyRole: string
+  userId: string
+  position: number
+}
+
 export interface DeleteKanbanColumnInput {
   companyId: string
   companyRole: string
@@ -397,6 +405,91 @@ export async function renameColumnInCompanyKanbanBoard(
       },
       data: {
         name: input.name.trim(),
+      },
+    })
+
+    return transaction.board.findUniqueOrThrow({
+      where: {
+        id: board.id,
+      },
+      include: boardInclude,
+    })
+  })
+
+  return mapBoardToKanbanBoard(updatedBoard)
+}
+
+export async function reorderColumnInCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: ReorderKanbanColumnInput,
+): Promise<KanbanBoard> {
+  assertCanManageColumns(input.companyRole)
+
+  const board = await getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
+  const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
+
+  if (!column) {
+    throw new BoardError('Column does not belong to the current board')
+  }
+
+  const targetPosition = normalizeColumnPosition(input.position, board.columns.length)
+
+  if (targetPosition === column.position) {
+    return board
+  }
+
+  const updatedBoard = await prisma.$transaction(async (transaction) => {
+    await transaction.boardColumn.update({
+      where: {
+        id: input.columnId,
+      },
+      data: {
+        position: 0,
+      },
+    })
+
+    const affectedColumns = await transaction.boardColumn.findMany({
+      where: {
+        boardId: board.id,
+        position:
+          targetPosition < column.position
+            ? {
+                gte: targetPosition,
+                lt: column.position,
+              }
+            : {
+                gt: column.position,
+                lte: targetPosition,
+              },
+      },
+      orderBy: {
+        position: targetPosition < column.position ? 'desc' : 'asc',
+      },
+    })
+
+    for (const affectedColumn of affectedColumns) {
+      await transaction.boardColumn.update({
+        where: {
+          id: affectedColumn.id,
+        },
+        data: {
+          position:
+            targetPosition < column.position
+              ? affectedColumn.position + 1
+              : affectedColumn.position - 1,
+        },
+      })
+    }
+
+    await transaction.boardColumn.update({
+      where: {
+        id: input.columnId,
+      },
+      data: {
+        position: targetPosition,
       },
     })
 

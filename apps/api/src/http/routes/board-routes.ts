@@ -10,6 +10,7 @@ import {
   getOrCreateCompanyKanbanBoard,
   moveTaskInCompanyKanbanBoard,
   renameColumnInCompanyKanbanBoard,
+  reorderColumnInCompanyKanbanBoard,
 } from '../../repositories/board-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
@@ -28,6 +29,10 @@ const columnBodySchema = z.object({
 })
 
 const createColumnBodySchema = columnBodySchema.extend({
+  position: z.coerce.number().int().min(1),
+})
+
+const reorderColumnBodySchema = z.object({
   position: z.coerce.number().int().min(1),
 })
 
@@ -195,6 +200,43 @@ export async function boardRoutes(app: FastifyInstance) {
           userId: request.user.userId,
           columnId: paramsValidation.data.columnId,
           name: bodyValidation.data.name,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(getBoardErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.patch(
+    '/boards/current/columns/:columnId/reorder',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = columnParamsSchema.safeParse(request.params)
+      const bodyValidation = reorderColumnBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid column reorder payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        return await reorderColumnInCompanyKanbanBoard(prisma, {
+          companyId: request.user.companyId,
+          companyRole: request.user.role,
+          userId: request.user.userId,
+          columnId: paramsValidation.data.columnId,
+          position: bodyValidation.data.position,
         })
       } catch (error) {
         if (error instanceof BoardError) {
