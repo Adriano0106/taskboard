@@ -123,6 +123,7 @@ export function App() {
     }),
     [],
   )
+  const canManageColumns = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
 
   async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
@@ -208,6 +209,7 @@ export function App() {
 
     const formData = new FormData(formEvent.currentTarget)
     const name = String(formData.get('name') ?? '').trim()
+    const position = Number(formData.get('position') ?? 1)
 
     if (!name) {
       return
@@ -218,6 +220,7 @@ export function App() {
     try {
       const updatedBoard = await createColumn(session.token, {
         name,
+        position,
       })
 
       setKanbanBoard(updatedBoard)
@@ -384,12 +387,24 @@ export function App() {
                   <p className="muted">{kanbanBoard.description}</p>
                 ) : null}
               </div>
-              <form className="column-create-form" onSubmit={handleCreateColumn}>
-                <input name="name" type="text" minLength={2} placeholder="Nova coluna" required />
-                <button type="submit" className="secondary-button">
-                  Adicionar coluna
-                </button>
-              </form>
+              {canManageColumns ? (
+                <form className="column-create-form" onSubmit={handleCreateColumn}>
+                  <input name="name" type="text" minLength={2} placeholder="Nova coluna" required />
+                  <select name="position" aria-label="Posicao da nova coluna">
+                    {Array.from(
+                      { length: kanbanBoard.columns.length + 1 },
+                      (_, optionIndex) => optionIndex + 1,
+                    ).map((positionOption) => (
+                      <option key={`column-position-${positionOption}`} value={positionOption}>
+                        Posicao {positionOption}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="submit" className="secondary-button">
+                    Adicionar coluna
+                  </button>
+                </form>
+              ) : null}
             </section>
 
             <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -398,6 +413,7 @@ export function App() {
                   <KanbanColumnView
                     column={column}
                     canCreateTask={columnIndex === 0}
+                    canManageColumns={canManageColumns}
                     deletingColumnId={deletingColumnId}
                     editingColumnId={editingColumnId}
                     creatingTaskColumnId={creatingTaskColumnId}
@@ -492,6 +508,7 @@ export function App() {
 interface KanbanColumnViewProps {
   column: KanbanColumn
   canCreateTask: boolean
+  canManageColumns: boolean
   creatingTaskColumnId: string | null
   deletingColumnId: string | null
   editingColumnId: string | null
@@ -504,6 +521,7 @@ interface KanbanColumnViewProps {
 function KanbanColumnView({
   column,
   canCreateTask,
+  canManageColumns,
   creatingTaskColumnId,
   deletingColumnId,
   editingColumnId,
@@ -522,28 +540,37 @@ function KanbanColumnView({
 
   return (
     <div className={isOver ? 'column is-over' : 'column'} ref={setNodeRef}>
-      <form className="column-title-form" onSubmit={(event) => onRenameColumn(event, column)}>
-        <input
-          aria-label={`Nome da coluna ${column.name}`}
-          defaultValue={column.name}
-          disabled={editingColumnId === column.id}
-          name="name"
-          type="text"
-          minLength={2}
-          required
-        />
-        <button type="submit" className="icon-button" title="Renomear coluna">
-          Salvar
-        </button>
-      </form>
-      <button
-        type="button"
-        className="column-delete-button"
-        disabled={column.tasks.length > 0 || deletingColumnId === column.id}
-        onClick={() => onDeleteColumn(column)}
-      >
-        Remover coluna vazia
-      </button>
+      {canManageColumns ? (
+        <>
+          <form className="column-title-form" onSubmit={(event) => onRenameColumn(event, column)}>
+            <input
+              aria-label={`Nome da coluna ${column.name}`}
+              defaultValue={column.name}
+              disabled={editingColumnId === column.id}
+              name="name"
+              type="text"
+              minLength={2}
+              required
+            />
+            <button type="submit" className="icon-button" title="Renomear coluna">
+              Salvar
+            </button>
+          </form>
+          <button
+            type="button"
+            className="column-delete-button"
+            disabled={column.tasks.length > 0 || deletingColumnId === column.id}
+            onClick={() => onDeleteColumn(column)}
+          >
+            Remover coluna vazia
+          </button>
+        </>
+      ) : (
+        <div className="column-title-readonly">
+          <h2>{column.name}</h2>
+          <span>Estrutura gerenciada por admins</span>
+        </div>
+      )}
       {canCreateTask ? (
         <form className="task-form" onSubmit={(event) => onCreateTask(event, column.id)}>
           <input

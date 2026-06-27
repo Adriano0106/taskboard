@@ -72,6 +72,7 @@ export interface MoveTaskPayload {
 
 export interface ColumnPayload {
   name: string
+  position?: number
 }
 
 export async function registerAccount(payload: RegisterAccountPayload): Promise<AuthSession> {

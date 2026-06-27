@@ -19,7 +19,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -28,7 +29,8 @@ button {
 }
 
 button:disabled,
-input:disabled {
+input:disabled,
+select:disabled {
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -133,7 +135,8 @@ label {
   font-weight: 700;
 }
 
-input {
+input,
+select {
   min-height: 46px;
   width: 100%;
   border: 1px solid colors.$border-strong;
@@ -207,9 +210,9 @@ input {
 
 .column-create-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1fr) 140px auto;
   gap: 8px;
-  min-width: min(100%, 420px);
+  min-width: min(100%, 560px);
 }
 
 .kanban-preview {
@@ -272,6 +275,22 @@ input {
       background: colors.$surface-panel;
       padding: 0 10px;
     }
+  }
+}
+
+.column-title-readonly {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+
+  h2 {
+    margin-bottom: 0;
+  }
+
+  span {
+    color: colors.$text-muted;
+    font-size: 0.78rem;
+    font-weight: 800;
   }
 }
 
