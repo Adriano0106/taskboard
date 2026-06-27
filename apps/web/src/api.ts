@@ -48,9 +48,30 @@ export interface KanbanBoard {
   columns: KanbanColumn[]
 }
 
+export interface KanbanTaskDetail {
+  id: string
+  friendlyId: string
+  title: string
+  description: string | null
+  boardName: string
+  columnName: string
+  assigneeName: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface CreateTaskPayload {
   title: string
   columnId: string
+}
+
+export interface MoveTaskPayload {
+  columnId: string
+  position: number
+}
+
+export interface ColumnPayload {
+  name: string
 }
 
 export async function registerAccount(payload: RegisterAccountPayload): Promise<AuthSession> {
@@ -92,6 +113,62 @@ export async function createTask(token: string, payload: CreateTaskPayload): Pro
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
+  })
+}
+
+export async function moveTask(
+  token: string,
+  taskId: string,
+  payload: MoveTaskPayload,
+): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(`/tasks/${taskId}/move`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getTaskDetail(token: string, taskId: string): Promise<KanbanTaskDetail> {
+  return sendRequest<KanbanTaskDetail>(`/tasks/${taskId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function createColumn(token: string, payload: ColumnPayload): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>('/boards/current/columns', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function renameColumn(
+  token: string,
+  columnId: string,
+  payload: ColumnPayload,
+): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(`/boards/current/columns/${columnId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteColumn(token: string, columnId: string): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(`/boards/current/columns/${columnId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   })
 }
 
