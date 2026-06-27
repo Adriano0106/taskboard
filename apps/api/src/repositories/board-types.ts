@@ -1,0 +1,91 @@
+export interface KanbanTaskCard {
+  id: string
+  friendlyId: string
+  title: string
+  assigneeName: string | null
+}
+
+export interface KanbanColumn {
+  id: string
+  name: string
+  position: number
+  tasks: KanbanTaskCard[]
+}
+
+export interface KanbanBoard {
+  id: string
+  key: string
+  name: string
+  description: string | null
+  columns: KanbanColumn[]
+}
+
+export interface KanbanTaskDetail {
+  id: string
+  friendlyId: string
+  title: string
+  description: string | null
+  boardName: string
+  columnName: string
+  assigneeName: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export class BoardError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BoardError'
+  }
+}
+
+export interface CreateKanbanTaskInput {
+  companyId: string
+  userId: string
+  columnId: string
+  title: string
+}
+
+export interface MoveKanbanTaskInput {
+  companyId: string
+  userId: string
+  taskId: string
+  columnId: string
+  position: number
+}
+
+export interface KanbanColumnInput {
+  companyId: string
+  companyRole: string
+  userId: string
+  name: string
+  position: number
+}
+
+export interface UpdateKanbanColumnInput {
+  columnId: string
+  companyId: string
+  companyRole: string
+  userId: string
+  name: string
+}
+
+export interface ReorderKanbanColumnInput {
+  columnId: string
+  companyId: string
+  companyRole: string
+  userId: string
+  position: number
+}
+
+export interface DeleteKanbanColumnInput {
+  companyId: string
+  companyRole: string
+  userId: string
+  columnId: string
+}
+
+export interface GetKanbanTaskDetailInput {
+  companyId: string
+  taskId: string
+}

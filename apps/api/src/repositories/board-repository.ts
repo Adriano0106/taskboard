@@ -1,96 +1,37 @@
-import type { Prisma, PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '@prisma/client'
+import {
+  assertCanManageColumns,
+  normalizeColumnPosition,
+  shiftColumnsFromPosition,
+} from './board-column-helpers.js'
+import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
+import { BoardError } from './board-types.js'
+import type {
+  CreateKanbanTaskInput,
+  DeleteKanbanColumnInput,
+  GetKanbanTaskDetailInput,
+  KanbanBoard,
+  KanbanColumnInput,
+  KanbanTaskDetail,
+  MoveKanbanTaskInput,
+  ReorderKanbanColumnInput,
+  UpdateKanbanColumnInput,
+} from './board-types.js'
 
-export interface KanbanTaskCard {
-  id: string
-  friendlyId: string
-  title: string
-  assigneeName: string | null
-}
-
-export interface KanbanColumn {
-  id: string
-  name: string
-  position: number
-  tasks: KanbanTaskCard[]
-}
-
-export interface KanbanBoard {
-  id: string
-  key: string
-  name: string
-  description: string | null
-  columns: KanbanColumn[]
-}
-
-export interface KanbanTaskDetail {
-  id: string
-  friendlyId: string
-  title: string
-  description: string | null
-  boardName: string
-  columnName: string
-  assigneeName: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export class BoardError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'BoardError'
-  }
-}
-
-export interface CreateKanbanTaskInput {
-  companyId: string
-  userId: string
-  columnId: string
-  title: string
-}
-
-export interface MoveKanbanTaskInput {
-  companyId: string
-  userId: string
-  taskId: string
-  columnId: string
-  position: number
-}
-
-export interface KanbanColumnInput {
-  companyId: string
-  companyRole: string
-  userId: string
-  name: string
-  position: number
-}
-
-export interface UpdateKanbanColumnInput {
-  columnId: string
-  companyId: string
-  companyRole: string
-  userId: string
-  name: string
-}
-
-export interface ReorderKanbanColumnInput {
-  columnId: string
-  companyId: string
-  companyRole: string
-  userId: string
-  position: number
-}
-
-export interface DeleteKanbanColumnInput {
-  companyId: string
-  companyRole: string
-  userId: string
-  columnId: string
-}
-
-export interface GetKanbanTaskDetailInput {
-  companyId: string
-  taskId: string
-}
+export { BoardError } from './board-types.js'
+export type {
+  CreateKanbanTaskInput,
+  DeleteKanbanColumnInput,
+  GetKanbanTaskDetailInput,
+  KanbanBoard,
+  KanbanColumn,
+  KanbanColumnInput,
+  KanbanTaskCard,
+  KanbanTaskDetail,
+  MoveKanbanTaskInput,
+  ReorderKanbanColumnInput,
+  UpdateKanbanColumnInput,
+} from './board-types.js'
 
 export async function getOrCreateCompanyKanbanBoard(
   prisma: PrismaClient,
@@ -598,45 +539,6 @@ export async function getKanbanTaskDetail(
   }
 }
 
-function assertCanManageColumns(companyRole: string) {
-  if (!['OWNER', 'ADMIN'].includes(companyRole)) {
-    throw new BoardError('Only company owners and admins can manage board columns')
-  }
-}
-
-function normalizeColumnPosition(position: number, maxPosition: number) {
-  return Math.min(Math.max(position, 1), maxPosition)
-}
-
-async function shiftColumnsFromPosition(
-  transaction: Prisma.TransactionClient,
-  boardId: string,
-  position: number,
-) {
-  const columnsToShift = await transaction.boardColumn.findMany({
-    where: {
-      boardId,
-      position: {
-        gte: position,
-      },
-    },
-    orderBy: {
-      position: 'desc',
-    },
-  })
-
-  for (const column of columnsToShift) {
-    await transaction.boardColumn.update({
-      where: {
-        id: column.id,
-      },
-      data: {
-        position: column.position + 1,
-      },
-    })
-  }
-}
-
 async function findFirstCompanyBoard(prisma: PrismaClient, companyId: string) {
   return prisma.board.findFirst({
     where: {
@@ -649,48 +551,4 @@ async function findFirstCompanyBoard(prisma: PrismaClient, companyId: string) {
     },
     include: boardInclude,
   })
-}
-
-const boardInclude = {
-  columns: {
-    orderBy: {
-      position: 'asc',
-    },
-    include: {
-      tasks: {
-        orderBy: {
-          position: 'asc',
-        },
-        include: {
-          assignee: true,
-        },
-      },
-    },
-  },
-} as const
-
-function mapBoardToKanbanBoard(
-  board: Awaited<ReturnType<typeof findFirstCompanyBoard>>,
-): KanbanBoard {
-  if (!board) {
-    throw new Error('Board not found')
-  }
-
-  return {
-    id: board.id,
-    key: board.key,
-    name: board.name,
-    description: board.description,
-    columns: board.columns.map((column) => ({
-      id: column.id,
-      name: column.name,
-      position: column.position,
-      tasks: column.tasks.map((task) => ({
-        id: task.id,
-        friendlyId: task.friendlyId,
-        title: task.title,
-        assigneeName: task.assignee?.name ?? null,
-      })),
-    })),
-  }
 }
