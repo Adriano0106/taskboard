@@ -27,6 +27,10 @@ const columnBodySchema = z.object({
   name: z.string().trim().min(2),
 })
 
+const createColumnBodySchema = columnBodySchema.extend({
+  position: z.coerce.number().int().min(1),
+})
+
 const taskParamsSchema = z.object({
   taskId: z.string().min(1),
 })
@@ -136,7 +140,7 @@ export async function boardRoutes(app: FastifyInstance) {
     '/boards/current/columns',
     { preHandler: authenticateRequest },
     async (request, reply) => {
-      const bodyValidation = columnBodySchema.safeParse(request.body)
+      const bodyValidation = createColumnBodySchema.safeParse(request.body)
 
       if (!bodyValidation.success) {
         return reply.status(400).send({
@@ -145,13 +149,25 @@ export async function boardRoutes(app: FastifyInstance) {
         })
       }
 
-      const board = await createColumnInCompanyKanbanBoard(prisma, {
-        companyId: request.user.companyId,
-        userId: request.user.userId,
-        name: bodyValidation.data.name,
-      })
+      try {
+        const board = await createColumnInCompanyKanbanBoard(prisma, {
+          companyId: request.user.companyId,
+          companyRole: request.user.role,
+          userId: request.user.userId,
+          name: bodyValidation.data.name,
+          position: bodyValidation.data.position,
+        })
 
-      return reply.status(201).send(board)
+        return reply.status(201).send(board)
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(403).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
     },
   )
 
@@ -175,13 +191,14 @@ export async function boardRoutes(app: FastifyInstance) {
       try {
         return await renameColumnInCompanyKanbanBoard(prisma, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           userId: request.user.userId,
           columnId: paramsValidation.data.columnId,
           name: bodyValidation.data.name,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -207,12 +224,13 @@ export async function boardRoutes(app: FastifyInstance) {
       try {
         return await deleteColumnFromCompanyKanbanBoard(prisma, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           userId: request.user.userId,
           columnId: paramsValidation.data.columnId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(409).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -221,4 +239,16 @@ export async function boardRoutes(app: FastifyInstance) {
       }
     },
   )
+}
+
+function getBoardErrorStatus(error: BoardError) {
+  if (error.message.includes('owners and admins')) {
+    return 403
+  }
+
+  if (error.message.includes('empty columns') || error.message.includes('at least one column')) {
+    return 409
+  }
+
+  return 404
 }

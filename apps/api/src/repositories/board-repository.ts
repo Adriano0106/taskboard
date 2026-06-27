@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 
 export interface KanbanTaskCard {
   id: string
@@ -58,16 +58,23 @@ export interface MoveKanbanTaskInput {
 
 export interface KanbanColumnInput {
   companyId: string
+  companyRole: string
+  userId: string
+  name: string
+  position: number
+}
+
+export interface UpdateKanbanColumnInput {
+  columnId: string
+  companyId: string
+  companyRole: string
   userId: string
   name: string
 }
 
-export interface UpdateKanbanColumnInput extends KanbanColumnInput {
-  columnId: string
-}
-
 export interface DeleteKanbanColumnInput {
   companyId: string
+  companyRole: string
   userId: string
   columnId: string
 }
@@ -337,17 +344,21 @@ export async function createColumnInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: KanbanColumnInput,
 ): Promise<KanbanBoard> {
+  assertCanManageColumns(input.companyRole)
+
   const board = await getOrCreateCompanyKanbanBoard(prisma, {
     companyId: input.companyId,
     userId: input.userId,
   })
-  const lastColumnPosition = Math.max(...board.columns.map((column) => column.position))
+  const targetPosition = normalizeColumnPosition(input.position, board.columns.length + 1)
 
   const updatedBoard = await prisma.$transaction(async (transaction) => {
+    await shiftColumnsFromPosition(transaction, board.id, targetPosition)
+
     await transaction.boardColumn.create({
       data: {
         name: input.name.trim(),
-        position: lastColumnPosition + 1,
+        position: targetPosition,
         boardId: board.id,
       },
     })
@@ -367,6 +378,8 @@ export async function renameColumnInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: UpdateKanbanColumnInput,
 ): Promise<KanbanBoard> {
+  assertCanManageColumns(input.companyRole)
+
   const board = await getOrCreateCompanyKanbanBoard(prisma, {
     companyId: input.companyId,
     userId: input.userId,
@@ -402,6 +415,8 @@ export async function deleteColumnFromCompanyKanbanBoard(
   prisma: PrismaClient,
   input: DeleteKanbanColumnInput,
 ): Promise<KanbanBoard> {
+  assertCanManageColumns(input.companyRole)
+
   const board = await getOrCreateCompanyKanbanBoard(prisma, {
     companyId: input.companyId,
     userId: input.userId,
@@ -487,6 +502,45 @@ export async function getKanbanTaskDetail(
     assigneeName: task.assignee?.name ?? null,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
+  }
+}
+
+function assertCanManageColumns(companyRole: string) {
+  if (!['OWNER', 'ADMIN'].includes(companyRole)) {
+    throw new BoardError('Only company owners and admins can manage board columns')
+  }
+}
+
+function normalizeColumnPosition(position: number, maxPosition: number) {
+  return Math.min(Math.max(position, 1), maxPosition)
+}
+
+async function shiftColumnsFromPosition(
+  transaction: Prisma.TransactionClient,
+  boardId: string,
+  position: number,
+) {
+  const columnsToShift = await transaction.boardColumn.findMany({
+    where: {
+      boardId,
+      position: {
+        gte: position,
+      },
+    },
+    orderBy: {
+      position: 'desc',
+    },
+  })
+
+  for (const column of columnsToShift) {
+    await transaction.boardColumn.update({
+      where: {
+        id: column.id,
+      },
+      data: {
+        position: column.position + 1,
+      },
+    })
   }
 }
 
