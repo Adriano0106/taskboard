@@ -165,6 +165,7 @@ export function App() {
   async function handleCreateTask(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
 
+    const formElement = formEvent.currentTarget
     const firstColumn = kanbanBoard?.columns[0]
 
     if (!session?.token || !firstColumn) {
@@ -188,7 +189,7 @@ export function App() {
       })
 
       setKanbanBoard(updatedBoard)
-      formEvent.currentTarget.reset()
+      formElement.reset()
     } catch (error) {
       setKanbanStatusMessage(
         error instanceof Error ? error.message : 'Nao foi possivel criar a task',
@@ -200,6 +201,8 @@ export function App() {
 
   async function handleCreateColumn(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
+
+    const formElement = formEvent.currentTarget
 
     if (!session?.token) {
       return
@@ -221,7 +224,7 @@ export function App() {
       })
 
       setKanbanBoard(updatedBoard)
-      formEvent.currentTarget.reset()
+      formElement.reset()
     } catch (error) {
       setKanbanStatusMessage(
         error instanceof Error ? error.message : 'Nao foi possivel criar a coluna',
