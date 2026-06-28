@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { FormEvent, ReactNode } from 'react'
+import type { FormEvent } from 'react'
 import type { KanbanColumn, KanbanTaskCard } from '../api.js'
 import type { ColumnDragData } from '../types/kanban.js'
 
@@ -95,15 +95,7 @@ interface SortableTaskCardProps {
 }
 
 function SortableTaskCard({ columnId, task, onOpenTask }: SortableTaskCardProps) {
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    setActivatorNodeRef,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({
+  const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
     id: task.id,
     data: {
       type: 'task',
@@ -123,22 +115,10 @@ function SortableTaskCard({ columnId, task, onOpenTask }: SortableTaskCardProps)
       ref={setNodeRef}
       style={style}
       onClick={() => onOpenTask(task.id)}
+      {...attributes}
+      {...listeners}
     >
-      <TaskCardContent
-        task={task}
-        dragHandle={
-          <span
-            className="task-drag-handle"
-            aria-label={`Mover ${task.friendlyId}`}
-            ref={setActivatorNodeRef}
-            onClick={(event) => event.stopPropagation()}
-            {...attributes}
-            {...listeners}
-          >
-            Arrastar
-          </span>
-        }
-      />
+      <TaskCardContent task={task} />
     </button>
   )
 }
@@ -151,7 +131,7 @@ export function TaskCardPreview({ task }: { task: KanbanTaskCard }) {
   )
 }
 
-function TaskCardContent({ dragHandle, task }: { dragHandle?: ReactNode; task: KanbanTaskCard }) {
+function TaskCardContent({ task }: { task: KanbanTaskCard }) {
   return (
     <>
       <div className="task-card-header">
@@ -159,7 +139,6 @@ function TaskCardContent({ dragHandle, task }: { dragHandle?: ReactNode; task: K
         <strong className="task-friendly-id">{task.friendlyId}</strong>
       </div>
       {task.assigneeName ? <small>Responsavel: {task.assigneeName}</small> : null}
-      {dragHandle ? <div className="task-card-footer">{dragHandle}</div> : null}
     </>
   )
 }

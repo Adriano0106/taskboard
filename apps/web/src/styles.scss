@@ -414,6 +414,10 @@ select {
     box-shadow: 0 8px 22px colors.$shadow-soft;
   }
 
+  &:active {
+    cursor: grab;
+  }
+
   &.is-dragging {
     border-color: colors.$brand-primary;
     cursor: grabbing;
@@ -439,29 +443,6 @@ select {
   background: colors.$surface-soft;
   padding: 3px 6px;
   white-space: nowrap;
-}
-
-.task-card-footer {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.task-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  border: 0;
-  border-radius: 6px;
-  background: colors.$surface-soft;
-  padding: 0 8px;
-  color: colors.$text-muted;
-  cursor: grab;
-  font-size: 0.74rem;
-  font-weight: 800;
-
-  &:active {
-    cursor: grabbing;
-  }
 }
 
 .task-card-overlay {
