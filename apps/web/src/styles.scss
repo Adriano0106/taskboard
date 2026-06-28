@@ -514,8 +514,7 @@ select {
   grid-column: 1 / -1;
 }
 
-.surface-message,
-.empty-column {
+.surface-message {
   margin: 0;
   border: 1px solid colors.$border-default;
   border-radius: 8px;

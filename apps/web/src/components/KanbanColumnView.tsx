@@ -70,18 +70,16 @@ export function KanbanColumnView({
         strategy={verticalListSortingStrategy}
       >
         <div className="task-list">
-          {column.tasks.length > 0 ? (
-            column.tasks.map((task) => (
-              <SortableTaskCard
-                columnId={column.id}
-                key={task.id}
-                task={task}
-                onOpenTask={onOpenTask}
-              />
-            ))
-          ) : (
-            <p className="empty-column">Arraste ou crie cards aqui</p>
-          )}
+          {column.tasks.length > 0
+            ? column.tasks.map((task) => (
+                <SortableTaskCard
+                  columnId={column.id}
+                  key={task.id}
+                  task={task}
+                  onOpenTask={onOpenTask}
+                />
+              ))
+            : null}
         </div>
       </SortableContext>
     </div>
