@@ -1,5 +1,20 @@
-import 'dotenv/config'
+import { existsSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { config } from 'dotenv'
 import { z } from 'zod'
+
+const currentDirectory = dirname(fileURLToPath(import.meta.url))
+const projectRootDirectory = resolve(currentDirectory, '../../..')
+const environmentFilePaths = [resolve(process.cwd(), '.env'), resolve(projectRootDirectory, '.env')]
+
+for (const environmentFilePath of environmentFilePaths) {
+  if (existsSync(environmentFilePath)) {
+    config({
+      path: environmentFilePath,
+    })
+  }
+}
 
 const environmentSchema = z.object({
   API_PORT: z.coerce.number().default(3333),
