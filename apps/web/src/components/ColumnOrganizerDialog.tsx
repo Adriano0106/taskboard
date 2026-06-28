@@ -6,15 +6,19 @@ import type { ColumnDragData } from '../types/kanban.js'
 
 interface ColumnOrganizerDialogProps {
   columns: KanbanColumn[]
+  deletingColumnId: string | null
   reorderingColumnId: string | null
   onClose: () => void
+  onDeleteColumn: (column: KanbanColumn) => void
   onReorderColumn: (columnId: string, position: number) => void
 }
 
 export function ColumnOrganizerDialog({
   columns,
+  deletingColumnId,
   reorderingColumnId,
   onClose,
+  onDeleteColumn,
   onReorderColumn,
 }: ColumnOrganizerDialogProps) {
   const columnOrganizerSensors = useSensors(
@@ -61,8 +65,10 @@ export function ColumnOrganizerDialog({
               {columns.map((column) => (
                 <SortableColumnOrderRow
                   column={column}
+                  deletingColumnId={deletingColumnId}
                   isReordering={reorderingColumnId === column.id}
                   key={column.id}
+                  onDeleteColumn={onDeleteColumn}
                 />
               ))}
             </div>
@@ -75,10 +81,19 @@ export function ColumnOrganizerDialog({
 
 interface SortableColumnOrderRowProps {
   column: KanbanColumn
+  deletingColumnId: string | null
   isReordering: boolean
+  onDeleteColumn: (column: KanbanColumn) => void
 }
 
-function SortableColumnOrderRow({ column, isReordering }: SortableColumnOrderRowProps) {
+const protectedColumnNames = ['A fazer', 'Concluido']
+
+function SortableColumnOrderRow({
+  column,
+  deletingColumnId,
+  isReordering,
+  onDeleteColumn,
+}: SortableColumnOrderRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column.id,
     data: {
@@ -91,19 +106,39 @@ function SortableColumnOrderRow({ column, isReordering }: SortableColumnOrderRow
     transform: CSS.Transform.toString(transform),
     transition,
   }
+  const isProtectedColumn = protectedColumnNames.includes(column.name)
+  const canDeleteColumn = column.tasks.length === 0 && !isProtectedColumn
+  const removeColumnTitle = isProtectedColumn
+    ? 'Coluna obrigatoria'
+    : column.tasks.length > 0
+      ? 'Remova os cards antes'
+      : 'Remover coluna vazia'
 
   return (
-    <button
-      type="button"
+    <div
       className={isDragging ? 'column-order-row is-dragging' : 'column-order-row'}
-      disabled={isReordering}
-      ref={setNodeRef}
       style={rowStyle}
-      {...attributes}
-      {...listeners}
     >
-      <span>{column.name}</span>
-      <small>{isReordering ? 'Reorganizando...' : 'Arraste para ordenar'}</small>
-    </button>
+      <button
+        type="button"
+        className="column-order-drag-button"
+        disabled={isReordering}
+        ref={setNodeRef}
+        {...attributes}
+        {...listeners}
+      >
+        <span>{column.name}</span>
+        <small>{isReordering ? 'Reorganizando...' : 'Arraste para ordenar'}</small>
+      </button>
+      <button
+        type="button"
+        className="column-order-remove-button"
+        disabled={!canDeleteColumn || deletingColumnId === column.id}
+        title={removeColumnTitle}
+        onClick={() => onDeleteColumn(column)}
+      >
+        -
+      </button>
+    </div>
   )
 }

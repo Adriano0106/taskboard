@@ -495,10 +495,8 @@ export function App() {
                   <KanbanColumnView
                     column={column}
                     canManageColumns={canManageColumns}
-                    deletingColumnId={deletingColumnId}
                     editingColumnId={editingColumnId}
                     key={column.id}
-                    onDeleteColumn={handleDeleteColumn}
                     onOpenTask={handleOpenTask}
                     onRenameColumn={handleRenameColumn}
                   />
@@ -526,8 +524,10 @@ export function App() {
         {isColumnOrganizerOpen && kanbanBoard ? (
           <ColumnOrganizerDialog
             columns={kanbanBoard.columns}
+            deletingColumnId={deletingColumnId}
             reorderingColumnId={reorderingColumnId}
             onClose={() => setIsColumnOrganizerOpen(false)}
+            onDeleteColumn={handleDeleteColumn}
             onReorderColumn={handleReorderColumn}
           />
         ) : null}

@@ -8,9 +8,7 @@ import type { ColumnDragData } from '../types/kanban.js'
 interface KanbanColumnViewProps {
   column: KanbanColumn
   canManageColumns: boolean
-  deletingColumnId: string | null
   editingColumnId: string | null
-  onDeleteColumn: (column: KanbanColumn) => void
   onOpenTask: (taskId: string) => void
   onRenameColumn: (formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) => void
 }
@@ -18,9 +16,7 @@ interface KanbanColumnViewProps {
 export function KanbanColumnView({
   column,
   canManageColumns,
-  deletingColumnId,
   editingColumnId,
-  onDeleteColumn,
   onOpenTask,
   onRenameColumn,
 }: KanbanColumnViewProps) {
@@ -50,14 +46,6 @@ export function KanbanColumnView({
               Renomear
             </button>
           </form>
-          <button
-            type="button"
-            className="column-delete-button"
-            disabled={column.tasks.length > 0 || deletingColumnId === column.id}
-            onClick={() => onDeleteColumn(column)}
-          >
-            Remover coluna vazia
-          </button>
         </>
       ) : (
         <div className="column-title-readonly">

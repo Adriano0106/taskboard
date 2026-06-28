@@ -306,8 +306,7 @@ select {
   }
 }
 
-.icon-button,
-.column-delete-button {
+.icon-button {
   min-height: 36px;
   border: 0;
   border-radius: 8px;
@@ -315,11 +314,6 @@ select {
   background: colors.$surface-soft;
   color: colors.$text-default;
   font-weight: 800;
-}
-
-.column-delete-button {
-  width: 100%;
-  margin-bottom: 14px;
 }
 
 .task-list {
@@ -357,6 +351,17 @@ select {
 
 .column-order-row {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 8px;
+
+  &.is-dragging {
+    opacity: 0.72;
+  }
+}
+
+.column-order-drag-button {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   min-height: 48px;
@@ -367,6 +372,15 @@ select {
   color: colors.$text-default;
   cursor: grab;
   text-align: left;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  .is-dragging & {
+    border-color: colors.$brand-primary;
+    box-shadow: 0 10px 24px colors.$shadow-soft;
+  }
 
   span {
     overflow: hidden;
@@ -380,16 +394,16 @@ select {
     font-size: 0.74rem;
     font-weight: 800;
   }
+}
 
-  &:active {
-    cursor: grabbing;
-  }
-
-  &.is-dragging {
-    border-color: colors.$brand-primary;
-    box-shadow: 0 10px 24px colors.$shadow-soft;
-    opacity: 0.72;
-  }
+.column-order-remove-button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: colors.$surface-soft;
+  color: colors.$danger;
+  font-size: 1.3rem;
+  font-weight: 900;
 }
 
 .task-card {
