@@ -394,26 +394,82 @@ select {
 
 .task-card {
   display: grid;
+  width: 100%;
   gap: 8px;
   border: 1px solid colors.$border-default;
   border-radius: 8px;
   background: colors.$surface-panel;
   padding: 12px;
+  cursor: pointer;
   text-align: left;
   touch-action: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
 
   &:hover {
     border-color: colors.$brand-primary;
+    box-shadow: 0 8px 22px colors.$shadow-soft;
   }
 
   &.is-dragging {
-    opacity: 0.45;
+    border-color: colors.$brand-primary;
+    cursor: grabbing;
+    opacity: 0.24;
+  }
+}
+
+.task-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.task-title {
+  color: colors.$text-strong;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.task-friendly-id {
+  border-radius: 6px;
+  background: colors.$surface-soft;
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+
+.task-card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.task-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: colors.$surface-soft;
+  padding: 0 8px;
+  color: colors.$text-muted;
+  cursor: grab;
+  font-size: 0.74rem;
+  font-weight: 800;
+
+  &:active {
+    cursor: grabbing;
   }
 }
 
 .task-card-overlay {
   width: 280px;
-  box-shadow: 0 18px 50px colors.$shadow-medium;
+  border-color: colors.$brand-primary;
+  cursor: grabbing;
+  box-shadow: 0 22px 56px colors.$shadow-medium;
+  transform: rotate(1deg) scale(1.02);
 }
 
 .modal-backdrop {

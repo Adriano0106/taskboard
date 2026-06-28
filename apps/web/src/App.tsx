@@ -35,6 +35,11 @@ import type { DragData } from './types/kanban.js'
 
 type AuthMode = 'login' | 'register'
 
+const taskDropAnimation = {
+  duration: 180,
+  easing: 'cubic-bezier(0.2, 0, 0, 1)',
+}
+
 export function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
@@ -458,7 +463,9 @@ export function App() {
                   />
                 ))}
               </section>
-              <DragOverlay>{activeTask ? <TaskCardPreview task={activeTask} /> : null}</DragOverlay>
+              <DragOverlay dropAnimation={taskDropAnimation}>
+                {activeTask ? <TaskCardPreview task={activeTask} /> : null}
+              </DragOverlay>
             </DndContext>
           </>
         ) : null}

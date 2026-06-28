@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { FormEvent } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import type { KanbanColumn, KanbanTaskCard } from '../api.js'
 import type { ColumnDragData } from '../types/kanban.js'
 
@@ -47,7 +47,7 @@ export function KanbanColumnView({
               required
             />
             <button type="submit" className="icon-button" title="Renomear coluna">
-              Salvar
+              Renomear
             </button>
           </form>
           <button
@@ -95,7 +95,15 @@ interface SortableTaskCardProps {
 }
 
 function SortableTaskCard({ columnId, task, onOpenTask }: SortableTaskCardProps) {
-  const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({
     id: task.id,
     data: {
       type: 'task',
@@ -109,16 +117,29 @@ function SortableTaskCard({ columnId, task, onOpenTask }: SortableTaskCardProps)
   }
 
   return (
-    <article
+    <button
+      type="button"
       className={isDragging ? 'task-card is-dragging' : 'task-card'}
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       onClick={() => onOpenTask(task.id)}
     >
-      <TaskCardContent task={task} />
-    </article>
+      <TaskCardContent
+        task={task}
+        dragHandle={
+          <span
+            className="task-drag-handle"
+            aria-label={`Mover ${task.friendlyId}`}
+            ref={setActivatorNodeRef}
+            onClick={(event) => event.stopPropagation()}
+            {...attributes}
+            {...listeners}
+          >
+            Arrastar
+          </span>
+        }
+      />
+    </button>
   )
 }
 
@@ -130,12 +151,15 @@ export function TaskCardPreview({ task }: { task: KanbanTaskCard }) {
   )
 }
 
-function TaskCardContent({ task }: { task: KanbanTaskCard }) {
+function TaskCardContent({ dragHandle, task }: { dragHandle?: ReactNode; task: KanbanTaskCard }) {
   return (
     <>
-      <strong>{task.friendlyId}</strong>
-      <span>{task.title}</span>
+      <div className="task-card-header">
+        <span className="task-title">{task.title}</span>
+        <strong className="task-friendly-id">{task.friendlyId}</strong>
+      </div>
       {task.assigneeName ? <small>Responsavel: {task.assigneeName}</small> : null}
+      {dragHandle ? <div className="task-card-footer">{dragHandle}</div> : null}
     </>
   )
 }
