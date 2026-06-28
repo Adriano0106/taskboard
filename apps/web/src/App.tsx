@@ -1,6 +1,7 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
   PointerSensor,
@@ -29,7 +30,7 @@ import {
 import { ColumnOrganizerDialog } from './components/ColumnOrganizerDialog.js'
 import { KanbanColumnView, TaskCardPreview } from './components/KanbanColumnView.js'
 import { TaskDetailDialog } from './components/TaskDetailDialog.js'
-import { findDropLocation, findTaskLocation } from './kanban-helpers.js'
+import { createTaskMovePreview, findDropLocation, findTaskLocation } from './kanban-helpers.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
 
@@ -44,6 +45,7 @@ export function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
   const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
+  const [kanbanBoardPreview, setKanbanBoardPreview] = useState<KanbanBoard | null>(null)
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<KanbanTaskDetail | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -116,6 +118,7 @@ export function App() {
     [],
   )
   const canManageColumns = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
+  const visibleKanbanBoard = kanbanBoardPreview ?? kanbanBoard
 
   async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
@@ -153,6 +156,7 @@ export function App() {
     localStorage.removeItem(sessionStorageKey)
     setSession(null)
     setKanbanBoard(null)
+    setKanbanBoardPreview(null)
     setSelectedTaskDetail(null)
     setStatusMessage('')
     setKanbanStatusMessage('')
@@ -326,11 +330,42 @@ export function App() {
 
     if (dragData?.type === 'task') {
       setActiveTask(dragData.task)
+      setKanbanBoardPreview(null)
     }
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    if (!kanbanBoard || !activeTask) {
+      return
+    }
+
+    if (!event.over) {
+      setKanbanBoardPreview(null)
+      return
+    }
+
+    const previewSourceBoard = kanbanBoardPreview ?? kanbanBoard
+    const targetLocation = findDropLocation(
+      previewSourceBoard,
+      event.over.id,
+      event.over.data.current as DragData,
+    )
+
+    if (!targetLocation) {
+      return
+    }
+
+    setKanbanBoardPreview(createTaskMovePreview(kanbanBoard, activeTask.id, targetLocation))
+  }
+
+  function handleDragCancel() {
+    setActiveTask(null)
+    setKanbanBoardPreview(null)
   }
 
   async function handleDragEnd(event: DragEndEvent) {
     setActiveTask(null)
+    setKanbanBoardPreview(null)
 
     if (!session?.token || !kanbanBoard || !event.over) {
       return
@@ -397,10 +432,10 @@ export function App() {
           <>
             <section className="board-header">
               <div>
-                <p className="eyebrow">{kanbanBoard.key}</p>
-                <h2>{kanbanBoard.name}</h2>
-                {kanbanBoard.description ? (
-                  <p className="muted">{kanbanBoard.description}</p>
+                <p className="eyebrow">{visibleKanbanBoard?.key}</p>
+                <h2>{visibleKanbanBoard?.name}</h2>
+                {visibleKanbanBoard?.description ? (
+                  <p className="muted">{visibleKanbanBoard.description}</p>
                 ) : null}
               </div>
               <div className="board-actions">
@@ -411,13 +446,13 @@ export function App() {
                     minLength={2}
                     placeholder="Adicionar nova tarefa"
                     aria-label="Adicionar nova tarefa"
-                    disabled={!kanbanBoard.columns[0] || creatingTaskColumnId !== null}
+                    disabled={!visibleKanbanBoard?.columns[0] || creatingTaskColumnId !== null}
                     required
                   />
                   <button
                     type="submit"
                     className="secondary-button"
-                    disabled={!kanbanBoard.columns[0] || creatingTaskColumnId !== null}
+                    disabled={!visibleKanbanBoard?.columns[0] || creatingTaskColumnId !== null}
                   >
                     {creatingTaskColumnId ? 'Criando...' : 'Adicionar nova tarefa'}
                   </button>
@@ -448,9 +483,15 @@ export function App() {
               </div>
             </section>
 
-            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragCancel={handleDragCancel}
+              onDragEnd={handleDragEnd}
+            >
               <section className="kanban-preview" aria-label="Quadro Kanban">
-                {kanbanBoard.columns.map((column) => (
+                {visibleKanbanBoard?.columns.map((column) => (
                   <KanbanColumnView
                     column={column}
                     canManageColumns={canManageColumns}

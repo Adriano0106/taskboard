@@ -1,4 +1,4 @@
-import type { KanbanBoard } from './api.js'
+import type { KanbanBoard, KanbanTaskCard } from './api.js'
 import type { DragData, TaskLocation } from './types/kanban.js'
 
 export function findTaskLocation(board: KanbanBoard, taskId: string): TaskLocation | null {
@@ -48,6 +48,51 @@ export function findDropLocation(
   }
 
   return null
+}
+
+export function createTaskMovePreview(
+  board: KanbanBoard,
+  taskId: string,
+  targetLocation: TaskLocation,
+): KanbanBoard {
+  let movingTask: KanbanTaskCard | null = null
+  const columnsWithoutMovingTask = board.columns.map((column) => {
+    const remainingTasks = column.tasks.filter((task) => {
+      if (task.id !== taskId) {
+        return true
+      }
+
+      movingTask = task
+      return false
+    })
+
+    return {
+      ...column,
+      tasks: remainingTasks,
+    }
+  })
+
+  if (!movingTask) {
+    return board
+  }
+
+  return {
+    ...board,
+    columns: columnsWithoutMovingTask.map((column) => {
+      if (column.id !== targetLocation.columnId) {
+        return column
+      }
+
+      const insertionIndex = Math.min(Math.max(targetLocation.position - 1, 0), column.tasks.length)
+      const previewTasks = [...column.tasks]
+      previewTasks.splice(insertionIndex, 0, movingTask as KanbanTaskCard)
+
+      return {
+        ...column,
+        tasks: previewTasks,
+      }
+    }),
+  }
 }
 
 export function formatDateTime(value: string) {
