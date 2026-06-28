@@ -102,7 +102,7 @@ model BoardMember {
 
 model Task {
   id             String      @id @default(cuid())
-  friendlyId     String      @unique
+  friendlyId     String
   sequenceNumber Int
   title          String
   description    String?
@@ -116,6 +116,7 @@ model Task {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
+  @@unique([boardId, friendlyId])
   @@unique([boardId, sequenceNumber])
   @@index([boardId, columnId, position])
 }
