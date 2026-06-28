@@ -143,6 +143,30 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('prevents deleting protected initial columns', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const protectedColumns = board.columns.filter((column) =>
+      ['A fazer', 'Concluido'].includes(column.name),
+    )
+
+    for (const protectedColumn of protectedColumns) {
+      const response = await app.inject({
+        method: 'DELETE',
+        url: `/boards/current/columns/${protectedColumn.id}`,
+        headers: createAuthHeader(token),
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json()).toMatchObject({
+        message: 'Protected board columns cannot be deleted',
+      })
+    }
+
+    await app.close()
+  })
+
   it('blocks column management for company members', async () => {
     const app = await createTestApp()
     const ownerSession = await registerOwnerSession(app)

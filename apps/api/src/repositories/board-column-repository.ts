@@ -15,6 +15,8 @@ import type {
   UpdateKanbanColumnInput,
 } from './board-types.js'
 
+const protectedColumnNames = ['A fazer', 'Concluido']
+
 export async function createColumnInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: KanbanColumnInput,
@@ -189,6 +191,10 @@ export async function deleteColumnFromCompanyKanbanBoard(
 
   if (board.columns.length <= 1) {
     throw new BoardError('Board must keep at least one column')
+  }
+
+  if (protectedColumnNames.includes(column.name)) {
+    throw new BoardError('Protected board columns cannot be deleted')
   }
 
   if (column.tasks.length > 0) {

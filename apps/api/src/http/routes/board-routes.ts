@@ -295,7 +295,11 @@ function getBoardErrorStatus(error: BoardError) {
     return 403
   }
 
-  if (error.message.includes('empty columns') || error.message.includes('at least one column')) {
+  if (
+    error.message.includes('empty columns') ||
+    error.message.includes('at least one column') ||
+    error.message.includes('Protected board columns')
+  ) {
     return 409
   }
 
