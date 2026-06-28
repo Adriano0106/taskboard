@@ -80,8 +80,8 @@ describe('board routes', () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)
     const board = await getCurrentBoard(app, token)
-    const firstColumn = board.columns[0]
-    const secondColumn = board.columns[1]
+    const firstColumn = getBoardColumn(board, 0)
+    const secondColumn = getBoardColumn(board, 1)
 
     const createdTaskResponse = await app.inject({
       method: 'POST',
@@ -122,7 +122,7 @@ describe('board routes', () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)
     const board = await getCurrentBoard(app, token)
-    const lastColumn = board.columns[2]
+    const lastColumn = getBoardColumn(board, 2)
 
     const response = await app.inject({
       method: 'PATCH',
@@ -199,7 +199,19 @@ async function registerOwnerSession(app: FastifyInstance) {
   }
 }
 
-async function getCurrentBoard(app: FastifyInstance, token: string) {
+interface TestBoard {
+  columns: TestBoardColumn[]
+}
+
+interface TestBoardColumn {
+  id: string
+  name: string
+  tasks: Array<{
+    title: string
+  }>
+}
+
+async function getCurrentBoard(app: FastifyInstance, token: string): Promise<TestBoard> {
   const response = await app.inject({
     method: 'GET',
     url: '/boards/current/kanban',
@@ -208,15 +220,15 @@ async function getCurrentBoard(app: FastifyInstance, token: string) {
 
   expect(response.statusCode).toBe(200)
 
-  return response.json() as {
-    columns: Array<{
-      id: string
-      name: string
-      tasks: Array<{
-        title: string
-      }>
-    }>
-  }
+  return response.json() as TestBoard
+}
+
+function getBoardColumn(board: TestBoard, columnIndex: number) {
+  const column = board.columns[columnIndex]
+
+  expect(column).toBeDefined()
+
+  return column as TestBoardColumn
 }
 
 async function createMemberToken(app: FastifyInstance, companyId: string) {
