@@ -1,5 +1,6 @@
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
+import type { PrismaClient } from '@prisma/client'
 import Fastify from 'fastify'
 import { authRoutes } from './http/routes/auth-routes.js'
 import { boardRoutes } from './http/routes/board-routes.js'
@@ -12,6 +13,7 @@ import { type UserRepository, createPrismaUserRepository } from './repositories/
 export interface BuildAppOptions {
   jwtSecret: string
   webOrigin: string
+  prismaClient?: PrismaClient
   userRepository?: UserRepository
 }
 
@@ -20,7 +22,8 @@ export async function buildApp(options: BuildAppOptions) {
     logger: true,
   })
 
-  const userRepository = options.userRepository ?? createPrismaUserRepository(prisma)
+  const prismaClient = options.prismaClient ?? prisma
+  const userRepository = options.userRepository ?? createPrismaUserRepository(prismaClient)
 
   await app.register(cors, {
     origin: options.webOrigin,
@@ -34,7 +37,9 @@ export async function buildApp(options: BuildAppOptions) {
   await app.register(authRoutes, {
     userRepository,
   })
-  await app.register(boardRoutes)
+  await app.register(boardRoutes, {
+    prismaClient,
+  })
   await app.register(userRoutes)
   await app.register(companyRoutes)
 

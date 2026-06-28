@@ -1,3 +1,4 @@
+import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '../../prisma.js'
@@ -44,9 +45,15 @@ const columnParamsSchema = z.object({
   columnId: z.string().min(1),
 })
 
-export async function boardRoutes(app: FastifyInstance) {
+interface BoardRoutesOptions {
+  prismaClient?: PrismaClient
+}
+
+export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOptions) {
+  const prismaClient = options.prismaClient ?? prisma
+
   app.get('/boards/current/kanban', { preHandler: authenticateRequest }, async (request) => {
-    return getOrCreateCompanyKanbanBoard(prisma, {
+    return getOrCreateCompanyKanbanBoard(prismaClient, {
       companyId: request.user.companyId,
       userId: request.user.userId,
     })
@@ -63,7 +70,7 @@ export async function boardRoutes(app: FastifyInstance) {
     }
 
     try {
-      const board = await createTaskInCompanyKanbanBoard(prisma, {
+      const board = await createTaskInCompanyKanbanBoard(prismaClient, {
         companyId: request.user.companyId,
         userId: request.user.userId,
         columnId: bodyValidation.data.columnId,
@@ -93,7 +100,7 @@ export async function boardRoutes(app: FastifyInstance) {
     }
 
     try {
-      return await getKanbanTaskDetail(prisma, {
+      return await getKanbanTaskDetail(prismaClient, {
         companyId: request.user.companyId,
         taskId: paramsValidation.data.taskId,
       })
@@ -123,7 +130,7 @@ export async function boardRoutes(app: FastifyInstance) {
     }
 
     try {
-      return await moveTaskInCompanyKanbanBoard(prisma, {
+      return await moveTaskInCompanyKanbanBoard(prismaClient, {
         companyId: request.user.companyId,
         userId: request.user.userId,
         taskId: paramsValidation.data.taskId,
@@ -155,7 +162,7 @@ export async function boardRoutes(app: FastifyInstance) {
       }
 
       try {
-        const board = await createColumnInCompanyKanbanBoard(prisma, {
+        const board = await createColumnInCompanyKanbanBoard(prismaClient, {
           companyId: request.user.companyId,
           companyRole: request.user.role,
           userId: request.user.userId,
@@ -194,7 +201,7 @@ export async function boardRoutes(app: FastifyInstance) {
       }
 
       try {
-        return await renameColumnInCompanyKanbanBoard(prisma, {
+        return await renameColumnInCompanyKanbanBoard(prismaClient, {
           companyId: request.user.companyId,
           companyRole: request.user.role,
           userId: request.user.userId,
@@ -231,7 +238,7 @@ export async function boardRoutes(app: FastifyInstance) {
       }
 
       try {
-        return await reorderColumnInCompanyKanbanBoard(prisma, {
+        return await reorderColumnInCompanyKanbanBoard(prismaClient, {
           companyId: request.user.companyId,
           companyRole: request.user.role,
           userId: request.user.userId,
@@ -264,7 +271,7 @@ export async function boardRoutes(app: FastifyInstance) {
       }
 
       try {
-        return await deleteColumnFromCompanyKanbanBoard(prisma, {
+        return await deleteColumnFromCompanyKanbanBoard(prismaClient, {
           companyId: request.user.companyId,
           companyRole: request.user.role,
           userId: request.user.userId,
