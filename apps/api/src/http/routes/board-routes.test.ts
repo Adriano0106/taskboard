@@ -207,6 +207,61 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('updates task editable metadata', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa para editar',
+        description: 'Descricao antes',
+        priority: 'LOW',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find((task: { title: string }) => task.title === 'Tarefa para editar')
+
+    const updateResponse = await app.inject({
+      method: 'PATCH',
+      url: `/tasks/${createdTask.id}`,
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa editada',
+        description: 'Descricao depois',
+        priority: 'HIGH',
+        assigneeId: null,
+      },
+    })
+
+    expect(updateResponse.statusCode).toBe(200)
+    expect(updateResponse.json().task).toMatchObject({
+      id: createdTask.id,
+      title: 'Tarefa editada',
+      description: 'Descricao depois',
+      priority: 'HIGH',
+      assigneeId: null,
+      assigneeName: null,
+    })
+    expect(updateResponse.json().board.columns[0].tasks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: createdTask.id,
+          title: 'Tarefa editada',
+          priority: 'HIGH',
+          assigneeName: null,
+        }),
+      ]),
+    )
+
+    await app.close()
+  })
+
   it('creates and lists task comments', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)

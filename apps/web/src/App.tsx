@@ -15,6 +15,7 @@ import {
   registerAccount,
   renameColumn,
   reorderColumn,
+  updateTask,
 } from './api.js'
 import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
 import { AuthPage } from './components/AuthPage.js'
@@ -49,6 +50,7 @@ export function App() {
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
   const [deletingColumnId, setDeletingColumnId] = useState<string | null>(null)
   const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
   const {
@@ -301,6 +303,42 @@ export function App() {
     }
   }
 
+  async function handleUpdateTask(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault()
+
+    if (!session?.token || !selectedTaskDetail) {
+      return
+    }
+
+    const formData = new FormData(formEvent.currentTarget)
+    const title = String(formData.get('title') ?? '').trim()
+
+    if (!title) {
+      return
+    }
+
+    setUpdatingTaskId(selectedTaskDetail.id)
+    setKanbanStatusMessage('')
+
+    try {
+      const updatedTask = await updateTask(session.token, selectedTaskDetail.id, {
+        title,
+        description: String(formData.get('description') ?? '').trim(),
+        priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
+        assigneeId: String(formData.get('assigneeId') ?? '') || null,
+      })
+
+      setKanbanBoard(updatedTask.board)
+      setSelectedTaskDetail(updatedTask.task)
+    } catch (error) {
+      setKanbanStatusMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel atualizar a task',
+      )
+    } finally {
+      setUpdatingTaskId(null)
+    }
+  }
+
   function handleOpenTask(taskId: string) {
     if (!kanbanBoard || currentRoute.type === 'adminCompanies') {
       return
@@ -461,6 +499,7 @@ export function App() {
             isCommentSubmitting={isCommentSubmitting}
             isCreateTaskDialogOpen={isCreateTaskDialogOpen}
             isTaskDetailLoading={isTaskDetailLoading}
+            isTaskUpdating={updatingTaskId === selectedTaskDetail?.id}
             kanbanBoard={kanbanBoard}
             reorderingColumnId={reorderingColumnId}
             selectedTaskDetail={selectedTaskDetail}
@@ -481,6 +520,7 @@ export function App() {
             onOpenTask={handleOpenTask}
             onRenameColumn={handleRenameColumn}
             onReorderColumn={handleReorderColumn}
+            onUpdateTask={handleUpdateTask}
           />
         ) : null}
       </main>

@@ -15,6 +15,7 @@ import {
   moveTaskInCompanyKanbanBoard,
   renameColumnInCompanyKanbanBoard,
   reorderColumnInCompanyKanbanBoard,
+  updateTaskInCompanyKanbanBoard,
 } from '../../repositories/board-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
@@ -29,6 +30,13 @@ const createTaskBodySchema = z.object({
 const moveTaskBodySchema = z.object({
   columnId: z.string().min(1),
   position: z.coerce.number().int().min(1),
+})
+
+const updateTaskBodySchema = z.object({
+  title: z.string().trim().min(2),
+  description: z.string().trim().optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+  assigneeId: z.string().min(1).nullable().optional(),
 })
 
 const createTaskCommentBodySchema = z.object({
@@ -158,6 +166,41 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       return await getKanbanTaskDetail(prismaClient, {
         companyId: request.user.companyId,
         taskId: paramsValidation.data.taskId,
+      })
+    } catch (error) {
+      if (error instanceof BoardError) {
+        return reply.status(404).send({
+          message: error.message,
+        })
+      }
+
+      throw error
+    }
+  })
+
+  app.patch('/tasks/:taskId', { preHandler: authenticateRequest }, async (request, reply) => {
+    const paramsValidation = taskParamsSchema.safeParse(request.params)
+    const bodyValidation = updateTaskBodySchema.safeParse(request.body)
+
+    if (!paramsValidation.success || !bodyValidation.success) {
+      return reply.status(400).send({
+        message: 'Invalid task payload',
+        issues: {
+          ...paramsValidation.error?.flatten().fieldErrors,
+          ...bodyValidation.error?.flatten().fieldErrors,
+        },
+      })
+    }
+
+    try {
+      return await updateTaskInCompanyKanbanBoard(prismaClient, {
+        companyId: request.user.companyId,
+        userId: request.user.userId,
+        taskId: paramsValidation.data.taskId,
+        title: bodyValidation.data.title,
+        description: bodyValidation.data.description,
+        priority: bodyValidation.data.priority,
+        assigneeId: bodyValidation.data.assigneeId,
       })
     } catch (error) {
       if (error instanceof BoardError) {

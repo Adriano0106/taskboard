@@ -12,6 +12,7 @@ export {
 export {
   createTaskInCompanyKanbanBoard,
   moveTaskInCompanyKanbanBoard,
+  updateTaskInCompanyKanbanBoard,
 } from './board-task-repository.js'
 export { createTaskComment, listTaskComments } from './task-comment-repository.js'
 export { BoardError } from './board-types.js'
@@ -31,4 +32,6 @@ export type {
   ReorderKanbanColumnInput,
   TaskCommentInput,
   UpdateKanbanColumnInput,
+  UpdateKanbanTaskInput,
+  UpdateKanbanTaskResult,
 } from './board-types.js'

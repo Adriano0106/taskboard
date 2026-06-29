@@ -57,6 +57,7 @@ export interface KanbanTaskDetail {
   priority: TaskPriority
   boardName: string
   columnName: string
+  assigneeId: string | null
   assigneeName: string | null
   createdAt: string
   updatedAt: string
@@ -114,6 +115,18 @@ export interface CreateTaskPayload {
 export interface MoveTaskPayload {
   columnId: string
   position: number
+}
+
+export interface UpdateTaskPayload {
+  title: string
+  description?: string
+  priority: TaskPriority
+  assigneeId?: string | null
+}
+
+export interface UpdateTaskResponse {
+  board: KanbanBoard
+  task: KanbanTaskDetail
 }
 
 export interface ReorderColumnPayload {
@@ -225,6 +238,20 @@ export async function moveTask(
   payload: MoveTaskPayload,
 ): Promise<KanbanBoard> {
   return sendRequest<KanbanBoard>(`/tasks/${taskId}/move`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateTask(
+  token: string,
+  taskId: string,
+  payload: UpdateTaskPayload,
+): Promise<UpdateTaskResponse> {
+  return sendRequest<UpdateTaskResponse>(`/tasks/${taskId}`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`,

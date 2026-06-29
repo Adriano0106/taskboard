@@ -1,4 +1,5 @@
-import type { KanbanTaskComment, KanbanTaskDetail } from '../api.js'
+import type { FormEvent } from 'react'
+import type { CompanyMember, KanbanTaskComment, KanbanTaskDetail } from '../api.js'
 import { formatDateTime } from '../kanban-helpers.js'
 import { TaskComments } from './TaskComments.js'
 
@@ -10,21 +11,27 @@ const priorityLabels = {
 }
 
 interface TaskDetailDialogProps {
+  companyMembers?: CompanyMember[]
   onClose: () => void
   comments?: KanbanTaskComment[]
   commentsStatusMessage?: string
   isCommentSubmitting?: boolean
+  isTaskUpdating?: boolean
   taskDetail?: KanbanTaskDetail
   title: string
   onCreateComment?: (content: string) => void
+  onUpdateTask?: (formEvent: FormEvent<HTMLFormElement>) => void
 }
 
 export function TaskDetailDialog({
+  companyMembers = [],
   comments = [],
   commentsStatusMessage = '',
   isCommentSubmitting = false,
+  isTaskUpdating = false,
   onClose,
   onCreateComment,
+  onUpdateTask,
   taskDetail,
   title,
 }: TaskDetailDialogProps) {
@@ -38,36 +45,85 @@ export function TaskDetailDialog({
           </button>
         </div>
         {taskDetail ? (
-          <dl className="task-detail-list">
-            <div>
-              <dt>Quadro</dt>
-              <dd>{taskDetail.boardName}</dd>
-            </div>
-            <div>
-              <dt>Coluna</dt>
-              <dd>{taskDetail.columnName}</dd>
-            </div>
-            <div>
-              <dt>Responsavel</dt>
-              <dd>{taskDetail.assigneeName ?? 'Sem responsavel'}</dd>
-            </div>
-            <div>
-              <dt>Prioridade</dt>
-              <dd>{priorityLabels[taskDetail.priority]}</dd>
-            </div>
-            <div>
-              <dt>Criada em</dt>
-              <dd>{formatDateTime(taskDetail.createdAt)}</dd>
-            </div>
-            <div>
-              <dt>Atualizada em</dt>
-              <dd>{formatDateTime(taskDetail.updatedAt)}</dd>
-            </div>
-            <div className="task-detail-description">
-              <dt>Descricao</dt>
-              <dd>{taskDetail.description ?? 'Sem descricao cadastrada'}</dd>
-            </div>
-          </dl>
+          <>
+            <form
+              className="task-edit-form"
+              key={taskDetail.updatedAt}
+              onSubmit={onUpdateTask}
+            >
+              <label>
+                Titulo
+                <input name="title" type="text" minLength={2} defaultValue={taskDetail.title} />
+              </label>
+
+              <label>
+                Descricao
+                <textarea
+                  name="description"
+                  rows={4}
+                  defaultValue={taskDetail.description ?? ''}
+                />
+              </label>
+
+              <div className="form-grid">
+                <label>
+                  Prioridade
+                  <select name="priority" defaultValue={taskDetail.priority}>
+                    {Object.entries(priorityLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Responsavel
+                  <select name="assigneeId" defaultValue={taskDetail.assigneeId ?? ''}>
+                    <option value="">Sem responsavel</option>
+                    {companyMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {onUpdateTask ? (
+                <button type="submit" className="primary-button" disabled={isTaskUpdating}>
+                  {isTaskUpdating ? 'Salvando...' : 'Salvar alteracoes'}
+                </button>
+              ) : null}
+            </form>
+
+            <dl className="task-detail-list">
+              <div>
+                <dt>Quadro</dt>
+                <dd>{taskDetail.boardName}</dd>
+              </div>
+              <div>
+                <dt>Coluna</dt>
+                <dd>{taskDetail.columnName}</dd>
+              </div>
+              <div>
+                <dt>Responsavel</dt>
+                <dd>{taskDetail.assigneeName ?? 'Sem responsavel'}</dd>
+              </div>
+              <div>
+                <dt>Prioridade</dt>
+                <dd>{priorityLabels[taskDetail.priority]}</dd>
+              </div>
+              <div>
+                <dt>Criada em</dt>
+                <dd>{formatDateTime(taskDetail.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>Atualizada em</dt>
+                <dd>{formatDateTime(taskDetail.updatedAt)}</dd>
+              </div>
+            </dl>
+          </>
         ) : (
           <p className="muted">Buscando informacoes da task...</p>
         )}

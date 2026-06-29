@@ -41,6 +41,7 @@ interface BoardPageProps {
   isCreateTaskDialogOpen: boolean
   isCommentSubmitting: boolean
   isTaskDetailLoading: boolean
+  isTaskUpdating: boolean
   kanbanBoard: KanbanBoard
   reorderingColumnId: string | null
   selectedTaskDetail: KanbanTaskDetail | null
@@ -61,6 +62,7 @@ interface BoardPageProps {
   onOpenTask: (taskId: string) => void
   onRenameColumn: (formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) => void
   onReorderColumn: (columnId: string, position: number) => void
+  onUpdateTask: (formEvent: FormEvent<HTMLFormElement>) => void
 }
 
 export function BoardPage({
@@ -77,6 +79,7 @@ export function BoardPage({
   isCreateTaskDialogOpen,
   isCommentSubmitting,
   isTaskDetailLoading,
+  isTaskUpdating,
   kanbanBoard,
   reorderingColumnId,
   selectedTaskDetail,
@@ -97,6 +100,7 @@ export function BoardPage({
   onOpenTask,
   onRenameColumn,
   onReorderColumn,
+  onUpdateTask,
 }: BoardPageProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -179,13 +183,16 @@ export function BoardPage({
 
       {selectedTaskDetail ? (
         <TaskDetailDialog
+          companyMembers={companyMembers}
           comments={comments}
           commentsStatusMessage={commentsStatusMessage}
           isCommentSubmitting={isCommentSubmitting}
+          isTaskUpdating={isTaskUpdating}
           taskDetail={selectedTaskDetail}
           title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
           onClose={onCloseTaskDetail}
           onCreateComment={onCreateComment}
+          onUpdateTask={onUpdateTask}
         />
       ) : null}
 

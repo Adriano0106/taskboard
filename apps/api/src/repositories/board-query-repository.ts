@@ -191,6 +191,7 @@ export async function getKanbanTaskDetail(
     priority: task.priority,
     boardName: task.board.name,
     columnName: task.column.name,
+    assigneeId: task.assigneeId,
     assigneeName: task.assignee?.name ?? null,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),

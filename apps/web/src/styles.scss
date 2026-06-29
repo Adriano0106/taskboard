@@ -730,8 +730,10 @@ textarea {
   }
 }
 
-.task-detail-description {
-  grid-column: 1 / -1;
+.task-edit-form {
+  gap: 14px;
+  border-bottom: 1px solid colors.$border-default;
+  padding-bottom: 18px;
 }
 
 .task-comments {

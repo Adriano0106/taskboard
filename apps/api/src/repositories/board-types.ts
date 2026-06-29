@@ -29,6 +29,7 @@ export interface KanbanTaskDetail {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   boardName: string
   columnName: string
+  assigneeId: string | null
   assigneeName: string | null
   createdAt: string
   updatedAt: string
@@ -64,6 +65,21 @@ export interface MoveKanbanTaskInput {
   taskId: string
   columnId: string
   position: number
+}
+
+export interface UpdateKanbanTaskInput {
+  companyId: string
+  userId: string
+  taskId: string
+  title: string
+  description?: string | null
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  assigneeId?: string | null
+}
+
+export interface UpdateKanbanTaskResult {
+  board: KanbanBoard
+  task: KanbanTaskDetail
 }
 
 export interface KanbanColumnInput {

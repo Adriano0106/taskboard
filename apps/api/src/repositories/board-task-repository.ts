@@ -1,8 +1,14 @@
 import type { PrismaClient } from '@prisma/client'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
-import { getOrCreateCompanyKanbanBoard } from './board-query-repository.js'
+import { getKanbanTaskDetail, getOrCreateCompanyKanbanBoard } from './board-query-repository.js'
 import { BoardError } from './board-types.js'
-import type { CreateKanbanTaskInput, KanbanBoard, MoveKanbanTaskInput } from './board-types.js'
+import type {
+  CreateKanbanTaskInput,
+  KanbanBoard,
+  MoveKanbanTaskInput,
+  UpdateKanbanTaskInput,
+  UpdateKanbanTaskResult,
+} from './board-types.js'
 
 export async function createTaskInCompanyKanbanBoard(
   prisma: PrismaClient,
@@ -153,4 +159,70 @@ export async function moveTaskInCompanyKanbanBoard(
   })
 
   return mapBoardToKanbanBoard(updatedBoard)
+}
+
+export async function updateTaskInCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: UpdateKanbanTaskInput,
+): Promise<UpdateKanbanTaskResult> {
+  const existingTask = await prisma.task.findFirst({
+    where: {
+      id: input.taskId,
+      board: {
+        department: {
+          companyId: input.companyId,
+        },
+      },
+    },
+    select: {
+      boardId: true,
+    },
+  })
+
+  if (!existingTask) {
+    throw new BoardError('Task does not belong to the current company')
+  }
+
+  if (input.assigneeId) {
+    const assigneeMembership = await prisma.companyMember.findUnique({
+      where: {
+        userId_companyId: {
+          userId: input.assigneeId,
+          companyId: input.companyId,
+        },
+      },
+    })
+
+    if (!assigneeMembership) {
+      throw new BoardError('Assignee does not belong to the current company')
+    }
+  }
+
+  await prisma.task.update({
+    where: {
+      id: input.taskId,
+    },
+    data: {
+      title: input.title.trim(),
+      description: input.description?.trim() || null,
+      priority: input.priority,
+      assigneeId: input.assigneeId ?? null,
+    },
+  })
+
+  const board = await prisma.board.findUniqueOrThrow({
+    where: {
+      id: existingTask.boardId,
+    },
+    include: boardInclude,
+  })
+  const task = await getKanbanTaskDetail(prisma, {
+    companyId: input.companyId,
+    taskId: input.taskId,
+  })
+
+  return {
+    board: mapBoardToKanbanBoard(board),
+    task,
+  }
 }
