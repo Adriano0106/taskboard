@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type AuthSession,
   type CompanyWorkspace,
@@ -38,12 +38,7 @@ import { ColumnOrganizerDialog } from './components/ColumnOrganizerDialog.js'
 import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { KanbanColumnView, TaskCardPreview } from './components/KanbanColumnView.js'
 import { TaskDetailDialog } from './components/TaskDetailDialog.js'
-import {
-  areTaskLocationsEqual,
-  createTaskMovePreview,
-  findDropLocation,
-  findTaskLocation,
-} from './kanban-helpers.js'
+import { areTaskLocationsEqual, findDropLocation, findTaskLocation } from './kanban-helpers.js'
 import { createBoardPath, createCompanyPath, createTaskPath, parseAppRoute } from './routing.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
@@ -62,7 +57,6 @@ export function App() {
   const [companyWorkspace, setCompanyWorkspace] = useState<CompanyWorkspace | null>(null)
   const [platformCompanies, setPlatformCompanies] = useState<PlatformCompanySummary[]>([])
   const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
-  const [kanbanBoardPreview, setKanbanBoardPreview] = useState<KanbanBoard | null>(null)
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<KanbanTaskDetail | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -77,6 +71,7 @@ export function App() {
   const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
+  const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
   const currentRoute = useMemo(() => parseAppRoute(currentPath), [currentPath])
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -301,7 +296,7 @@ export function App() {
     [],
   )
   const canManageColumns = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
-  const visibleKanbanBoard = kanbanBoardPreview ?? kanbanBoard
+  const visibleKanbanBoard = kanbanBoard
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
 
@@ -357,7 +352,6 @@ export function App() {
     setCompanyWorkspace(null)
     setPlatformCompanies([])
     setKanbanBoard(null)
-    setKanbanBoardPreview(null)
     setSelectedTaskDetail(null)
     setStatusMessage('')
     setKanbanStatusMessage('')
@@ -541,9 +535,9 @@ export function App() {
   function handleDragStart(event: DragStartEvent) {
     const dragData = event.active.data.current as DragData | undefined
 
-    if (dragData?.type === 'task') {
+    if (dragData?.type === 'task' && kanbanBoard) {
       setActiveTask(dragData.task)
-      setKanbanBoardPreview(null)
+      dragTargetLocationRef.current = findTaskLocation(kanbanBoard, dragData.task.id)
     }
   }
 
@@ -553,13 +547,12 @@ export function App() {
     }
 
     if (!event.over) {
-      setKanbanBoardPreview(null)
+      dragTargetLocationRef.current = null
       return
     }
 
-    const previewSourceBoard = kanbanBoardPreview ?? kanbanBoard
     const targetLocation = findDropLocation(
-      previewSourceBoard,
+      kanbanBoard,
       event.over.id,
       event.over.data.current as DragData,
     )
@@ -568,25 +561,23 @@ export function App() {
       return
     }
 
-    const currentPreviewLocation = findTaskLocation(previewSourceBoard, activeTask.id)
-
-    if (areTaskLocationsEqual(currentPreviewLocation, targetLocation)) {
+    if (areTaskLocationsEqual(dragTargetLocationRef.current, targetLocation)) {
       return
     }
 
-    setKanbanBoardPreview(createTaskMovePreview(kanbanBoard, activeTask.id, targetLocation))
+    dragTargetLocationRef.current = targetLocation
   }
 
   function handleDragCancel() {
     setActiveTask(null)
-    setKanbanBoardPreview(null)
+    dragTargetLocationRef.current = null
   }
 
   async function handleDragEnd(event: DragEndEvent) {
-    const finalPreviewBoard = kanbanBoardPreview
+    const finalTargetLocation = dragTargetLocationRef.current
 
     setActiveTask(null)
-    setKanbanBoardPreview(null)
+    dragTargetLocationRef.current = null
 
     if (!session?.token || !kanbanBoard || !event.over) {
       return
@@ -595,7 +586,7 @@ export function App() {
     const activeTaskId = String(event.active.id)
     const sourceLocation = findTaskLocation(kanbanBoard, activeTaskId)
     const targetLocation =
-      (finalPreviewBoard ? findTaskLocation(finalPreviewBoard, activeTaskId) : null) ??
+      finalTargetLocation ??
       findDropLocation(kanbanBoard, event.over.id, event.over.data.current as DragData)
 
     if (!sourceLocation || !targetLocation) {
@@ -609,10 +600,6 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      if (finalPreviewBoard) {
-        setKanbanBoard(finalPreviewBoard)
-      }
-
       const updatedBoard = await moveTask(session.token, activeTaskId, {
         columnId: targetLocation.columnId,
         position: targetLocation.position,
