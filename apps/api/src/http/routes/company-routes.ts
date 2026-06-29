@@ -6,6 +6,7 @@ import {
   CompanyError,
   getCompanyWorkspace,
   listCompaniesForPlatformAdmin,
+  listCompanyMembers,
 } from '../../repositories/company-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
@@ -36,6 +37,13 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
 
   app.get('/companies/current', { preHandler: authenticateRequest }, async (request) => {
     return getCompanyWorkspace(prismaClient, {
+      companyId: request.user.companyId,
+      userId: request.user.userId,
+    })
+  })
+
+  app.get('/companies/current/members', { preHandler: authenticateRequest }, async (request) => {
+    return listCompanyMembers(prismaClient, {
       companyId: request.user.companyId,
       userId: request.user.userId,
     })

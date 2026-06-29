@@ -80,6 +80,29 @@ describe('company routes', () => {
     await app.close()
   })
 
+  it('returns current company members for task assignment', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/companies/current/members',
+      headers: createAuthHeader(token),
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Company Route Test Owner',
+          role: 'OWNER',
+        }),
+      ]),
+    )
+
+    await app.close()
+  })
+
   it('allows configured platform admins to list every company', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app, {

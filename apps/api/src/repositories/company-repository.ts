@@ -25,6 +25,13 @@ export interface PlatformCompanySummary {
   createdAt: string
 }
 
+export interface CompanyMemberSummary {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
 export class CompanyError extends Error {
   constructor(message: string) {
     super(message)
@@ -162,5 +169,45 @@ export async function listCompaniesForPlatformAdmin(
       0,
     ),
     createdAt: company.createdAt.toISOString(),
+  }))
+}
+
+export async function listCompanyMembers(
+  prisma: PrismaClient,
+  input: {
+    companyId: string
+    userId: string
+  },
+): Promise<CompanyMemberSummary[]> {
+  const membership = await prisma.companyMember.findUnique({
+    where: {
+      userId_companyId: {
+        userId: input.userId,
+        companyId: input.companyId,
+      },
+    },
+  })
+
+  if (!membership) {
+    throw new CompanyError('Company does not belong to the authenticated user')
+  }
+
+  const members = await prisma.companyMember.findMany({
+    where: {
+      companyId: input.companyId,
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+    include: {
+      user: true,
+    },
+  })
+
+  return members.map((member) => ({
+    id: member.user.id,
+    name: member.user.name,
+    email: member.user.email,
+    role: member.role,
   }))
 }
