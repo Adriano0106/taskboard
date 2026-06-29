@@ -106,6 +106,47 @@ describe('company routes', () => {
     await app.close()
   })
 
+  it('allows platform admins to open a company workspace without membership', async () => {
+    const app = await createTestApp()
+    const platformAdminSession = await registerOwnerSession(app, {
+      emailPrefix: 'platform-admin',
+      platformAdmin: true,
+    })
+    const targetCompanySession = await registerOwnerSession(app, {
+      emailPrefix: 'target-owner',
+    })
+
+    await app.inject({
+      method: 'GET',
+      url: '/boards/current/kanban',
+      headers: createAuthHeader(targetCompanySession.token),
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/companies/${targetCompanySession.company.id}`,
+      headers: createAuthHeader(platformAdminSession.token),
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      id: targetCompanySession.company.id,
+      role: 'PLATFORM_ADMIN',
+      departments: [
+        {
+          name: 'Produto',
+          boards: [
+            {
+              key: 'TB',
+            },
+          ],
+        },
+      ],
+    })
+
+    await app.close()
+  })
+
   it('blocks platform company listing for regular users', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)

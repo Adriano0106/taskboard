@@ -91,6 +91,7 @@ export interface GetKanbanTaskDetailInput {
 }
 
 export interface GetCompanyKanbanBoardInput {
+  allowPlatformAdmin?: boolean
   companyId: string
   userId: string
   boardId: string

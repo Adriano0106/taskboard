@@ -35,10 +35,21 @@ export class CompanyError extends Error {
 export async function getCompanyWorkspace(
   prisma: PrismaClient,
   input: {
+    allowPlatformAdmin?: boolean
     companyId: string
     userId: string
   },
 ): Promise<CompanyWorkspace> {
+  if (input.allowPlatformAdmin) {
+    const company = await findCompanyWithWorkspace(prisma, input.companyId)
+
+    if (!company) {
+      throw new CompanyError('Company was not found')
+    }
+
+    return mapCompanyWorkspace(company, 'PLATFORM_ADMIN')
+  }
+
   const membership = await prisma.companyMember.findUnique({
     where: {
       userId_companyId: {
@@ -70,11 +81,39 @@ export async function getCompanyWorkspace(
     throw new CompanyError('Company does not belong to the authenticated user')
   }
 
+  return mapCompanyWorkspace(membership.company, membership.role)
+}
+
+async function findCompanyWithWorkspace(prisma: PrismaClient, companyId: string) {
+  return prisma.company.findUnique({
+    where: {
+      id: companyId,
+    },
+    include: {
+      departments: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+        include: {
+          boards: {
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
+        },
+      },
+    },
+  })
+}
+
+type CompanyWithWorkspace = NonNullable<Awaited<ReturnType<typeof findCompanyWithWorkspace>>>
+
+function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): CompanyWorkspace {
   return {
-    id: membership.company.id,
-    name: membership.company.name,
-    role: membership.role,
-    departments: membership.company.departments.map((department) => ({
+    id: company.id,
+    name: company.name,
+    role,
+    departments: company.departments.map((department) => ({
       id: department.id,
       name: department.name,
       boards: department.boards.map((board) => ({

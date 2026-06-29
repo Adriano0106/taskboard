@@ -16,6 +16,7 @@ process.env.DATABASE_URL ??=
 const prisma = new PrismaClient()
 const testCompanyNamePrefix = 'TaskBoard Test Company'
 const testEmailDomain = 'board-test.taskboard.local'
+const platformAdminEmail = `platform-admin@${testEmailDomain}`
 
 describe('board routes', () => {
   beforeAll(async () => {
@@ -92,6 +93,27 @@ describe('board routes', () => {
       id: currentBoard.id,
       key: 'TB',
       name: 'TaskBoard',
+    })
+
+    await app.close()
+  })
+
+  it('allows platform admins to load a company board without membership', async () => {
+    const app = await createTestApp()
+    const { company, token } = await registerOwnerSession(app)
+    const currentBoard = await getCurrentBoard(app, token)
+    const platformAdminToken = await createPlatformAdminToken(app, company.id)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/companies/${company.id}/boards/${currentBoard.id}/kanban`,
+      headers: createAuthHeader(platformAdminToken),
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      id: currentBoard.id,
+      key: 'TB',
     })
 
     await app.close()
@@ -216,6 +238,7 @@ describe('board routes', () => {
 async function createTestApp() {
   return buildApp({
     jwtSecret: 'test-secret-with-enough-length',
+    platformAdminEmails: [platformAdminEmail],
     webOrigin: 'http://localhost:5173',
     prismaClient: prisma,
   })
@@ -298,6 +321,23 @@ async function createMemberToken(app: FastifyInstance, companyId: string) {
     email: user.email,
     companyId,
     role: 'MEMBER',
+  })
+}
+
+async function createPlatformAdminToken(app: FastifyInstance, companyId: string) {
+  const user = await prisma.user.create({
+    data: {
+      name: 'Board Test Platform Admin',
+      email: platformAdminEmail,
+      passwordHash: 'not-used-in-this-test',
+    },
+  })
+
+  return app.jwt.sign({
+    userId: user.id,
+    email: user.email,
+    companyId,
+    role: 'PLATFORM_ADMIN',
   })
 }
 

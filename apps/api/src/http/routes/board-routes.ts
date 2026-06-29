@@ -52,11 +52,15 @@ const columnParamsSchema = z.object({
 })
 
 interface BoardRoutesOptions {
+  platformAdminEmails?: string[]
   prismaClient?: PrismaClient
 }
 
 export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOptions) {
   const prismaClient = options.prismaClient ?? prisma
+  const platformAdminEmails = new Set(
+    (options.platformAdminEmails ?? []).map((adminEmail) => adminEmail.toLowerCase()),
+  )
 
   app.get('/boards/current/kanban', { preHandler: authenticateRequest }, async (request) => {
     return getOrCreateCompanyKanbanBoard(prismaClient, {
@@ -70,6 +74,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
     { preHandler: authenticateRequest },
     async (request, reply) => {
       const paramsValidation = companyBoardParamsSchema.safeParse(request.params)
+      const isPlatformAdmin = platformAdminEmails.has(request.user.email.toLowerCase())
 
       if (!paramsValidation.success) {
         return reply.status(400).send({
@@ -80,6 +85,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
 
       try {
         return await getCompanyKanbanBoard(prismaClient, {
+          allowPlatformAdmin: isPlatformAdmin,
           companyId: paramsValidation.data.companyId,
           userId: request.user.userId,
           boardId: paramsValidation.data.boardId,

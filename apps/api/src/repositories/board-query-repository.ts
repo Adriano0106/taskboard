@@ -136,13 +136,17 @@ export async function getCompanyKanbanBoard(
       id: input.boardId,
       department: {
         companyId: input.companyId,
-        company: {
-          members: {
-            some: {
-              userId: input.userId,
-            },
-          },
-        },
+        ...(input.allowPlatformAdmin
+          ? {}
+          : {
+              company: {
+                members: {
+                  some: {
+                    userId: input.userId,
+                  },
+                },
+              },
+            }),
       },
     },
     include: boardInclude,

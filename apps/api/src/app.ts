@@ -39,6 +39,7 @@ export async function buildApp(options: BuildAppOptions) {
     userRepository,
   })
   await app.register(boardRoutes, {
+    platformAdminEmails: options.platformAdminEmails ?? [],
     prismaClient,
   })
   await app.register(userRoutes)

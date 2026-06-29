@@ -43,6 +43,7 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
 
   app.get('/companies/:companyId', { preHandler: authenticateRequest }, async (request, reply) => {
     const paramsValidation = companyParamsSchema.safeParse(request.params)
+    const isPlatformAdmin = platformAdminEmails.has(request.user.email.toLowerCase())
 
     if (!paramsValidation.success) {
       return reply.status(400).send({
@@ -53,6 +54,7 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
 
     try {
       return await getCompanyWorkspace(prismaClient, {
+        allowPlatformAdmin: isPlatformAdmin,
         companyId: paramsValidation.data.companyId,
         userId: request.user.userId,
       })
