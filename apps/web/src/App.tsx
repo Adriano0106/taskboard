@@ -38,7 +38,12 @@ import { ColumnOrganizerDialog } from './components/ColumnOrganizerDialog.js'
 import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { KanbanColumnView, TaskCardPreview } from './components/KanbanColumnView.js'
 import { TaskDetailDialog } from './components/TaskDetailDialog.js'
-import { createTaskMovePreview, findDropLocation, findTaskLocation } from './kanban-helpers.js'
+import {
+  areTaskLocationsEqual,
+  createTaskMovePreview,
+  findDropLocation,
+  findTaskLocation,
+} from './kanban-helpers.js'
 import { createBoardPath, createCompanyPath, createTaskPath, parseAppRoute } from './routing.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
@@ -563,6 +568,12 @@ export function App() {
       return
     }
 
+    const currentPreviewLocation = findTaskLocation(previewSourceBoard, activeTask.id)
+
+    if (areTaskLocationsEqual(currentPreviewLocation, targetLocation)) {
+      return
+    }
+
     setKanbanBoardPreview(createTaskMovePreview(kanbanBoard, activeTask.id, targetLocation))
   }
 
@@ -591,10 +602,7 @@ export function App() {
       return
     }
 
-    if (
-      sourceLocation.columnId === targetLocation.columnId &&
-      sourceLocation.position === targetLocation.position
-    ) {
+    if (areTaskLocationsEqual(sourceLocation, targetLocation)) {
       return
     }
 

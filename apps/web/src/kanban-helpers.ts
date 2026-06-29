@@ -16,6 +16,16 @@ export function findTaskLocation(board: KanbanBoard, taskId: string): TaskLocati
   return null
 }
 
+export function areTaskLocationsEqual(
+  firstLocation: TaskLocation | null,
+  secondLocation: TaskLocation | null,
+) {
+  return (
+    firstLocation?.columnId === secondLocation?.columnId &&
+    firstLocation?.position === secondLocation?.position
+  )
+}
+
 export function findDropLocation(
   board: KanbanBoard,
   overId: string | number,

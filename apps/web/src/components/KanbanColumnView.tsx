@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { FormEvent } from 'react'
+import { type FormEvent, useMemo } from 'react'
 import type { KanbanColumn, KanbanTaskCard } from '../api.js'
 import type { ColumnDragData } from '../types/kanban.js'
 
@@ -27,6 +27,7 @@ export function KanbanColumnView({
       columnId: column.id,
     } satisfies ColumnDragData,
   })
+  const sortableTaskIds = useMemo(() => column.tasks.map((task) => task.id), [column.tasks])
 
   return (
     <div className={isOver ? 'column is-over' : 'column'} ref={setNodeRef}>
@@ -53,10 +54,7 @@ export function KanbanColumnView({
           <span>Estrutura gerenciada por admins</span>
         </div>
       )}
-      <SortableContext
-        items={column.tasks.map((task) => task.id)}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={sortableTaskIds} strategy={verticalListSortingStrategy}>
         <div className="task-list">
           {column.tasks.length > 0
             ? column.tasks.map((task) => (
