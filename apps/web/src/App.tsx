@@ -572,6 +572,8 @@ export function App() {
   }
 
   async function handleDragEnd(event: DragEndEvent) {
+    const finalPreviewBoard = kanbanBoardPreview
+
     setActiveTask(null)
     setKanbanBoardPreview(null)
 
@@ -581,11 +583,9 @@ export function App() {
 
     const activeTaskId = String(event.active.id)
     const sourceLocation = findTaskLocation(kanbanBoard, activeTaskId)
-    const targetLocation = findDropLocation(
-      kanbanBoard,
-      event.over.id,
-      event.over.data.current as DragData,
-    )
+    const targetLocation =
+      (finalPreviewBoard ? findTaskLocation(finalPreviewBoard, activeTaskId) : null) ??
+      findDropLocation(kanbanBoard, event.over.id, event.over.data.current as DragData)
 
     if (!sourceLocation || !targetLocation) {
       return
@@ -601,6 +601,10 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
+      if (finalPreviewBoard) {
+        setKanbanBoard(finalPreviewBoard)
+      }
+
       const updatedBoard = await moveTask(session.token, activeTaskId, {
         columnId: targetLocation.columnId,
         position: targetLocation.position,
@@ -608,6 +612,7 @@ export function App() {
 
       setKanbanBoard(updatedBoard)
     } catch (error) {
+      setKanbanBoard(kanbanBoard)
       setKanbanStatusMessage(
         error instanceof Error ? error.message : 'Nao foi possivel mover a task',
       )
