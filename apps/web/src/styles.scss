@@ -154,6 +154,31 @@ textarea {
   }
 }
 
+select {
+  appearance: none;
+  padding-right: 42px;
+  background:
+    linear-gradient(45deg, transparent 50%, colors.$brand-primary 50%) calc(100% - 22px) 50% /
+      7px 7px no-repeat,
+    linear-gradient(135deg, colors.$brand-primary 50%, transparent 50%) calc(100% - 16px) 50% /
+      7px 7px no-repeat,
+    colors.$surface-panel;
+  cursor: pointer;
+  font-weight: 800;
+
+  option {
+    background: colors.$surface-panel;
+    color: colors.$text-strong;
+    font-weight: 700;
+  }
+
+  option:checked {
+    background: rgba(colors.$brand-primary, 0.14);
+    color: colors.$brand-primary;
+    font-weight: 900;
+  }
+}
+
 textarea {
   min-height: 110px;
   padding: 12px 14px;
