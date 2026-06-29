@@ -456,6 +456,111 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('uploads, downloads and deletes task attachments', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa com anexo',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find((task: { title: string }) => task.title === 'Tarefa com anexo')
+
+    const uploadResponse = await app.inject({
+      method: 'POST',
+      url: `/tasks/${createdTask.id}/attachments`,
+      headers: createAuthHeader(token),
+      payload: {
+        fileName: 'arquivo.txt',
+        contentType: 'text/plain',
+        contentBase64: Buffer.from('conteudo do anexo').toString('base64'),
+      },
+    })
+    const listResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/attachments`,
+      headers: createAuthHeader(token),
+    })
+    const attachment = uploadResponse.json()
+    const downloadResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/attachments/${attachment.id}/download`,
+      headers: createAuthHeader(token),
+    })
+    const deleteResponse = await app.inject({
+      method: 'DELETE',
+      url: `/tasks/${createdTask.id}/attachments/${attachment.id}`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(uploadResponse.statusCode).toBe(201)
+    expect(uploadResponse.json()).toMatchObject({
+      fileName: 'arquivo.txt',
+      contentType: 'text/plain',
+      sizeBytes: 17,
+      uploaderName: 'Board Test Owner',
+    })
+    expect(listResponse.statusCode).toBe(200)
+    expect(listResponse.json()).toEqual([
+      expect.objectContaining({
+        id: attachment.id,
+      }),
+    ])
+    expect(downloadResponse.statusCode).toBe(200)
+    expect(downloadResponse.body).toBe('conteudo do anexo')
+    expect(deleteResponse.statusCode).toBe(200)
+    expect(deleteResponse.json()).toEqual([])
+
+    await app.close()
+  })
+
+  it('rejects task attachments larger than 3 MB', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa com anexo grande',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find(
+        (task: { title: string }) => task.title === 'Tarefa com anexo grande',
+      )
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/tasks/${createdTask.id}/attachments`,
+      headers: createAuthHeader(token),
+      payload: {
+        fileName: 'grande.txt',
+        contentType: 'text/plain',
+        contentBase64: Buffer.alloc(3 * 1024 * 1024 + 1).toString('base64'),
+      },
+    })
+
+    expect(response.statusCode).toBe(409)
+    expect(response.json()).toMatchObject({
+      message: 'Attachment exceeds the 3 MB limit',
+    })
+
+    await app.close()
+  })
+
   it('reorders columns for company owners', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)

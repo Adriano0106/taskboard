@@ -2,12 +2,14 @@ import type { FormEvent } from 'react'
 import type {
   CompanyMember,
   KanbanTaskActivity,
+  KanbanTaskAttachment,
   KanbanTaskComment,
   KanbanTaskDetail,
   KanbanTaskWatcher,
 } from '../api.js'
 import { formatDateTime } from '../kanban-helpers.js'
 import { TaskActivities } from './TaskActivities.js'
+import { TaskAttachments } from './TaskAttachments.js'
 import { TaskComments } from './TaskComments.js'
 import { TaskWatchers } from './TaskWatchers.js'
 
@@ -21,38 +23,52 @@ const priorityLabels = {
 interface TaskDetailDialogProps {
   activities?: KanbanTaskActivity[]
   activitiesStatusMessage?: string
+  attachments?: KanbanTaskAttachment[]
+  attachmentsStatusMessage?: string
   companyMembers?: CompanyMember[]
   onClose: () => void
   comments?: KanbanTaskComment[]
   commentsStatusMessage?: string
   isCommentSubmitting?: boolean
+  isAttachmentUploading?: boolean
   isTaskUpdating?: boolean
   taskDetail?: KanbanTaskDetail
   title: string
   updatingWatcherUserId?: string | null
+  updatingAttachmentId?: string | null
   watchers?: KanbanTaskWatcher[]
   watchersStatusMessage?: string
   onAddWatcher?: (userId: string) => void
   onCreateComment?: (content: string) => void
+  onDownloadAttachment?: (attachment: KanbanTaskAttachment) => void
   onRemoveWatcher?: (userId: string) => void
+  onRemoveAttachment?: (attachmentId: string) => void
+  onUploadAttachment?: (file: File) => void
   onUpdateTask?: (formEvent: FormEvent<HTMLFormElement>) => void
 }
 
 export function TaskDetailDialog({
   activities = [],
   activitiesStatusMessage = '',
+  attachments = [],
+  attachmentsStatusMessage = '',
   companyMembers = [],
   comments = [],
   commentsStatusMessage = '',
   isCommentSubmitting = false,
+  isAttachmentUploading = false,
   isTaskUpdating = false,
   onClose,
   onAddWatcher,
   onCreateComment,
+  onDownloadAttachment,
+  onRemoveAttachment,
   onRemoveWatcher,
+  onUploadAttachment,
   onUpdateTask,
   taskDetail,
   title,
+  updatingAttachmentId = null,
   updatingWatcherUserId = null,
   watchers = [],
   watchersStatusMessage = '',
@@ -157,6 +173,17 @@ export function TaskDetailDialog({
             watchersStatusMessage={watchersStatusMessage}
             onAddWatcher={onAddWatcher}
             onRemoveWatcher={onRemoveWatcher}
+          />
+        ) : null}
+        {taskDetail && onDownloadAttachment && onRemoveAttachment && onUploadAttachment ? (
+          <TaskAttachments
+            attachments={attachments}
+            isUploading={isAttachmentUploading}
+            statusMessage={attachmentsStatusMessage}
+            updatingAttachmentId={updatingAttachmentId}
+            onDownloadAttachment={onDownloadAttachment}
+            onRemoveAttachment={onRemoveAttachment}
+            onUploadAttachment={onUploadAttachment}
           />
         ) : null}
         {taskDetail ? (

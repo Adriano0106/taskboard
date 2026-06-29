@@ -259,6 +259,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     selectedTaskDetail,
     resetWorkspaceData,
     setIsTaskDetailLoading,
+    setCompanyWorkspace,
     setKanbanBoard,
     setKanbanStatusMessage,
     setSelectedTaskDetail,

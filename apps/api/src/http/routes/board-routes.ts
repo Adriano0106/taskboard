@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
@@ -6,13 +7,17 @@ import {
   addTaskWatcher,
   BoardError,
   createColumnInCompanyKanbanBoard,
+  createTaskAttachment,
   createTaskComment,
   createTaskInCompanyKanbanBoard,
   deleteColumnFromCompanyKanbanBoard,
+  deleteTaskAttachment,
+  downloadTaskAttachment,
   getCompanyKanbanBoard,
   getKanbanTaskDetail,
   getOrCreateCompanyKanbanBoard,
   listTaskActivities,
+  listTaskAttachments,
   listTaskComments,
   listTaskWatchers,
   moveTaskInCompanyKanbanBoard,
@@ -21,6 +26,7 @@ import {
   reorderColumnInCompanyKanbanBoard,
   updateTaskInCompanyKanbanBoard,
 } from '../../repositories/board-repository.js'
+import { LocalStorageProvider } from '../../repositories/storage-provider.js'
 import { authenticateRequest } from '../auth-guard.js'
 
 const createTaskBodySchema = z.object({
@@ -45,6 +51,12 @@ const updateTaskBodySchema = z.object({
 
 const createTaskCommentBodySchema = z.object({
   content: z.string().trim().min(1).max(2000),
+})
+
+const createTaskAttachmentBodySchema = z.object({
+  fileName: z.string().trim().min(1).max(255),
+  contentType: z.string().trim().max(255).default('application/octet-stream'),
+  contentBase64: z.string().min(1),
 })
 
 const taskWatcherBodySchema = z.object({
@@ -72,6 +84,11 @@ const taskWatcherParamsSchema = z.object({
   userId: z.string().min(1),
 })
 
+const taskAttachmentParamsSchema = z.object({
+  taskId: z.string().min(1),
+  attachmentId: z.string().min(1),
+})
+
 const companyBoardParamsSchema = z.object({
   companyId: z.string().min(1),
   boardId: z.string().min(1),
@@ -88,6 +105,7 @@ interface BoardRoutesOptions {
 
 export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOptions) {
   const prismaClient = options.prismaClient ?? prisma
+  const storageProvider = new LocalStorageProvider(resolve(process.cwd(), 'uploads'))
   const platformAdminEmails = new Set(
     (options.platformAdminEmails ?? []).map((adminEmail) => adminEmail.toLowerCase()),
   )
@@ -225,6 +243,149 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       throw error
     }
   })
+
+  app.get(
+    '/tasks/:taskId/attachments',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await listTaskAttachments(prismaClient, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.post(
+    '/tasks/:taskId/attachments',
+    {
+      bodyLimit: 5 * 1024 * 1024,
+      preHandler: authenticateRequest,
+    },
+    async (request, reply) => {
+      const paramsValidation = taskParamsSchema.safeParse(request.params)
+      const bodyValidation = createTaskAttachmentBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task attachment payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        const attachment = await createTaskAttachment(prismaClient, storageProvider, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+          fileName: bodyValidation.data.fileName,
+          contentType: bodyValidation.data.contentType,
+          contentBase64: bodyValidation.data.contentBase64,
+        })
+
+        return reply.status(201).send(attachment)
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(409).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.get(
+    '/tasks/:taskId/attachments/:attachmentId/download',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskAttachmentParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task attachment params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        const attachment = await downloadTaskAttachment(prismaClient, storageProvider, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+          attachmentId: paramsValidation.data.attachmentId,
+        })
+
+        return reply
+          .header('Content-Type', attachment.contentType)
+          .header('Content-Disposition', `attachment; filename="${attachment.fileName}"`)
+          .send(attachment.content)
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.delete(
+    '/tasks/:taskId/attachments/:attachmentId',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskAttachmentParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task attachment params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await deleteTaskAttachment(prismaClient, storageProvider, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+          attachmentId: paramsValidation.data.attachmentId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 
   app.get(
     '/tasks/:taskId/activities',

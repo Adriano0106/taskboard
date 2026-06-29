@@ -4,17 +4,24 @@ import {
   type AuthSession,
   type KanbanBoard,
   type KanbanColumn,
+  type KanbanTaskAttachment,
   type KanbanTaskCard,
   type TaskPriority,
+  createBoard,
   createColumn,
+  createDepartment,
   createTask,
+  deleteBoard,
   deleteColumn,
+  deleteDepartment,
   getCurrentSession,
   login,
   moveTask,
   registerAccount,
   renameColumn,
+  renameDepartment,
   reorderColumn,
+  updateBoard,
   updateTask,
 } from './api.js'
 import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
@@ -25,6 +32,7 @@ import { ProfilePage } from './components/ProfilePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
 import { useTaskActivities } from './hooks/useTaskActivities.js'
+import { useTaskAttachments } from './hooks/useTaskAttachments.js'
 import { useTaskComments } from './hooks/useTaskComments.js'
 import { useTaskWatchers } from './hooks/useTaskWatchers.js'
 import { useWorkspaceData } from './hooks/useWorkspaceData.js'
@@ -53,6 +61,11 @@ export function App() {
   const [deletingColumnId, setDeletingColumnId] = useState<string | null>(null)
   const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
+  const [editingDepartmentId, setEditingDepartmentId] = useState<string | null>(null)
+  const [deletingDepartmentId, setDeletingDepartmentId] = useState<string | null>(null)
+  const [editingBoardId, setEditingBoardId] = useState<string | null>(null)
+  const [deletingBoardId, setDeletingBoardId] = useState<string | null>(null)
+  const [workspaceStructureMessage, setWorkspaceStructureMessage] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
   const {
@@ -67,6 +80,7 @@ export function App() {
     platformCompanies,
     selectedTaskDetail,
     resetWorkspaceData,
+    setCompanyWorkspace,
     setIsTaskDetailLoading,
     setKanbanBoard,
     setKanbanStatusMessage,
@@ -81,6 +95,18 @@ export function App() {
     token: session?.token ?? null,
   })
   const { activities, activitiesStatusMessage, reloadActivities } = useTaskActivities({
+    taskId: selectedTaskDetail?.id ?? null,
+    token: session?.token ?? null,
+  })
+  const {
+    attachments,
+    attachmentsStatusMessage,
+    downloadAttachment,
+    isAttachmentUploading,
+    removeAttachment,
+    updatingAttachmentId,
+    uploadAttachment,
+  } = useTaskAttachments({
     taskId: selectedTaskDetail?.id ?? null,
     token: session?.token ?? null,
   })
@@ -125,6 +151,7 @@ export function App() {
     [],
   )
   const canManageColumns = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
+  const canManageWorkspace = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
 
@@ -319,6 +346,185 @@ export function App() {
     }
   }
 
+  async function handleCreateDepartment(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault()
+
+    if (!session?.token) {
+      return
+    }
+
+    const formElement = formEvent.currentTarget
+    const formData = new FormData(formElement)
+    const name = String(formData.get('name') ?? '').trim()
+
+    if (!name) {
+      return
+    }
+
+    setWorkspaceStructureMessage('')
+
+    try {
+      const updatedWorkspace = await createDepartment(session.token, {
+        name,
+      })
+
+      setCompanyWorkspace(updatedWorkspace)
+      formElement.reset()
+    } catch (error) {
+      setWorkspaceStructureMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel criar o departamento',
+      )
+    }
+  }
+
+  async function handleRenameDepartment(
+    formEvent: FormEvent<HTMLFormElement>,
+    departmentId: string,
+  ) {
+    formEvent.preventDefault()
+
+    if (!session?.token) {
+      return
+    }
+
+    const formData = new FormData(formEvent.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+
+    if (!name) {
+      return
+    }
+
+    setEditingDepartmentId(departmentId)
+    setWorkspaceStructureMessage('')
+
+    try {
+      const updatedWorkspace = await renameDepartment(session.token, departmentId, {
+        name,
+      })
+
+      setCompanyWorkspace(updatedWorkspace)
+    } catch (error) {
+      setWorkspaceStructureMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel renomear o departamento',
+      )
+    } finally {
+      setEditingDepartmentId(null)
+    }
+  }
+
+  async function handleDeleteDepartment(departmentId: string, departmentName: string) {
+    if (!session?.token || !window.confirm(`Remover departamento "${departmentName}"?`)) {
+      return
+    }
+
+    setDeletingDepartmentId(departmentId)
+    setWorkspaceStructureMessage('')
+
+    try {
+      const updatedWorkspace = await deleteDepartment(session.token, departmentId)
+      setCompanyWorkspace(updatedWorkspace)
+    } catch (error) {
+      setWorkspaceStructureMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel remover o departamento',
+      )
+    } finally {
+      setDeletingDepartmentId(null)
+    }
+  }
+
+  async function handleCreateBoard(formEvent: FormEvent<HTMLFormElement>, departmentId: string) {
+    formEvent.preventDefault()
+
+    if (!session?.token) {
+      return
+    }
+
+    const formElement = formEvent.currentTarget
+    const formData = new FormData(formElement)
+    const name = String(formData.get('name') ?? '').trim()
+
+    if (!name) {
+      return
+    }
+
+    setWorkspaceStructureMessage('')
+
+    try {
+      const updatedWorkspace = await createBoard(session.token, departmentId, {
+        name,
+        description: String(formData.get('description') ?? '').trim(),
+      })
+
+      setCompanyWorkspace(updatedWorkspace)
+      formElement.reset()
+    } catch (error) {
+      setWorkspaceStructureMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel criar o quadro',
+      )
+    }
+  }
+
+  async function handleUpdateBoard(formEvent: FormEvent<HTMLFormElement>, boardId: string) {
+    formEvent.preventDefault()
+
+    if (!session?.token) {
+      return
+    }
+
+    const formData = new FormData(formEvent.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+
+    if (!name) {
+      return
+    }
+
+    setEditingBoardId(boardId)
+    setWorkspaceStructureMessage('')
+
+    try {
+      const updatedWorkspace = await updateBoard(session.token, boardId, {
+        name,
+        description: String(formData.get('description') ?? '').trim(),
+      })
+
+      setCompanyWorkspace(updatedWorkspace)
+    } catch (error) {
+      setWorkspaceStructureMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel atualizar o quadro',
+      )
+    } finally {
+      setEditingBoardId(null)
+    }
+  }
+
+  async function handleDeleteBoard(boardId: string, boardName: string) {
+    if (!session?.token || !window.confirm(`Remover quadro "${boardName}"?`)) {
+      return
+    }
+
+    setDeletingBoardId(boardId)
+    setWorkspaceStructureMessage('')
+
+    try {
+      const updatedWorkspace = await deleteBoard(session.token, boardId)
+      setCompanyWorkspace(updatedWorkspace)
+
+      if (
+        currentRoute.type === 'board' &&
+        currentRoute.boardId === boardId &&
+        updatedWorkspace.departments[0]?.boards[0]
+      ) {
+        navigateTo(createBoardPath(updatedWorkspace.id, updatedWorkspace.departments[0].boards[0].id))
+      }
+    } catch (error) {
+      setWorkspaceStructureMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel remover o quadro',
+      )
+    } finally {
+      setDeletingBoardId(null)
+    }
+  }
+
   async function handleUpdateTask(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
 
@@ -359,6 +565,14 @@ export function App() {
   async function handleCreateComment(content: string) {
     await addComment(content)
     await reloadActivities()
+  }
+
+  async function handleUploadAttachment(file: File) {
+    await uploadAttachment(file)
+  }
+
+  async function handleDownloadAttachment(attachment: KanbanTaskAttachment) {
+    await downloadAttachment(attachment)
   }
 
   function handleOpenTask(taskId: string) {
@@ -501,9 +715,21 @@ export function App() {
 
         {currentRoute.type === 'company' ? (
           <CompanyWorkspacePage
+            canManageWorkspace={canManageWorkspace}
             companyWorkspace={companyWorkspace}
+            deletingBoardId={deletingBoardId}
+            deletingDepartmentId={deletingDepartmentId}
+            editingBoardId={editingBoardId}
+            editingDepartmentId={editingDepartmentId}
             isLoading={isCompanyLoading}
+            workspaceStructureMessage={workspaceStructureMessage}
+            onCreateBoard={handleCreateBoard}
+            onCreateDepartment={handleCreateDepartment}
+            onDeleteBoard={handleDeleteBoard}
+            onDeleteDepartment={handleDeleteDepartment}
             onNavigate={navigateTo}
+            onRenameDepartment={handleRenameDepartment}
+            onUpdateBoard={handleUpdateBoard}
           />
         ) : null}
 
@@ -514,6 +740,8 @@ export function App() {
             activeTask={activeTask}
             activities={activities}
             activitiesStatusMessage={activitiesStatusMessage}
+            attachments={attachments}
+            attachmentsStatusMessage={attachmentsStatusMessage}
             canManageColumns={canManageColumns}
             comments={comments}
             commentsStatusMessage={commentsStatusMessage}
@@ -523,6 +751,7 @@ export function App() {
             deletingColumnId={deletingColumnId}
             editingColumnId={editingColumnId}
             isColumnOrganizerOpen={isColumnOrganizerOpen}
+            isAttachmentUploading={isAttachmentUploading}
             isCommentSubmitting={isCommentSubmitting}
             isCreateTaskDialogOpen={isCreateTaskDialogOpen}
             isTaskDetailLoading={isTaskDetailLoading}
@@ -530,6 +759,7 @@ export function App() {
             kanbanBoard={kanbanBoard}
             reorderingColumnId={reorderingColumnId}
             selectedTaskDetail={selectedTaskDetail}
+            updatingAttachmentId={updatingAttachmentId}
             updatingWatcherUserId={updatingWatcherUserId}
             watchers={watchers}
             watchersStatusMessage={watchersStatusMessage}
@@ -542,6 +772,7 @@ export function App() {
             onCreateColumn={handleCreateColumn}
             onCreateTask={handleCreateTask}
             onDeleteColumn={handleDeleteColumn}
+            onDownloadAttachment={handleDownloadAttachment}
             onDragCancel={handleDragCancel}
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
@@ -550,8 +781,10 @@ export function App() {
             onOpenCreateTaskDialog={() => setIsCreateTaskDialogOpen(true)}
             onOpenTask={handleOpenTask}
             onRenameColumn={handleRenameColumn}
+            onRemoveAttachment={removeAttachment}
             onRemoveWatcher={removeWatcher}
             onReorderColumn={handleReorderColumn}
+            onUploadAttachment={handleUploadAttachment}
             onUpdateTask={handleUpdateTask}
           />
         ) : null}

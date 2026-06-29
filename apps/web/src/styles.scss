@@ -352,6 +352,25 @@ textarea {
   }
 }
 
+.workspace-structure-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.workspace-create-form,
+.department-title-form,
+.board-create-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.workspace-create-form {
+  width: min(100%, 420px);
+}
+
 .department-section {
   display: grid;
   gap: 14px;
@@ -361,6 +380,34 @@ textarea {
     color: colors.$text-strong;
     font-size: 1rem;
   }
+}
+
+.department-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.department-title-form {
+  input {
+    min-height: 40px;
+    border-color: transparent;
+    background: transparent;
+    padding: 0;
+    font-size: 1rem;
+    font-weight: 900;
+
+    &:focus {
+      border-color: colors.$brand-primary;
+      background: colors.$surface-panel;
+      padding: 0 10px;
+    }
+  }
+}
+
+.board-create-form {
+  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1fr) auto;
 }
 
 .company-grid,
@@ -403,6 +450,36 @@ textarea {
     font-weight: 700;
     line-height: 1.45;
   }
+}
+
+.board-card {
+  cursor: default;
+}
+
+.board-open-button {
+  display: grid;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: colors.$text-default;
+  padding: 0;
+  text-align: left;
+}
+
+.board-edit-form {
+  gap: 8px;
+  border-top: 1px solid colors.$border-default;
+  padding-top: 10px;
+}
+
+.board-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.danger-button {
+  color: colors.$danger;
 }
 
 .board-card {
@@ -772,6 +849,7 @@ textarea {
 
 .task-watchers,
 .task-activities,
+.task-attachments,
 .task-comments {
   display: grid;
   gap: 14px;
@@ -813,6 +891,69 @@ textarea {
 .task-activities-list {
   display: grid;
   gap: 10px;
+}
+
+.task-attachments-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-attachment-upload {
+  border: 1px dashed colors.$border-strong;
+  border-radius: 8px;
+  background: colors.$surface-soft;
+  padding: 12px;
+  cursor: pointer;
+
+  input {
+    display: none;
+  }
+
+  span {
+    color: colors.$text-strong;
+    font-weight: 900;
+  }
+
+  small {
+    color: colors.$text-muted;
+    font-weight: 700;
+  }
+}
+
+.task-attachment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid colors.$border-default;
+  border-radius: 8px;
+  background: colors.$surface-soft;
+  padding: 10px 12px;
+
+  div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: colors.$text-muted;
+    font-weight: 700;
+  }
+}
+
+.task-attachment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .task-activity {
@@ -963,6 +1104,11 @@ textarea {
     flex-direction: column;
   }
 
+  .workspace-structure-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .workspace-actions {
     justify-content: stretch;
 
@@ -975,9 +1121,22 @@ textarea {
   .column-create-form,
   .column-management,
   .task-form,
+  .task-attachment,
   .task-watcher-form,
+  .workspace-create-form,
+  .department-header,
+  .department-title-form,
+  .board-create-form,
   .column-title-form {
     grid-template-columns: 1fr;
+  }
+
+  .task-attachment-actions {
+    justify-content: stretch;
+
+    .icon-button {
+      flex: 1 1 120px;
+    }
   }
 
   .column {

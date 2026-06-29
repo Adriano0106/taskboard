@@ -64,6 +64,15 @@ export interface KanbanTaskActivity {
   createdAt: string
 }
 
+export interface KanbanTaskAttachment {
+  id: string
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  uploaderName: string
+  createdAt: string
+}
+
 export class BoardError extends Error {
   constructor(message: string) {
     super(message)
@@ -167,6 +176,30 @@ export interface TaskActivityInput {
   companyId: string
   taskId: string
   userId: string
+}
+
+export interface TaskAttachmentInput {
+  companyId: string
+  taskId: string
+  userId: string
+}
+
+export interface CreateTaskAttachmentInput extends TaskAttachmentInput {
+  fileName: string
+  contentBase64: string
+  contentType: string
+}
+
+export interface DeleteTaskAttachmentInput extends TaskAttachmentInput {
+  attachmentId: string
+}
+
+export interface DownloadTaskAttachmentInput extends DeleteTaskAttachmentInput {}
+
+export interface DownloadTaskAttachmentResult {
+  fileName: string
+  contentType: string
+  content: Buffer
 }
 
 export interface UpdateTaskWatcherInput extends TaskWatcherInput {

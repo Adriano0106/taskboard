@@ -14,6 +14,7 @@ import type {
   KanbanBoard,
   KanbanColumn,
   KanbanTaskActivity,
+  KanbanTaskAttachment,
   KanbanTaskCard,
   KanbanTaskComment,
   KanbanTaskDetail,
@@ -44,6 +45,8 @@ interface BoardPageProps {
   activities: KanbanTaskActivity[]
   activitiesStatusMessage: string
   canManageColumns: boolean
+  attachments: KanbanTaskAttachment[]
+  attachmentsStatusMessage: string
   comments: KanbanTaskComment[]
   commentsStatusMessage: string
   companyMembers: CompanyMember[]
@@ -52,6 +55,7 @@ interface BoardPageProps {
   deletingColumnId: string | null
   editingColumnId: string | null
   isColumnOrganizerOpen: boolean
+  isAttachmentUploading: boolean
   isCreateTaskDialogOpen: boolean
   isCommentSubmitting: boolean
   isTaskDetailLoading: boolean
@@ -59,10 +63,12 @@ interface BoardPageProps {
   kanbanBoard: KanbanBoard
   reorderingColumnId: string | null
   selectedTaskDetail: KanbanTaskDetail | null
+  updatingAttachmentId: string | null
   updatingWatcherUserId: string | null
   watchers: KanbanTaskWatcher[]
   watchersStatusMessage: string
   onAddWatcher: (userId: string) => void
+  onDownloadAttachment: (attachment: KanbanTaskAttachment) => void
   onCloseColumnOrganizer: () => void
   onCloseCreateTaskDialog: () => void
   onCloseTaskDetail: () => void
@@ -80,7 +86,9 @@ interface BoardPageProps {
   onOpenTask: (taskId: string) => void
   onRenameColumn: (formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) => void
   onRemoveWatcher: (userId: string) => void
+  onRemoveAttachment: (attachmentId: string) => void
   onReorderColumn: (columnId: string, position: number) => void
+  onUploadAttachment: (file: File) => void
   onUpdateTask: (formEvent: FormEvent<HTMLFormElement>) => void
 }
 
@@ -88,6 +96,8 @@ export function BoardPage({
   activeTask,
   activities,
   activitiesStatusMessage,
+  attachments,
+  attachmentsStatusMessage,
   canManageColumns,
   comments,
   commentsStatusMessage,
@@ -97,6 +107,7 @@ export function BoardPage({
   deletingColumnId,
   editingColumnId,
   isColumnOrganizerOpen,
+  isAttachmentUploading,
   isCreateTaskDialogOpen,
   isCommentSubmitting,
   isTaskDetailLoading,
@@ -104,10 +115,12 @@ export function BoardPage({
   kanbanBoard,
   reorderingColumnId,
   selectedTaskDetail,
+  updatingAttachmentId,
   updatingWatcherUserId,
   watchers,
   watchersStatusMessage,
   onAddWatcher,
+  onDownloadAttachment,
   onCloseColumnOrganizer,
   onCloseCreateTaskDialog,
   onCloseTaskDetail,
@@ -125,7 +138,9 @@ export function BoardPage({
   onOpenTask,
   onRenameColumn,
   onRemoveWatcher,
+  onRemoveAttachment,
   onReorderColumn,
+  onUploadAttachment,
   onUpdateTask,
 }: BoardPageProps) {
   const kanbanPanStateRef = useRef({
@@ -270,20 +285,27 @@ export function BoardPage({
         <TaskDetailDialog
           activities={activities}
           activitiesStatusMessage={activitiesStatusMessage}
+          attachments={attachments}
+          attachmentsStatusMessage={attachmentsStatusMessage}
           companyMembers={companyMembers}
           comments={comments}
           commentsStatusMessage={commentsStatusMessage}
           isCommentSubmitting={isCommentSubmitting}
+          isAttachmentUploading={isAttachmentUploading}
           isTaskUpdating={isTaskUpdating}
           taskDetail={selectedTaskDetail}
           title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
+          updatingAttachmentId={updatingAttachmentId}
           updatingWatcherUserId={updatingWatcherUserId}
           watchers={watchers}
           watchersStatusMessage={watchersStatusMessage}
           onAddWatcher={onAddWatcher}
           onClose={onCloseTaskDetail}
           onCreateComment={onCreateComment}
+          onDownloadAttachment={onDownloadAttachment}
+          onRemoveAttachment={onRemoveAttachment}
           onRemoveWatcher={onRemoveWatcher}
+          onUploadAttachment={onUploadAttachment}
           onUpdateTask={onUpdateTask}
         />
       ) : null}

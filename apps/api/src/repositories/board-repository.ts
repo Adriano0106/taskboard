@@ -16,12 +16,23 @@ export {
 } from './board-task-repository.js'
 export { createTaskComment, listTaskComments } from './task-comment-repository.js'
 export { listTaskActivities } from './task-activity-repository.js'
+export {
+  createTaskAttachment,
+  deleteTaskAttachment,
+  downloadTaskAttachment,
+  listTaskAttachments,
+  taskAttachmentMaxSizeBytes,
+} from './task-attachment-repository.js'
 export { addTaskWatcher, listTaskWatchers, removeTaskWatcher } from './task-watcher-repository.js'
 export { BoardError } from './board-types.js'
 export type {
   CreateTaskCommentInput,
+  CreateTaskAttachmentInput,
   CreateKanbanTaskInput,
+  DeleteTaskAttachmentInput,
   DeleteKanbanColumnInput,
+  DownloadTaskAttachmentInput,
+  DownloadTaskAttachmentResult,
   GetCompanyKanbanBoardInput,
   GetKanbanTaskDetailInput,
   KanbanBoard,
@@ -29,6 +40,7 @@ export type {
   KanbanColumnInput,
   KanbanTaskCard,
   KanbanTaskActivity,
+  KanbanTaskAttachment,
   KanbanTaskComment,
   KanbanTaskDetail,
   KanbanTaskWatcher,
@@ -37,6 +49,7 @@ export type {
   TaskCommentInput,
   TaskActivityInput,
   TaskActivityType,
+  TaskAttachmentInput,
   TaskWatcherInput,
   UpdateKanbanColumnInput,
   UpdateKanbanTaskInput,

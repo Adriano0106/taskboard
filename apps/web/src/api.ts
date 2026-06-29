@@ -92,6 +92,15 @@ export interface KanbanTaskActivity {
   createdAt: string
 }
 
+export interface KanbanTaskAttachment {
+  id: string
+  fileName: string
+  contentType: string
+  sizeBytes: number
+  uploaderName: string
+  createdAt: string
+}
+
 export interface CompanyWorkspace {
   id: string
   name: string
@@ -158,6 +167,15 @@ export interface ReorderColumnPayload {
 export interface ColumnPayload {
   name: string
   position?: number
+}
+
+export interface DepartmentPayload {
+  name: string
+}
+
+export interface BoardPayload {
+  name: string
+  description?: string
 }
 
 export async function registerAccount(payload: RegisterAccountPayload): Promise<AuthSession> {
@@ -229,6 +247,82 @@ export async function getCompanyWorkspace(
 export async function getPlatformCompanies(token: string): Promise<PlatformCompanySummary[]> {
   return sendRequest<PlatformCompanySummary[]>('/admin/companies', {
     method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function createDepartment(
+  token: string,
+  payload: DepartmentPayload,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>('/companies/current/departments', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function renameDepartment(
+  token: string,
+  departmentId: string,
+  payload: DepartmentPayload,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>(`/companies/current/departments/${departmentId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteDepartment(
+  token: string,
+  departmentId: string,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>(`/companies/current/departments/${departmentId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function createBoard(
+  token: string,
+  departmentId: string,
+  payload: BoardPayload,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>(`/companies/current/departments/${departmentId}/boards`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateBoard(
+  token: string,
+  boardId: string,
+  payload: BoardPayload,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>(`/companies/current/boards/${boardId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteBoard(token: string, boardId: string): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>(`/companies/current/boards/${boardId}`, {
+    method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -310,6 +404,80 @@ export async function getTaskActivities(
       Authorization: `Bearer ${token}`,
     },
   })
+}
+
+export async function getTaskAttachments(
+  token: string,
+  taskId: string,
+): Promise<KanbanTaskAttachment[]> {
+  return sendRequest<KanbanTaskAttachment[]>(`/tasks/${taskId}/attachments`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function createTaskAttachment(
+  token: string,
+  taskId: string,
+  file: File,
+): Promise<KanbanTaskAttachment> {
+  const contentBase64 = await fileToBase64(file)
+
+  return sendRequest<KanbanTaskAttachment>(`/tasks/${taskId}/attachments`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      fileName: file.name,
+      contentType: file.type || 'application/octet-stream',
+      contentBase64,
+    }),
+  })
+}
+
+export async function deleteTaskAttachment(
+  token: string,
+  taskId: string,
+  attachmentId: string,
+): Promise<KanbanTaskAttachment[]> {
+  return sendRequest<KanbanTaskAttachment[]>(`/tasks/${taskId}/attachments/${attachmentId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function downloadTaskAttachment(
+  token: string,
+  taskId: string,
+  attachmentId: string,
+  fileName: string,
+) {
+  const response = await fetch(`${apiUrl}/tasks/${taskId}/attachments/${attachmentId}/download`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { message?: string } | null
+    throw new Error(errorBody?.message ?? 'Nao foi possivel baixar o anexo')
+  }
+
+  const objectUrl = URL.createObjectURL(await response.blob())
+  const linkElement = document.createElement('a')
+
+  linkElement.href = objectUrl
+  linkElement.download = fileName
+  document.body.appendChild(linkElement)
+  linkElement.click()
+  linkElement.remove()
+  URL.revokeObjectURL(objectUrl)
 }
 
 export async function createTaskComment(
@@ -429,4 +597,16 @@ async function sendRequest<ResponseBody>(path: string, init: RequestInit): Promi
   }
 
   return response.json() as Promise<ResponseBody>
+}
+
+async function fileToBase64(file: File) {
+  const content = await file.arrayBuffer()
+  let binaryContent = ''
+  const bytes = new Uint8Array(content)
+
+  for (const byte of bytes) {
+    binaryContent += String.fromCharCode(byte)
+  }
+
+  return btoa(binaryContent)
 }
