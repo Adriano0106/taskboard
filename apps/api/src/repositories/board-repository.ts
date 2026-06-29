@@ -15,6 +15,7 @@ export {
   updateTaskInCompanyKanbanBoard,
 } from './board-task-repository.js'
 export { createTaskComment, listTaskComments } from './task-comment-repository.js'
+export { addTaskWatcher, listTaskWatchers, removeTaskWatcher } from './task-watcher-repository.js'
 export { BoardError } from './board-types.js'
 export type {
   CreateTaskCommentInput,
@@ -28,10 +29,13 @@ export type {
   KanbanTaskCard,
   KanbanTaskComment,
   KanbanTaskDetail,
+  KanbanTaskWatcher,
   MoveKanbanTaskInput,
   ReorderKanbanColumnInput,
   TaskCommentInput,
+  TaskWatcherInput,
   UpdateKanbanColumnInput,
   UpdateKanbanTaskInput,
   UpdateKanbanTaskResult,
+  UpdateTaskWatcherInput,
 } from './board-types.js'

@@ -309,6 +309,60 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('adds, lists and removes task watchers', async () => {
+    const app = await createTestApp()
+    const { company, token } = await registerOwnerSession(app)
+    const watcherToken = await createMemberToken(app, company.id)
+    const watcherPayload = app.jwt.decode<{ userId: string }>(watcherToken)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa com observador',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find((task: { title: string }) => task.title === 'Tarefa com observador')
+
+    const addWatcherResponse = await app.inject({
+      method: 'POST',
+      url: `/tasks/${createdTask.id}/watchers`,
+      headers: createAuthHeader(token),
+      payload: {
+        userId: watcherPayload?.userId,
+      },
+    })
+    const listWatchersResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/watchers`,
+      headers: createAuthHeader(token),
+    })
+    const removeWatcherResponse = await app.inject({
+      method: 'DELETE',
+      url: `/tasks/${createdTask.id}/watchers/${watcherPayload?.userId}`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(addWatcherResponse.statusCode).toBe(201)
+    expect(addWatcherResponse.json()).toEqual([
+      expect.objectContaining({
+        userId: watcherPayload?.userId,
+        name: 'Board Test Member',
+      }),
+    ])
+    expect(listWatchersResponse.statusCode).toBe(200)
+    expect(listWatchersResponse.json()).toHaveLength(1)
+    expect(removeWatcherResponse.statusCode).toBe(200)
+    expect(removeWatcherResponse.json()).toEqual([])
+
+    await app.close()
+  })
+
   it('reorders columns for company owners', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)

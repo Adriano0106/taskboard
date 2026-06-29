@@ -1,7 +1,13 @@
 import type { FormEvent } from 'react'
-import type { CompanyMember, KanbanTaskComment, KanbanTaskDetail } from '../api.js'
+import type {
+  CompanyMember,
+  KanbanTaskComment,
+  KanbanTaskDetail,
+  KanbanTaskWatcher,
+} from '../api.js'
 import { formatDateTime } from '../kanban-helpers.js'
 import { TaskComments } from './TaskComments.js'
+import { TaskWatchers } from './TaskWatchers.js'
 
 const priorityLabels = {
   LOW: 'Baixo',
@@ -19,7 +25,12 @@ interface TaskDetailDialogProps {
   isTaskUpdating?: boolean
   taskDetail?: KanbanTaskDetail
   title: string
+  updatingWatcherUserId?: string | null
+  watchers?: KanbanTaskWatcher[]
+  watchersStatusMessage?: string
+  onAddWatcher?: (userId: string) => void
   onCreateComment?: (content: string) => void
+  onRemoveWatcher?: (userId: string) => void
   onUpdateTask?: (formEvent: FormEvent<HTMLFormElement>) => void
 }
 
@@ -30,10 +41,15 @@ export function TaskDetailDialog({
   isCommentSubmitting = false,
   isTaskUpdating = false,
   onClose,
+  onAddWatcher,
   onCreateComment,
+  onRemoveWatcher,
   onUpdateTask,
   taskDetail,
   title,
+  updatingWatcherUserId = null,
+  watchers = [],
+  watchersStatusMessage = '',
 }: TaskDetailDialogProps) {
   return (
     <div className="modal-backdrop" role="presentation">
@@ -127,6 +143,16 @@ export function TaskDetailDialog({
         ) : (
           <p className="muted">Buscando informacoes da task...</p>
         )}
+        {taskDetail && onAddWatcher && onRemoveWatcher ? (
+          <TaskWatchers
+            companyMembers={companyMembers}
+            updatingWatcherUserId={updatingWatcherUserId}
+            watchers={watchers}
+            watchersStatusMessage={watchersStatusMessage}
+            onAddWatcher={onAddWatcher}
+            onRemoveWatcher={onRemoveWatcher}
+          />
+        ) : null}
         {taskDetail && onCreateComment ? (
           <TaskComments
             comments={comments}

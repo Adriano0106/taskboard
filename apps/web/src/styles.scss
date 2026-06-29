@@ -736,6 +736,7 @@ textarea {
   padding-bottom: 18px;
 }
 
+.task-watchers,
 .task-comments {
   display: grid;
   gap: 14px;
@@ -767,6 +768,45 @@ textarea {
 .task-comments-list {
   display: grid;
   gap: 10px;
+}
+
+.task-watchers-list {
+  display: grid;
+  gap: 8px;
+}
+
+.task-watcher {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid colors.$border-default;
+  border-radius: 8px;
+  background: colors.$surface-soft;
+  padding: 10px 12px;
+
+  div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: colors.$text-muted;
+    font-weight: 700;
+  }
+}
+
+.task-watcher-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
 }
 
 .task-comment {
@@ -869,6 +909,7 @@ textarea {
   .column-create-form,
   .column-management,
   .task-form,
+  .task-watcher-form,
   .column-title-form {
     grid-template-columns: 1fr;
   }

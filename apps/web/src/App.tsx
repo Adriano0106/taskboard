@@ -25,6 +25,7 @@ import { ProfilePage } from './components/ProfilePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
 import { useTaskComments } from './hooks/useTaskComments.js'
+import { useTaskWatchers } from './hooks/useTaskWatchers.js'
 import { useWorkspaceData } from './hooks/useWorkspaceData.js'
 import {
   areTaskLocationsEqual,
@@ -75,6 +76,16 @@ export function App() {
     session,
   })
   const { addComment, comments, commentsStatusMessage, isCommentSubmitting } = useTaskComments({
+    taskId: selectedTaskDetail?.id ?? null,
+    token: session?.token ?? null,
+  })
+  const {
+    addWatcher,
+    removeWatcher,
+    updatingWatcherUserId,
+    watchers,
+    watchersStatusMessage,
+  } = useTaskWatchers({
     taskId: selectedTaskDetail?.id ?? null,
     token: session?.token ?? null,
   })
@@ -503,6 +514,10 @@ export function App() {
             kanbanBoard={kanbanBoard}
             reorderingColumnId={reorderingColumnId}
             selectedTaskDetail={selectedTaskDetail}
+            updatingWatcherUserId={updatingWatcherUserId}
+            watchers={watchers}
+            watchersStatusMessage={watchersStatusMessage}
+            onAddWatcher={addWatcher}
             onCloseColumnOrganizer={() => setIsColumnOrganizerOpen(false)}
             onCloseCreateTaskDialog={() => setIsCreateTaskDialogOpen(false)}
             onCloseTaskDetail={handleCloseTaskDetail}
@@ -519,6 +534,7 @@ export function App() {
             onOpenCreateTaskDialog={() => setIsCreateTaskDialogOpen(true)}
             onOpenTask={handleOpenTask}
             onRenameColumn={handleRenameColumn}
+            onRemoveWatcher={removeWatcher}
             onReorderColumn={handleReorderColumn}
             onUpdateTask={handleUpdateTask}
           />

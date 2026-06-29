@@ -16,6 +16,7 @@ import type {
   KanbanTaskCard,
   KanbanTaskComment,
   KanbanTaskDetail,
+  KanbanTaskWatcher,
 } from '../api.js'
 import { ColumnOrganizerDialog } from './ColumnOrganizerDialog.js'
 import { CreateTaskDialog } from './CreateTaskDialog.js'
@@ -45,6 +46,10 @@ interface BoardPageProps {
   kanbanBoard: KanbanBoard
   reorderingColumnId: string | null
   selectedTaskDetail: KanbanTaskDetail | null
+  updatingWatcherUserId: string | null
+  watchers: KanbanTaskWatcher[]
+  watchersStatusMessage: string
+  onAddWatcher: (userId: string) => void
   onCloseColumnOrganizer: () => void
   onCloseCreateTaskDialog: () => void
   onCloseTaskDetail: () => void
@@ -61,6 +66,7 @@ interface BoardPageProps {
   onOpenCreateTaskDialog: () => void
   onOpenTask: (taskId: string) => void
   onRenameColumn: (formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) => void
+  onRemoveWatcher: (userId: string) => void
   onReorderColumn: (columnId: string, position: number) => void
   onUpdateTask: (formEvent: FormEvent<HTMLFormElement>) => void
 }
@@ -83,6 +89,10 @@ export function BoardPage({
   kanbanBoard,
   reorderingColumnId,
   selectedTaskDetail,
+  updatingWatcherUserId,
+  watchers,
+  watchersStatusMessage,
+  onAddWatcher,
   onCloseColumnOrganizer,
   onCloseCreateTaskDialog,
   onCloseTaskDetail,
@@ -99,6 +109,7 @@ export function BoardPage({
   onOpenCreateTaskDialog,
   onOpenTask,
   onRenameColumn,
+  onRemoveWatcher,
   onReorderColumn,
   onUpdateTask,
 }: BoardPageProps) {
@@ -190,8 +201,13 @@ export function BoardPage({
           isTaskUpdating={isTaskUpdating}
           taskDetail={selectedTaskDetail}
           title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
+          updatingWatcherUserId={updatingWatcherUserId}
+          watchers={watchers}
+          watchersStatusMessage={watchersStatusMessage}
+          onAddWatcher={onAddWatcher}
           onClose={onCloseTaskDetail}
           onCreateComment={onCreateComment}
+          onRemoveWatcher={onRemoveWatcher}
           onUpdateTask={onUpdateTask}
         />
       ) : null}

@@ -42,6 +42,13 @@ export interface KanbanTaskComment {
   createdAt: string
 }
 
+export interface KanbanTaskWatcher {
+  userId: string
+  name: string
+  email: string
+  createdAt: string
+}
+
 export class BoardError extends Error {
   constructor(message: string) {
     super(message)
@@ -133,4 +140,14 @@ export interface TaskCommentInput {
 
 export interface CreateTaskCommentInput extends TaskCommentInput {
   content: string
+}
+
+export interface TaskWatcherInput {
+  companyId: string
+  taskId: string
+  userId: string
+}
+
+export interface UpdateTaskWatcherInput extends TaskWatcherInput {
+  watcherUserId: string
 }

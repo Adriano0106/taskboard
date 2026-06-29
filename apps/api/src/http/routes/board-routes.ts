@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '../../prisma.js'
 import {
+  addTaskWatcher,
   BoardError,
   createColumnInCompanyKanbanBoard,
   createTaskComment,
@@ -12,8 +13,10 @@ import {
   getKanbanTaskDetail,
   getOrCreateCompanyKanbanBoard,
   listTaskComments,
+  listTaskWatchers,
   moveTaskInCompanyKanbanBoard,
   renameColumnInCompanyKanbanBoard,
+  removeTaskWatcher,
   reorderColumnInCompanyKanbanBoard,
   updateTaskInCompanyKanbanBoard,
 } from '../../repositories/board-repository.js'
@@ -43,6 +46,10 @@ const createTaskCommentBodySchema = z.object({
   content: z.string().trim().min(1).max(2000),
 })
 
+const taskWatcherBodySchema = z.object({
+  userId: z.string().min(1),
+})
+
 const columnBodySchema = z.object({
   name: z.string().trim().min(2),
 })
@@ -57,6 +64,11 @@ const reorderColumnBodySchema = z.object({
 
 const taskParamsSchema = z.object({
   taskId: z.string().min(1),
+})
+
+const taskWatcherParamsSchema = z.object({
+  taskId: z.string().min(1),
+  userId: z.string().min(1),
 })
 
 const companyBoardParamsSchema = z.object({
@@ -231,6 +243,107 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
           companyId: request.user.companyId,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.get(
+    '/tasks/:taskId/watchers',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await listTaskWatchers(prismaClient, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.post(
+    '/tasks/:taskId/watchers',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskParamsSchema.safeParse(request.params)
+      const bodyValidation = taskWatcherBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task watcher payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        const watchers = await addTaskWatcher(prismaClient, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+          watcherUserId: bodyValidation.data.userId,
+        })
+
+        return reply.status(201).send(watchers)
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.delete(
+    '/tasks/:taskId/watchers/:userId',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskWatcherParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task watcher params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await removeTaskWatcher(prismaClient, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+          watcherUserId: paramsValidation.data.userId,
         })
       } catch (error) {
         if (error instanceof BoardError) {

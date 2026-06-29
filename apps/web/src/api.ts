@@ -70,6 +70,13 @@ export interface KanbanTaskComment {
   createdAt: string
 }
 
+export interface KanbanTaskWatcher {
+  userId: string
+  name: string
+  email: string
+  createdAt: string
+}
+
 export interface CompanyWorkspace {
   id: string
   name: string
@@ -291,6 +298,44 @@ export async function createTaskComment(
     body: JSON.stringify({
       content,
     }),
+  })
+}
+
+export async function getTaskWatchers(token: string, taskId: string): Promise<KanbanTaskWatcher[]> {
+  return sendRequest<KanbanTaskWatcher[]>(`/tasks/${taskId}/watchers`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function addTaskWatcher(
+  token: string,
+  taskId: string,
+  userId: string,
+): Promise<KanbanTaskWatcher[]> {
+  return sendRequest<KanbanTaskWatcher[]>(`/tasks/${taskId}/watchers`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      userId,
+    }),
+  })
+}
+
+export async function removeTaskWatcher(
+  token: string,
+  taskId: string,
+  userId: string,
+): Promise<KanbanTaskWatcher[]> {
+  return sendRequest<KanbanTaskWatcher[]>(`/tasks/${taskId}/watchers/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   })
 }
 
