@@ -207,6 +207,53 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('creates and lists task comments', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa com comentario',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find((task: { title: string }) => task.title === 'Tarefa com comentario')
+
+    const createdCommentResponse = await app.inject({
+      method: 'POST',
+      url: `/tasks/${createdTask.id}/comments`,
+      headers: createAuthHeader(token),
+      payload: {
+        content: 'Primeiro comentario da tarefa',
+      },
+    })
+    const listCommentsResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/comments`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(createdCommentResponse.statusCode).toBe(201)
+    expect(createdCommentResponse.json()).toMatchObject({
+      content: 'Primeiro comentario da tarefa',
+      authorName: 'Board Test Owner',
+    })
+    expect(listCommentsResponse.statusCode).toBe(200)
+    expect(listCommentsResponse.json()).toEqual([
+      expect.objectContaining({
+        content: 'Primeiro comentario da tarefa',
+      }),
+    ])
+
+    await app.close()
+  })
+
   it('reorders columns for company owners', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)

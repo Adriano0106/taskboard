@@ -34,6 +34,13 @@ export interface KanbanTaskDetail {
   updatedAt: string
 }
 
+export interface KanbanTaskComment {
+  id: string
+  content: string
+  authorName: string
+  createdAt: string
+}
+
 export class BoardError extends Error {
   constructor(message: string) {
     super(message)
@@ -100,4 +107,14 @@ export interface GetCompanyKanbanBoardInput {
   companyId: string
   userId: string
   boardId: string
+}
+
+export interface TaskCommentInput {
+  companyId: string
+  taskId: string
+  userId: string
+}
+
+export interface CreateTaskCommentInput extends TaskCommentInput {
+  content: string
 }

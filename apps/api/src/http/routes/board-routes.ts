@@ -5,11 +5,13 @@ import { prisma } from '../../prisma.js'
 import {
   BoardError,
   createColumnInCompanyKanbanBoard,
+  createTaskComment,
   createTaskInCompanyKanbanBoard,
   deleteColumnFromCompanyKanbanBoard,
   getCompanyKanbanBoard,
   getKanbanTaskDetail,
   getOrCreateCompanyKanbanBoard,
+  listTaskComments,
   moveTaskInCompanyKanbanBoard,
   renameColumnInCompanyKanbanBoard,
   reorderColumnInCompanyKanbanBoard,
@@ -27,6 +29,10 @@ const createTaskBodySchema = z.object({
 const moveTaskBodySchema = z.object({
   columnId: z.string().min(1),
   position: z.coerce.number().int().min(1),
+})
+
+const createTaskCommentBodySchema = z.object({
+  content: z.string().trim().min(1).max(2000),
 })
 
 const columnBodySchema = z.object({
@@ -163,6 +169,75 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       throw error
     }
   })
+
+  app.get(
+    '/tasks/:taskId/comments',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await listTaskComments(prismaClient, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.post(
+    '/tasks/:taskId/comments',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskParamsSchema.safeParse(request.params)
+      const bodyValidation = createTaskCommentBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task comment payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        const comment = await createTaskComment(prismaClient, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+          content: bodyValidation.data.content,
+        })
+
+        return reply.status(201).send(comment)
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 
   app.patch('/tasks/:taskId/move', { preHandler: authenticateRequest }, async (request, reply) => {
     const paramsValidation = taskParamsSchema.safeParse(request.params)
