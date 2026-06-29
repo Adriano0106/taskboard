@@ -1,6 +1,13 @@
 import type { KanbanTaskDetail } from '../api.js'
 import { formatDateTime } from '../kanban-helpers.js'
 
+const priorityLabels = {
+  LOW: 'Baixo',
+  MEDIUM: 'Media',
+  HIGH: 'Alto',
+  URGENT: 'Urgente',
+}
+
 interface TaskDetailDialogProps {
   onClose: () => void
   taskDetail?: KanbanTaskDetail
@@ -30,6 +37,10 @@ export function TaskDetailDialog({ onClose, taskDetail, title }: TaskDetailDialo
             <div>
               <dt>Responsavel</dt>
               <dd>{taskDetail.assigneeName ?? 'Sem responsavel'}</dd>
+            </div>
+            <div>
+              <dt>Prioridade</dt>
+              <dd>{priorityLabels[taskDetail.priority]}</dd>
             </div>
             <div>
               <dt>Criada em</dt>

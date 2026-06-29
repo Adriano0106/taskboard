@@ -30,6 +30,7 @@ export interface KanbanTaskCard {
   id: string
   friendlyId: string
   title: string
+  priority: TaskPriority
   assigneeName: string | null
 }
 
@@ -53,6 +54,7 @@ export interface KanbanTaskDetail {
   friendlyId: string
   title: string
   description: string | null
+  priority: TaskPriority
   boardName: string
   columnName: string
   assigneeName: string | null
@@ -85,9 +87,21 @@ export interface PlatformCompanySummary {
   createdAt: string
 }
 
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
+export interface CompanyMember {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
 export interface CreateTaskPayload {
   title: string
   columnId: string
+  description?: string
+  priority?: TaskPriority
+  assigneeId?: string
 }
 
 export interface MoveTaskPayload {
@@ -172,6 +186,15 @@ export async function getCompanyWorkspace(
 
 export async function getPlatformCompanies(token: string): Promise<PlatformCompanySummary[]> {
   return sendRequest<PlatformCompanySummary[]>('/admin/companies', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function getCurrentCompanyMembers(token: string): Promise<CompanyMember[]> {
+  return sendRequest<CompanyMember[]>('/companies/current/members', {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,

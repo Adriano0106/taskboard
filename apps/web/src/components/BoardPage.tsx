@@ -9,28 +9,39 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import type { FormEvent } from 'react'
-import type { KanbanBoard, KanbanColumn, KanbanTaskCard, KanbanTaskDetail } from '../api.js'
+import type {
+  CompanyMember,
+  KanbanBoard,
+  KanbanColumn,
+  KanbanTaskCard,
+  KanbanTaskDetail,
+} from '../api.js'
 import { ColumnOrganizerDialog } from './ColumnOrganizerDialog.js'
+import { CreateTaskDialog } from './CreateTaskDialog.js'
 import { KanbanColumnView, TaskCardPreview } from './KanbanColumnView.js'
 import { TaskDetailDialog } from './TaskDetailDialog.js'
 
 const taskDropAnimation = {
-  duration: 180,
-  easing: 'cubic-bezier(0.2, 0, 0, 1)',
+  duration: 260,
+  easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
 }
 
 interface BoardPageProps {
   activeTask: KanbanTaskCard | null
   canManageColumns: boolean
+  companyMembers: CompanyMember[]
   creatingTaskColumnId: string | null
+  currentUserId: string
   deletingColumnId: string | null
   editingColumnId: string | null
   isColumnOrganizerOpen: boolean
+  isCreateTaskDialogOpen: boolean
   isTaskDetailLoading: boolean
   kanbanBoard: KanbanBoard
   reorderingColumnId: string | null
   selectedTaskDetail: KanbanTaskDetail | null
   onCloseColumnOrganizer: () => void
+  onCloseCreateTaskDialog: () => void
   onCloseTaskDetail: () => void
   onCloseTaskLoading: () => void
   onCreateColumn: (formEvent: FormEvent<HTMLFormElement>) => void
@@ -41,6 +52,7 @@ interface BoardPageProps {
   onDragOver: (event: DragOverEvent) => void
   onDragStart: (event: DragStartEvent) => void
   onOpenColumnOrganizer: () => void
+  onOpenCreateTaskDialog: () => void
   onOpenTask: (taskId: string) => void
   onRenameColumn: (formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) => void
   onReorderColumn: (columnId: string, position: number) => void
@@ -49,15 +61,19 @@ interface BoardPageProps {
 export function BoardPage({
   activeTask,
   canManageColumns,
+  companyMembers,
   creatingTaskColumnId,
+  currentUserId,
   deletingColumnId,
   editingColumnId,
   isColumnOrganizerOpen,
+  isCreateTaskDialogOpen,
   isTaskDetailLoading,
   kanbanBoard,
   reorderingColumnId,
   selectedTaskDetail,
   onCloseColumnOrganizer,
+  onCloseCreateTaskDialog,
   onCloseTaskDetail,
   onCloseTaskLoading,
   onCreateColumn,
@@ -68,6 +84,7 @@ export function BoardPage({
   onDragOver,
   onDragStart,
   onOpenColumnOrganizer,
+  onOpenCreateTaskDialog,
   onOpenTask,
   onRenameColumn,
   onReorderColumn,
@@ -89,24 +106,14 @@ export function BoardPage({
           {kanbanBoard.description ? <p className="muted">{kanbanBoard.description}</p> : null}
         </div>
         <div className="board-actions">
-          <form className="task-create-form" onSubmit={onCreateTask}>
-            <input
-              name="title"
-              type="text"
-              minLength={2}
-              placeholder="Adicionar nova tarefa"
-              aria-label="Adicionar nova tarefa"
-              disabled={!kanbanBoard.columns[0] || creatingTaskColumnId !== null}
-              required
-            />
-            <button
-              type="submit"
-              className="secondary-button"
-              disabled={!kanbanBoard.columns[0] || creatingTaskColumnId !== null}
-            >
-              {creatingTaskColumnId ? 'Criando...' : 'Adicionar nova tarefa'}
-            </button>
-          </form>
+          <button
+            type="button"
+            className="primary-button"
+            disabled={!kanbanBoard.columns[0] || creatingTaskColumnId !== null}
+            onClick={onOpenCreateTaskDialog}
+          >
+            Adicionar nova tarefa
+          </button>
           {canManageColumns ? (
             <div className="column-management">
               <form className="column-create-form" onSubmit={onCreateColumn}>
@@ -149,6 +156,16 @@ export function BoardPage({
 
       {isTaskDetailLoading ? (
         <TaskDetailDialog title="Carregando task" onClose={onCloseTaskLoading} />
+      ) : null}
+
+      {isCreateTaskDialogOpen ? (
+        <CreateTaskDialog
+          companyMembers={companyMembers}
+          currentUserId={currentUserId}
+          isSubmitting={creatingTaskColumnId !== null}
+          onClose={onCloseCreateTaskDialog}
+          onSubmit={onCreateTask}
+        />
       ) : null}
 
       {selectedTaskDetail ? (

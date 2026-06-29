@@ -5,6 +5,7 @@ import {
   type KanbanBoard,
   type KanbanColumn,
   type KanbanTaskCard,
+  type TaskPriority,
   createColumn,
   createTask,
   deleteColumn,
@@ -19,10 +20,16 @@ import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
 import { AuthPage } from './components/AuthPage.js'
 import { BoardPage } from './components/BoardPage.js'
 import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
+import { ProfilePage } from './components/ProfilePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
 import { useWorkspaceData } from './hooks/useWorkspaceData.js'
-import { areTaskLocationsEqual, findDropLocation, findTaskLocation } from './kanban-helpers.js'
+import {
+  areTaskLocationsEqual,
+  createTaskMovePreview,
+  findDropLocation,
+  findTaskLocation,
+} from './kanban-helpers.js'
 import { createBoardPath, createTaskPath } from './routing.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
@@ -36,6 +43,7 @@ export function App() {
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isColumnOrganizerOpen, setIsColumnOrganizerOpen] = useState(false)
+  const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false)
   const [creatingTaskColumnId, setCreatingTaskColumnId] = useState<string | null>(null)
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
   const [deletingColumnId, setDeletingColumnId] = useState<string | null>(null)
@@ -44,6 +52,7 @@ export function App() {
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
   const {
     companyWorkspace,
+    companyMembers,
     isAdminCompaniesLoading,
     isCompanyLoading,
     isKanbanLoading,
@@ -162,10 +171,14 @@ export function App() {
       const updatedBoard = await createTask(session.token, {
         columnId: firstColumn.id,
         title,
+        description: String(formData.get('description') ?? '').trim(),
+        priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
+        assigneeId: String(formData.get('assigneeId') ?? '') || undefined,
       })
 
       setKanbanBoard(updatedBoard)
       formElement.reset()
+      setIsCreateTaskDialogOpen(false)
     } catch (error) {
       setKanbanStatusMessage(
         error instanceof Error ? error.message : 'Nao foi possivel criar a task',
@@ -378,6 +391,8 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
+      setKanbanBoard(createTaskMovePreview(kanbanBoard, activeTaskId, targetLocation))
+
       const updatedBoard = await moveTask(session.token, activeTaskId, {
         columnId: targetLocation.columnId,
         position: targetLocation.position,
@@ -424,19 +439,25 @@ export function App() {
           />
         ) : null}
 
+        {currentRoute.type === 'profile' ? <ProfilePage session={session} /> : null}
+
         {shouldShowKanbanBoard && kanbanBoard ? (
           <BoardPage
             activeTask={activeTask}
             canManageColumns={canManageColumns}
+            companyMembers={companyMembers}
             creatingTaskColumnId={creatingTaskColumnId}
+            currentUserId={session.user.id}
             deletingColumnId={deletingColumnId}
             editingColumnId={editingColumnId}
             isColumnOrganizerOpen={isColumnOrganizerOpen}
+            isCreateTaskDialogOpen={isCreateTaskDialogOpen}
             isTaskDetailLoading={isTaskDetailLoading}
             kanbanBoard={kanbanBoard}
             reorderingColumnId={reorderingColumnId}
             selectedTaskDetail={selectedTaskDetail}
             onCloseColumnOrganizer={() => setIsColumnOrganizerOpen(false)}
+            onCloseCreateTaskDialog={() => setIsCreateTaskDialogOpen(false)}
             onCloseTaskDetail={handleCloseTaskDetail}
             onCloseTaskLoading={() => setIsTaskDetailLoading(false)}
             onCreateColumn={handleCreateColumn}
@@ -447,6 +468,7 @@ export function App() {
             onDragOver={handleDragOver}
             onDragStart={handleDragStart}
             onOpenColumnOrganizer={() => setIsColumnOrganizerOpen(true)}
+            onOpenCreateTaskDialog={() => setIsCreateTaskDialogOpen(true)}
             onOpenTask={handleOpenTask}
             onRenameColumn={handleRenameColumn}
             onReorderColumn={handleReorderColumn}

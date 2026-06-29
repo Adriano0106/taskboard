@@ -14,14 +14,27 @@ export function WorkspaceHeader({
   onLogout,
   onNavigate,
 }: WorkspaceHeaderProps) {
+  const avatarInitials = session.user.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((namePart) => namePart[0])
+    .join('')
+    .toUpperCase()
+
   return (
-    <section className="workspace">
-      <div>
-        <p className="eyebrow">TaskBoard</p>
-        <h1>{companyWorkspace?.name ?? session.company.name}</h1>
-        <p className="muted">
-          Sessao ativa para {session.user.name} com perfil {session.company.role}.
-        </p>
+    <nav className="workspace">
+      <div className="workspace-brand">
+        <button type="button" className="brand-button" onClick={() => onNavigate('/')}>
+          TaskBoard
+        </button>
+        <button
+          type="button"
+          className="workspace-company-button"
+          onClick={() => onNavigate(createCompanyPath(session.company.id))}
+        >
+          {companyWorkspace?.name ?? session.company.name}
+        </button>
       </div>
       <div className="workspace-actions">
         <button
@@ -38,10 +51,18 @@ export function WorkspaceHeader({
         >
           Admin geral
         </button>
+        <button
+          type="button"
+          className="avatar-button"
+          title="Meu perfil"
+          onClick={() => onNavigate('/profile')}
+        >
+          <span>{avatarInitials || 'U'}</span>
+        </button>
         <button type="button" className="secondary-button" onClick={onLogout}>
           Sair
         </button>
       </div>
-    </section>
+    </nav>
   )
 }

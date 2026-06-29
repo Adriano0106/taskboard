@@ -5,6 +5,13 @@ import { type FormEvent, useMemo } from 'react'
 import type { KanbanColumn, KanbanTaskCard } from '../api.js'
 import type { ColumnDragData } from '../types/kanban.js'
 
+const priorityLabels = {
+  LOW: 'Baixo',
+  MEDIUM: 'Media',
+  HIGH: 'Alto',
+  URGENT: 'Urgente',
+}
+
 interface KanbanColumnViewProps {
   column: KanbanColumn
   canManageColumns: boolean
@@ -122,6 +129,9 @@ function TaskCardContent({ task }: { task: KanbanTaskCard }) {
         <span className="task-title">{task.title}</span>
         <strong className="task-friendly-id">{task.friendlyId}</strong>
       </div>
+      <span className={`task-priority priority-${task.priority.toLowerCase()}`}>
+        {priorityLabels[task.priority]}
+      </span>
       {task.assigneeName ? <small>Responsavel: {task.assigneeName}</small> : null}
     </>
   )

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type {
   AuthSession,
+  CompanyMember,
   CompanyWorkspace,
   KanbanBoard,
   KanbanTaskDetail,
@@ -9,6 +10,7 @@ import type {
 import {
   getCompanyKanbanBoard,
   getCompanyWorkspace,
+  getCurrentCompanyMembers,
   getCurrentCompanyWorkspace,
   getCurrentKanbanBoard,
   getPlatformCompanies,
@@ -24,6 +26,7 @@ interface UseWorkspaceDataInput {
 
 export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorkspaceDataInput) {
   const [companyWorkspace, setCompanyWorkspace] = useState<CompanyWorkspace | null>(null)
+  const [companyMembers, setCompanyMembers] = useState<CompanyMember[]>([])
   const [platformCompanies, setPlatformCompanies] = useState<PlatformCompanySummary[]>([])
   const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<KanbanTaskDetail | null>(null)
@@ -32,6 +35,30 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
   const [isAdminCompaniesLoading, setIsAdminCompaniesLoading] = useState(false)
   const [isTaskDetailLoading, setIsTaskDetailLoading] = useState(false)
   const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
+
+  useEffect(() => {
+    if (!session?.token) {
+      return
+    }
+
+    let shouldIgnoreResult = false
+
+    getCurrentCompanyMembers(session.token)
+      .then((members) => {
+        if (!shouldIgnoreResult) {
+          setCompanyMembers(members)
+        }
+      })
+      .catch(() => {
+        if (!shouldIgnoreResult) {
+          setCompanyMembers([])
+        }
+      })
+
+    return () => {
+      shouldIgnoreResult = true
+    }
+  }, [session?.token])
 
   useEffect(() => {
     if (!session?.token) {
@@ -122,7 +149,11 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
       return
     }
 
-    if (currentRoute.type === 'adminCompanies' || currentRoute.type === 'company') {
+    if (
+      currentRoute.type === 'adminCompanies' ||
+      currentRoute.type === 'company' ||
+      currentRoute.type === 'profile'
+    ) {
       setKanbanBoard(null)
       return
     }
@@ -208,6 +239,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
 
   const resetWorkspaceData = useCallback(() => {
     setCompanyWorkspace(null)
+    setCompanyMembers([])
     setPlatformCompanies([])
     setKanbanBoard(null)
     setSelectedTaskDetail(null)
@@ -216,6 +248,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
 
   return {
     companyWorkspace,
+    companyMembers,
     isAdminCompaniesLoading,
     isCompanyLoading,
     isKanbanLoading,

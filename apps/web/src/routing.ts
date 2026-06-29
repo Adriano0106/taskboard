@@ -20,6 +20,9 @@ export type AppRoute =
   | {
       type: 'home'
     }
+  | {
+      type: 'profile'
+    }
 
 export function parseAppRoute(pathname: string): AppRoute {
   const pathSegments = pathname.split('/').filter(Boolean)
@@ -51,6 +54,12 @@ export function parseAppRoute(pathname: string): AppRoute {
     return {
       type: 'company',
       companyId: pathSegments[1],
+    }
+  }
+
+  if (pathSegments[0] === 'profile') {
+    return {
+      type: 'profile',
     }
   }
 
