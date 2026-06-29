@@ -60,6 +60,31 @@ export interface KanbanTaskDetail {
   updatedAt: string
 }
 
+export interface CompanyWorkspace {
+  id: string
+  name: string
+  role: string
+  departments: Array<{
+    id: string
+    name: string
+    boards: Array<{
+      id: string
+      key: string
+      name: string
+      description: string | null
+    }>
+  }>
+}
+
+export interface PlatformCompanySummary {
+  id: string
+  name: string
+  memberCount: number
+  departmentCount: number
+  boardCount: number
+  createdAt: string
+}
+
 export interface CreateTaskPayload {
   title: string
   columnId: string
@@ -104,6 +129,49 @@ export async function getCurrentSession(token: string): Promise<Omit<AuthSession
 
 export async function getCurrentKanbanBoard(token: string): Promise<KanbanBoard> {
   return sendRequest<KanbanBoard>('/boards/current/kanban', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function getCompanyKanbanBoard(
+  token: string,
+  companyId: string,
+  boardId: string,
+): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(`/companies/${companyId}/boards/${boardId}/kanban`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function getCurrentCompanyWorkspace(token: string): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>('/companies/current', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function getCompanyWorkspace(
+  token: string,
+  companyId: string,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>(`/companies/${companyId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function getPlatformCompanies(token: string): Promise<PlatformCompanySummary[]> {
+  return sendRequest<PlatformCompanySummary[]>('/admin/companies', {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,

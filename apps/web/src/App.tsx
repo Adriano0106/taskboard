@@ -11,15 +11,21 @@ import {
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import {
   type AuthSession,
+  type CompanyWorkspace,
   type KanbanBoard,
   type KanbanColumn,
   type KanbanTaskCard,
   type KanbanTaskDetail,
+  type PlatformCompanySummary,
   createColumn,
   createTask,
   deleteColumn,
+  getCompanyKanbanBoard,
+  getCompanyWorkspace,
+  getCurrentCompanyWorkspace,
   getCurrentKanbanBoard,
   getCurrentSession,
+  getPlatformCompanies,
   getTaskDetail,
   login,
   moveTask,
@@ -27,10 +33,13 @@ import {
   renameColumn,
   reorderColumn,
 } from './api.js'
+import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
 import { ColumnOrganizerDialog } from './components/ColumnOrganizerDialog.js'
+import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { KanbanColumnView, TaskCardPreview } from './components/KanbanColumnView.js'
 import { TaskDetailDialog } from './components/TaskDetailDialog.js'
 import { createTaskMovePreview, findDropLocation, findTaskLocation } from './kanban-helpers.js'
+import { createBoardPath, createCompanyPath, createTaskPath, parseAppRoute } from './routing.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
 
@@ -44,12 +53,17 @@ const taskDropAnimation = {
 export function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname)
+  const [companyWorkspace, setCompanyWorkspace] = useState<CompanyWorkspace | null>(null)
+  const [platformCompanies, setPlatformCompanies] = useState<PlatformCompanySummary[]>([])
   const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
   const [kanbanBoardPreview, setKanbanBoardPreview] = useState<KanbanBoard | null>(null)
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<KanbanTaskDetail | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isKanbanLoading, setIsKanbanLoading] = useState(false)
+  const [isCompanyLoading, setIsCompanyLoading] = useState(false)
+  const [isAdminCompaniesLoading, setIsAdminCompaniesLoading] = useState(false)
   const [isTaskDetailLoading, setIsTaskDetailLoading] = useState(false)
   const [isColumnOrganizerOpen, setIsColumnOrganizerOpen] = useState(false)
   const [creatingTaskColumnId, setCreatingTaskColumnId] = useState<string | null>(null)
@@ -58,6 +72,7 @@ export function App() {
   const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
+  const currentRoute = useMemo(() => parseAppRoute(currentPath), [currentPath])
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -65,6 +80,18 @@ export function App() {
       },
     }),
   )
+
+  useEffect(() => {
+    function handlePopState() {
+      setCurrentPath(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
 
   useEffect(() => {
     if (!session?.token) {
@@ -93,22 +120,173 @@ export function App() {
       return
     }
 
+    const routeCompanyId =
+      currentRoute.type === 'company' ||
+      currentRoute.type === 'board' ||
+      currentRoute.type === 'task'
+        ? currentRoute.companyId
+        : session.company.id
+    let shouldIgnoreResult = false
+
+    setIsCompanyLoading(true)
+    setKanbanStatusMessage('')
+
+    const workspaceRequest =
+      currentRoute.type === 'home'
+        ? getCurrentCompanyWorkspace(session.token)
+        : getCompanyWorkspace(session.token, routeCompanyId)
+
+    workspaceRequest
+      .then((workspace) => {
+        if (!shouldIgnoreResult) {
+          setCompanyWorkspace(workspace)
+        }
+      })
+      .catch((error) => {
+        if (!shouldIgnoreResult) {
+          setKanbanStatusMessage(
+            error instanceof Error ? error.message : 'Nao foi possivel carregar a empresa',
+          )
+        }
+      })
+      .finally(() => {
+        if (!shouldIgnoreResult) {
+          setIsCompanyLoading(false)
+        }
+      })
+
+    return () => {
+      shouldIgnoreResult = true
+    }
+  }, [session?.token, session?.company.id, currentRoute])
+
+  useEffect(() => {
+    if (!session?.token) {
+      return
+    }
+
+    if (currentRoute.type !== 'adminCompanies') {
+      setPlatformCompanies([])
+      return
+    }
+
+    let shouldIgnoreResult = false
+
+    setIsAdminCompaniesLoading(true)
+    setKanbanStatusMessage('')
+
+    getPlatformCompanies(session.token)
+      .then((companies) => {
+        if (!shouldIgnoreResult) {
+          setPlatformCompanies(companies)
+        }
+      })
+      .catch((error) => {
+        if (!shouldIgnoreResult) {
+          setKanbanStatusMessage(
+            error instanceof Error ? error.message : 'Nao foi possivel carregar as empresas',
+          )
+        }
+      })
+      .finally(() => {
+        if (!shouldIgnoreResult) {
+          setIsAdminCompaniesLoading(false)
+        }
+      })
+
+    return () => {
+      shouldIgnoreResult = true
+    }
+  }, [session?.token, currentRoute])
+
+  useEffect(() => {
+    if (!session?.token) {
+      return
+    }
+
+    if (currentRoute.type === 'adminCompanies' || currentRoute.type === 'company') {
+      setKanbanBoard(null)
+      return
+    }
+
+    let shouldIgnoreResult = false
+
     setIsKanbanLoading(true)
     setKanbanStatusMessage('')
 
-    getCurrentKanbanBoard(session.token)
+    const boardRequest =
+      currentRoute.type === 'board' || currentRoute.type === 'task'
+        ? getCompanyKanbanBoard(session.token, currentRoute.companyId, currentRoute.boardId)
+        : getCurrentKanbanBoard(session.token)
+
+    boardRequest
       .then((board) => {
+        if (shouldIgnoreResult) {
+          return
+        }
+
         setKanbanBoard(board)
+
+        if (currentRoute.type === 'home') {
+          navigateTo(createBoardPath(session.company.id, board.id), {
+            replace: true,
+          })
+        }
       })
       .catch((error) => {
-        setKanbanStatusMessage(
-          error instanceof Error ? error.message : 'Nao foi possivel carregar o quadro',
-        )
+        if (!shouldIgnoreResult) {
+          setKanbanStatusMessage(
+            error instanceof Error ? error.message : 'Nao foi possivel carregar o quadro',
+          )
+        }
       })
       .finally(() => {
-        setIsKanbanLoading(false)
+        if (!shouldIgnoreResult) {
+          setIsKanbanLoading(false)
+        }
       })
-  }, [session?.token])
+
+    return () => {
+      shouldIgnoreResult = true
+    }
+  }, [session?.token, session?.company.id, currentRoute])
+
+  useEffect(() => {
+    if (!session?.token || currentRoute.type !== 'task') {
+      setSelectedTaskDetail(null)
+      setIsTaskDetailLoading(false)
+      return
+    }
+
+    let shouldIgnoreResult = false
+
+    setSelectedTaskDetail(null)
+    setIsTaskDetailLoading(true)
+    setKanbanStatusMessage('')
+
+    getTaskDetail(session.token, currentRoute.taskId)
+      .then((taskDetail) => {
+        if (!shouldIgnoreResult) {
+          setSelectedTaskDetail(taskDetail)
+        }
+      })
+      .catch((error) => {
+        if (!shouldIgnoreResult) {
+          setKanbanStatusMessage(
+            error instanceof Error ? error.message : 'Nao foi possivel carregar a task',
+          )
+        }
+      })
+      .finally(() => {
+        if (!shouldIgnoreResult) {
+          setIsTaskDetailLoading(false)
+        }
+      })
+
+    return () => {
+      shouldIgnoreResult = true
+    }
+  }, [session?.token, currentRoute])
 
   const authModeLabels = useMemo(
     () => ({
@@ -119,6 +297,22 @@ export function App() {
   )
   const canManageColumns = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
   const visibleKanbanBoard = kanbanBoardPreview ?? kanbanBoard
+  const shouldShowKanbanBoard =
+    currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
+
+  function navigateTo(path: string, options: { replace?: boolean } = {}) {
+    if (window.location.pathname === path) {
+      return
+    }
+
+    if (options.replace) {
+      window.history.replaceState(null, '', path)
+    } else {
+      window.history.pushState(null, '', path)
+    }
+
+    setCurrentPath(path)
+  }
 
   async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
@@ -155,11 +349,16 @@ export function App() {
   function handleLogout() {
     localStorage.removeItem(sessionStorageKey)
     setSession(null)
+    setCompanyWorkspace(null)
+    setPlatformCompanies([])
     setKanbanBoard(null)
     setKanbanBoardPreview(null)
     setSelectedTaskDetail(null)
     setStatusMessage('')
     setKanbanStatusMessage('')
+    navigateTo('/', {
+      replace: true,
+    })
   }
 
   async function handleCreateTask(formEvent: FormEvent<HTMLFormElement>) {
@@ -307,25 +506,31 @@ export function App() {
     }
   }
 
-  async function handleOpenTask(taskId: string) {
-    if (!session?.token) {
+  function handleOpenTask(taskId: string) {
+    if (!kanbanBoard || currentRoute.type === 'adminCompanies') {
+      return
+    }
+
+    const companyId =
+      currentRoute.type === 'board' || currentRoute.type === 'task'
+        ? currentRoute.companyId
+        : session?.company.id
+
+    if (!companyId) {
+      return
+    }
+
+    navigateTo(createTaskPath(companyId, kanbanBoard.id, taskId))
+  }
+
+  function handleCloseTaskDetail() {
+    if (currentRoute.type === 'task') {
+      navigateTo(createBoardPath(currentRoute.companyId, currentRoute.boardId))
       return
     }
 
     setSelectedTaskDetail(null)
-    setIsTaskDetailLoading(true)
-    setKanbanStatusMessage('')
-
-    try {
-      const taskDetail = await getTaskDetail(session.token, taskId)
-      setSelectedTaskDetail(taskDetail)
-    } catch (error) {
-      setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel carregar a task',
-      )
-    } finally {
-      setIsTaskDetailLoading(false)
-    }
+    setIsTaskDetailLoading(false)
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -415,14 +620,30 @@ export function App() {
         <section className="workspace">
           <div>
             <p className="eyebrow">TaskBoard</p>
-            <h1>{session.company.name}</h1>
+            <h1>{companyWorkspace?.name ?? session.company.name}</h1>
             <p className="muted">
               Sessao ativa para {session.user.name} com perfil {session.company.role}.
             </p>
           </div>
-          <button type="button" className="secondary-button" onClick={handleLogout}>
-            Sair
-          </button>
+          <div className="workspace-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => navigateTo(createCompanyPath(session.company.id))}
+            >
+              Empresa
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => navigateTo('/admin/companies')}
+            >
+              Admin geral
+            </button>
+            <button type="button" className="secondary-button" onClick={handleLogout}>
+              Sair
+            </button>
+          </div>
         </section>
 
         {isKanbanLoading ? <p className="surface-message">Carregando quadro...</p> : null}
@@ -431,7 +652,23 @@ export function App() {
           <p className="surface-message error-message">{kanbanStatusMessage}</p>
         ) : null}
 
-        {kanbanBoard ? (
+        {currentRoute.type === 'adminCompanies' ? (
+          <AdminCompaniesPage
+            companies={platformCompanies}
+            isLoading={isAdminCompaniesLoading}
+            onNavigate={navigateTo}
+          />
+        ) : null}
+
+        {currentRoute.type === 'company' ? (
+          <CompanyWorkspacePage
+            companyWorkspace={companyWorkspace}
+            isLoading={isCompanyLoading}
+            onNavigate={navigateTo}
+          />
+        ) : null}
+
+        {shouldShowKanbanBoard && kanbanBoard ? (
           <>
             <section className="board-header">
               <div>
@@ -520,7 +757,7 @@ export function App() {
           <TaskDetailDialog
             taskDetail={selectedTaskDetail}
             title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
-            onClose={() => setSelectedTaskDetail(null)}
+            onClose={handleCloseTaskDetail}
           />
         ) : null}
 

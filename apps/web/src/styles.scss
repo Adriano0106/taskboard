@@ -203,6 +203,13 @@ select {
   }
 }
 
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .board-header {
   align-items: end;
   box-shadow: none;
@@ -212,6 +219,94 @@ select {
   display: grid;
   width: min(100%, 680px);
   gap: 10px;
+}
+
+.admin-page,
+.company-page {
+  display: grid;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.page-section-header,
+.department-section {
+  border: 1px solid colors.$border-default;
+  border-radius: 8px;
+  background: colors.$surface-panel;
+  padding: 18px 20px;
+}
+
+.page-section-header {
+  h2 {
+    margin-bottom: 0;
+    font-size: 1.2rem;
+  }
+}
+
+.department-section {
+  display: grid;
+  gap: 14px;
+
+  h3 {
+    margin: 0;
+    color: colors.$text-strong;
+    font-size: 1rem;
+  }
+}
+
+.company-grid,
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.company-card,
+.board-card {
+  display: grid;
+  gap: 8px;
+  min-height: 128px;
+  border: 1px solid colors.$border-default;
+  border-radius: 8px;
+  background: colors.$surface-panel;
+  padding: 16px;
+  color: colors.$text-default;
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+
+  &:hover {
+    border-color: colors.$brand-primary;
+    box-shadow: 0 8px 22px colors.$shadow-soft;
+    transform: translateY(-1px);
+  }
+
+  strong {
+    color: colors.$text-strong;
+    font-size: 1rem;
+  }
+
+  span,
+  small {
+    color: colors.$text-muted;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+}
+
+.board-card {
+  span {
+    width: fit-content;
+    border-radius: 6px;
+    background: colors.$surface-soft;
+    padding: 3px 7px;
+    color: colors.$brand-primary;
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
 }
 
 .task-create-form,
@@ -548,6 +643,14 @@ select {
   .board-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .workspace-actions {
+    justify-content: stretch;
+
+    .secondary-button {
+      flex: 1 1 140px;
+    }
   }
 
   .task-create-form,
