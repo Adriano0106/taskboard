@@ -62,6 +62,13 @@ export interface KanbanTaskDetail {
   updatedAt: string
 }
 
+export interface KanbanTaskComment {
+  id: string
+  content: string
+  authorName: string
+  createdAt: string
+}
+
 export interface CompanyWorkspace {
   id: string
   name: string
@@ -232,6 +239,31 @@ export async function getTaskDetail(token: string, taskId: string): Promise<Kanb
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  })
+}
+
+export async function getTaskComments(token: string, taskId: string): Promise<KanbanTaskComment[]> {
+  return sendRequest<KanbanTaskComment[]>(`/tasks/${taskId}/comments`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function createTaskComment(
+  token: string,
+  taskId: string,
+  content: string,
+): Promise<KanbanTaskComment> {
+  return sendRequest<KanbanTaskComment>(`/tasks/${taskId}/comments`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      content,
+    }),
   })
 }
 

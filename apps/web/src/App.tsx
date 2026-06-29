@@ -23,6 +23,7 @@ import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { ProfilePage } from './components/ProfilePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
+import { useTaskComments } from './hooks/useTaskComments.js'
 import { useWorkspaceData } from './hooks/useWorkspaceData.js'
 import {
   areTaskLocationsEqual,
@@ -70,6 +71,10 @@ export function App() {
     currentRoute,
     navigateTo,
     session,
+  })
+  const { addComment, comments, commentsStatusMessage, isCommentSubmitting } = useTaskComments({
+    taskId: selectedTaskDetail?.id ?? null,
+    token: session?.token ?? null,
   })
 
   useEffect(() => {
@@ -445,12 +450,15 @@ export function App() {
           <BoardPage
             activeTask={activeTask}
             canManageColumns={canManageColumns}
+            comments={comments}
+            commentsStatusMessage={commentsStatusMessage}
             companyMembers={companyMembers}
             creatingTaskColumnId={creatingTaskColumnId}
             currentUserId={session.user.id}
             deletingColumnId={deletingColumnId}
             editingColumnId={editingColumnId}
             isColumnOrganizerOpen={isColumnOrganizerOpen}
+            isCommentSubmitting={isCommentSubmitting}
             isCreateTaskDialogOpen={isCreateTaskDialogOpen}
             isTaskDetailLoading={isTaskDetailLoading}
             kanbanBoard={kanbanBoard}
@@ -460,6 +468,7 @@ export function App() {
             onCloseCreateTaskDialog={() => setIsCreateTaskDialogOpen(false)}
             onCloseTaskDetail={handleCloseTaskDetail}
             onCloseTaskLoading={() => setIsTaskDetailLoading(false)}
+            onCreateComment={addComment}
             onCreateColumn={handleCreateColumn}
             onCreateTask={handleCreateTask}
             onDeleteColumn={handleDeleteColumn}

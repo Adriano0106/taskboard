@@ -1,5 +1,6 @@
-import type { KanbanTaskDetail } from '../api.js'
+import type { KanbanTaskComment, KanbanTaskDetail } from '../api.js'
 import { formatDateTime } from '../kanban-helpers.js'
+import { TaskComments } from './TaskComments.js'
 
 const priorityLabels = {
   LOW: 'Baixo',
@@ -10,11 +11,23 @@ const priorityLabels = {
 
 interface TaskDetailDialogProps {
   onClose: () => void
+  comments?: KanbanTaskComment[]
+  commentsStatusMessage?: string
+  isCommentSubmitting?: boolean
   taskDetail?: KanbanTaskDetail
   title: string
+  onCreateComment?: (content: string) => void
 }
 
-export function TaskDetailDialog({ onClose, taskDetail, title }: TaskDetailDialogProps) {
+export function TaskDetailDialog({
+  comments = [],
+  commentsStatusMessage = '',
+  isCommentSubmitting = false,
+  onClose,
+  onCreateComment,
+  taskDetail,
+  title,
+}: TaskDetailDialogProps) {
   return (
     <div className="modal-backdrop" role="presentation">
       <dialog aria-modal="true" className="task-detail-modal" open>
@@ -58,6 +71,14 @@ export function TaskDetailDialog({ onClose, taskDetail, title }: TaskDetailDialo
         ) : (
           <p className="muted">Buscando informacoes da task...</p>
         )}
+        {taskDetail && onCreateComment ? (
+          <TaskComments
+            comments={comments}
+            isSubmitting={isCommentSubmitting}
+            statusMessage={commentsStatusMessage}
+            onCreateComment={onCreateComment}
+          />
+        ) : null}
       </dialog>
     </div>
   )

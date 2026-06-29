@@ -734,6 +734,74 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.task-comments {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid colors.$border-default;
+  padding-top: 16px;
+}
+
+.task-comments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  span {
+    border-radius: 999px;
+    background: colors.$surface-soft;
+    padding: 3px 8px;
+    color: colors.$text-muted;
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
+}
+
+.task-comments-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-comment {
+  display: grid;
+  gap: 8px;
+  border: 1px solid colors.$border-default;
+  border-radius: 8px;
+  background: colors.$surface-soft;
+  padding: 12px;
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  strong {
+    color: colors.$text-strong;
+  }
+
+  small {
+    color: colors.$text-muted;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: colors.$text-default;
+    line-height: 1.45;
+  }
+}
+
+.task-comment-form {
+  gap: 10px;
+}
+
 .create-task-modal {
   max-height: min(760px, calc(100vh - 40px));
   overflow-y: auto;

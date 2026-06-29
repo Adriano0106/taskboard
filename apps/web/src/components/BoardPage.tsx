@@ -14,6 +14,7 @@ import type {
   KanbanBoard,
   KanbanColumn,
   KanbanTaskCard,
+  KanbanTaskComment,
   KanbanTaskDetail,
 } from '../api.js'
 import { ColumnOrganizerDialog } from './ColumnOrganizerDialog.js'
@@ -29,6 +30,8 @@ const taskDropAnimation = {
 interface BoardPageProps {
   activeTask: KanbanTaskCard | null
   canManageColumns: boolean
+  comments: KanbanTaskComment[]
+  commentsStatusMessage: string
   companyMembers: CompanyMember[]
   creatingTaskColumnId: string | null
   currentUserId: string
@@ -36,6 +39,7 @@ interface BoardPageProps {
   editingColumnId: string | null
   isColumnOrganizerOpen: boolean
   isCreateTaskDialogOpen: boolean
+  isCommentSubmitting: boolean
   isTaskDetailLoading: boolean
   kanbanBoard: KanbanBoard
   reorderingColumnId: string | null
@@ -44,6 +48,7 @@ interface BoardPageProps {
   onCloseCreateTaskDialog: () => void
   onCloseTaskDetail: () => void
   onCloseTaskLoading: () => void
+  onCreateComment: (content: string) => void
   onCreateColumn: (formEvent: FormEvent<HTMLFormElement>) => void
   onCreateTask: (formEvent: FormEvent<HTMLFormElement>) => void
   onDeleteColumn: (column: KanbanColumn) => void
@@ -61,6 +66,8 @@ interface BoardPageProps {
 export function BoardPage({
   activeTask,
   canManageColumns,
+  comments,
+  commentsStatusMessage,
   companyMembers,
   creatingTaskColumnId,
   currentUserId,
@@ -68,6 +75,7 @@ export function BoardPage({
   editingColumnId,
   isColumnOrganizerOpen,
   isCreateTaskDialogOpen,
+  isCommentSubmitting,
   isTaskDetailLoading,
   kanbanBoard,
   reorderingColumnId,
@@ -76,6 +84,7 @@ export function BoardPage({
   onCloseCreateTaskDialog,
   onCloseTaskDetail,
   onCloseTaskLoading,
+  onCreateComment,
   onCreateColumn,
   onCreateTask,
   onDeleteColumn,
@@ -170,9 +179,13 @@ export function BoardPage({
 
       {selectedTaskDetail ? (
         <TaskDetailDialog
+          comments={comments}
+          commentsStatusMessage={commentsStatusMessage}
+          isCommentSubmitting={isCommentSubmitting}
           taskDetail={selectedTaskDetail}
           title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
           onClose={onCloseTaskDetail}
+          onCreateComment={onCreateComment}
         />
       ) : null}
 
