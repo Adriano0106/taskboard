@@ -414,6 +414,12 @@ textarea {
   overflow-y: hidden;
   padding: 4px 4px 20px;
   scroll-padding-inline: 4px;
+  cursor: grab;
+  user-select: none;
+
+  &.is-panning {
+    cursor: grabbing;
+  }
 }
 
 .column {
@@ -593,6 +599,7 @@ textarea {
   background: colors.$surface-panel;
   padding: 12px;
   cursor: pointer;
+  user-select: text;
   text-align: left;
   touch-action: none;
   transition:

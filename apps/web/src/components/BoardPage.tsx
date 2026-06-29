@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import type { FormEvent } from 'react'
+import { type FormEvent, type PointerEvent, useRef, useState } from 'react'
 import type {
   CompanyMember,
   KanbanBoard,
@@ -27,6 +27,16 @@ const taskDropAnimation = {
   duration: 260,
   easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
 }
+
+const kanbanPanIgnoredSelector = [
+  '.task-card',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'a',
+  '[role="button"]',
+].join(',')
 
 interface BoardPageProps {
   activeTask: KanbanTaskCard | null
@@ -113,6 +123,12 @@ export function BoardPage({
   onReorderColumn,
   onUpdateTask,
 }: BoardPageProps) {
+  const kanbanPanStateRef = useRef({
+    pointerId: -1,
+    scrollLeft: 0,
+    x: 0,
+  })
+  const [isKanbanPanning, setIsKanbanPanning] = useState(false)
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -120,6 +136,52 @@ export function BoardPage({
       },
     }),
   )
+
+  function handleKanbanPanStart(event: PointerEvent<HTMLElement>) {
+    if (event.button !== 0 || shouldIgnoreKanbanPan(event.target)) {
+      return
+    }
+
+    const kanbanPreview = event.currentTarget
+
+    kanbanPanStateRef.current = {
+      pointerId: event.pointerId,
+      scrollLeft: kanbanPreview.scrollLeft,
+      x: event.clientX,
+    }
+    kanbanPreview.setPointerCapture(event.pointerId)
+    setIsKanbanPanning(true)
+  }
+
+  function handleKanbanPanMove(event: PointerEvent<HTMLElement>) {
+    const panState = kanbanPanStateRef.current
+
+    if (!isKanbanPanning || event.pointerId !== panState.pointerId) {
+      return
+    }
+
+    event.preventDefault()
+    event.currentTarget.scrollLeft = panState.scrollLeft - (event.clientX - panState.x)
+  }
+
+  function handleKanbanPanEnd(event: PointerEvent<HTMLElement>) {
+    const panState = kanbanPanStateRef.current
+
+    if (event.pointerId !== panState.pointerId) {
+      return
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    kanbanPanStateRef.current = {
+      pointerId: -1,
+      scrollLeft: 0,
+      x: 0,
+    }
+    setIsKanbanPanning(false)
+  }
 
   return (
     <>
@@ -161,7 +223,14 @@ export function BoardPage({
         onDragCancel={onDragCancel}
         onDragEnd={onDragEnd}
       >
-        <section className="kanban-preview" aria-label="Quadro Kanban">
+        <section
+          className={isKanbanPanning ? 'kanban-preview is-panning' : 'kanban-preview'}
+          aria-label="Quadro Kanban"
+          onPointerCancel={handleKanbanPanEnd}
+          onPointerDown={handleKanbanPanStart}
+          onPointerMove={handleKanbanPanMove}
+          onPointerUp={handleKanbanPanEnd}
+        >
           {kanbanBoard.columns.map((column) => (
             <KanbanColumnView
               column={column}
@@ -224,4 +293,8 @@ export function BoardPage({
       ) : null}
     </>
   )
+}
+
+function shouldIgnoreKanbanPan(target: EventTarget) {
+  return target instanceof Element && Boolean(target.closest(kanbanPanIgnoredSelector))
 }
