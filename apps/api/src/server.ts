@@ -4,6 +4,9 @@ import { prisma } from './prisma.js'
 
 const app = await buildApp({
   jwtSecret: environment.JWT_SECRET,
+  platformAdminEmails: environment.PLATFORM_ADMIN_EMAILS.split(',')
+    .map((adminEmail) => adminEmail.trim().toLowerCase())
+    .filter(Boolean),
   webOrigin: environment.WEB_ORIGIN,
 })
 

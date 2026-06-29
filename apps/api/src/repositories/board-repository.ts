@@ -4,7 +4,11 @@ export {
   renameColumnInCompanyKanbanBoard,
   reorderColumnInCompanyKanbanBoard,
 } from './board-column-repository.js'
-export { getKanbanTaskDetail, getOrCreateCompanyKanbanBoard } from './board-query-repository.js'
+export {
+  getCompanyKanbanBoard,
+  getKanbanTaskDetail,
+  getOrCreateCompanyKanbanBoard,
+} from './board-query-repository.js'
 export {
   createTaskInCompanyKanbanBoard,
   moveTaskInCompanyKanbanBoard,
@@ -13,6 +17,7 @@ export { BoardError } from './board-types.js'
 export type {
   CreateKanbanTaskInput,
   DeleteKanbanColumnInput,
+  GetCompanyKanbanBoardInput,
   GetKanbanTaskDetailInput,
   KanbanBoard,
   KanbanColumn,

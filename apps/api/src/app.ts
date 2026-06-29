@@ -12,6 +12,7 @@ import { type UserRepository, createPrismaUserRepository } from './repositories/
 
 export interface BuildAppOptions {
   jwtSecret: string
+  platformAdminEmails?: string[]
   webOrigin: string
   prismaClient?: PrismaClient
   userRepository?: UserRepository
@@ -41,7 +42,10 @@ export async function buildApp(options: BuildAppOptions) {
     prismaClient,
   })
   await app.register(userRoutes)
-  await app.register(companyRoutes)
+  await app.register(companyRoutes, {
+    platformAdminEmails: options.platformAdminEmails ?? [],
+    prismaClient,
+  })
 
   return app
 }

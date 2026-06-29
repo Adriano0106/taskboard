@@ -76,6 +76,27 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('loads a company board by its public route ids', async () => {
+    const app = await createTestApp()
+    const { company, token } = await registerOwnerSession(app)
+    const currentBoard = await getCurrentBoard(app, token)
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/companies/${company.id}/boards/${currentBoard.id}/kanban`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      id: currentBoard.id,
+      key: 'TB',
+      name: 'TaskBoard',
+    })
+
+    await app.close()
+  })
+
   it('creates new tasks only in the first board column', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)
@@ -224,6 +245,7 @@ async function registerOwnerSession(app: FastifyInstance) {
 }
 
 interface TestBoard {
+  id: string
   columns: TestBoardColumn[]
 }
 

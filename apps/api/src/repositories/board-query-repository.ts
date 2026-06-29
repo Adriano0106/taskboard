@@ -1,7 +1,12 @@
 import type { PrismaClient } from '@prisma/client'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
 import { BoardError } from './board-types.js'
-import type { GetKanbanTaskDetailInput, KanbanBoard, KanbanTaskDetail } from './board-types.js'
+import type {
+  GetCompanyKanbanBoardInput,
+  GetKanbanTaskDetailInput,
+  KanbanBoard,
+  KanbanTaskDetail,
+} from './board-types.js'
 
 export async function getOrCreateCompanyKanbanBoard(
   prisma: PrismaClient,
@@ -120,6 +125,34 @@ export async function getOrCreateCompanyKanbanBoard(
   })
 
   return mapBoardToKanbanBoard(createdBoard)
+}
+
+export async function getCompanyKanbanBoard(
+  prisma: PrismaClient,
+  input: GetCompanyKanbanBoardInput,
+): Promise<KanbanBoard> {
+  const board = await prisma.board.findFirst({
+    where: {
+      id: input.boardId,
+      department: {
+        companyId: input.companyId,
+        company: {
+          members: {
+            some: {
+              userId: input.userId,
+            },
+          },
+        },
+      },
+    },
+    include: boardInclude,
+  })
+
+  if (!board) {
+    throw new BoardError('Board does not belong to the authenticated user')
+  }
+
+  return mapBoardToKanbanBoard(board)
 }
 
 export async function getKanbanTaskDetail(

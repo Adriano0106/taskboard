@@ -89,3 +89,9 @@ export interface GetKanbanTaskDetailInput {
   companyId: string
   taskId: string
 }
+
+export interface GetCompanyKanbanBoardInput {
+  companyId: string
+  userId: string
+  boardId: string
+}

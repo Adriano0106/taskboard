@@ -7,6 +7,7 @@ import {
   createColumnInCompanyKanbanBoard,
   createTaskInCompanyKanbanBoard,
   deleteColumnFromCompanyKanbanBoard,
+  getCompanyKanbanBoard,
   getKanbanTaskDetail,
   getOrCreateCompanyKanbanBoard,
   moveTaskInCompanyKanbanBoard,
@@ -41,6 +42,11 @@ const taskParamsSchema = z.object({
   taskId: z.string().min(1),
 })
 
+const companyBoardParamsSchema = z.object({
+  companyId: z.string().min(1),
+  boardId: z.string().min(1),
+})
+
 const columnParamsSchema = z.object({
   columnId: z.string().min(1),
 })
@@ -58,6 +64,37 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       userId: request.user.userId,
     })
   })
+
+  app.get(
+    '/companies/:companyId/boards/:boardId/kanban',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = companyBoardParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid board params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await getCompanyKanbanBoard(prismaClient, {
+          companyId: paramsValidation.data.companyId,
+          userId: request.user.userId,
+          boardId: paramsValidation.data.boardId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 
   app.post('/boards/current/tasks', { preHandler: authenticateRequest }, async (request, reply) => {
     const bodyValidation = createTaskBodySchema.safeParse(request.body)
