@@ -13,6 +13,13 @@ enum CompanyRole {
   MEMBER
 }
 
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model User {
   id           String          @id @default(cuid())
   name         String
@@ -106,6 +113,7 @@ model Task {
   sequenceNumber Int
   title          String
   description    String?
+  priority       TaskPriority @default(MEDIUM)
   position       Int
   board          Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
   boardId        String

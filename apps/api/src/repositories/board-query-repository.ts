@@ -188,6 +188,7 @@ export async function getKanbanTaskDetail(
     friendlyId: task.friendlyId,
     title: task.title,
     description: task.description,
+    priority: task.priority,
     boardName: task.board.name,
     columnName: task.column.name,
     assigneeName: task.assignee?.name ?? null,

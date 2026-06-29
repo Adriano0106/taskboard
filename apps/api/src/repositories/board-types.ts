@@ -2,6 +2,7 @@ export interface KanbanTaskCard {
   id: string
   friendlyId: string
   title: string
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   assigneeName: string | null
 }
 
@@ -25,6 +26,7 @@ export interface KanbanTaskDetail {
   friendlyId: string
   title: string
   description: string | null
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   boardName: string
   columnName: string
   assigneeName: string | null
@@ -44,6 +46,9 @@ export interface CreateKanbanTaskInput {
   userId: string
   columnId: string
   title: string
+  description?: string | null
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  assigneeId?: string | null
 }
 
 export interface MoveKanbanTaskInput {

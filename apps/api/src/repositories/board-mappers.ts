@@ -41,6 +41,7 @@ export function mapBoardToKanbanBoard(board: BoardWithKanbanRelations | null): K
         id: task.id,
         friendlyId: task.friendlyId,
         title: task.title,
+        priority: task.priority,
         assigneeName: task.assignee?.name ?? null,
       })),
     })),

@@ -161,6 +161,52 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('creates tasks with description and priority metadata', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa urgente com detalhes',
+        description: 'Descricao inicial da tarefa',
+        priority: 'URGENT',
+        columnId: firstColumn.id,
+      },
+    })
+
+    expect(createdTaskResponse.statusCode).toBe(201)
+
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find(
+        (task: { title: string }) => task.title === 'Tarefa urgente com detalhes',
+      )
+
+    expect(createdTask).toMatchObject({
+      title: 'Tarefa urgente com detalhes',
+      priority: 'URGENT',
+    })
+
+    const detailResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(detailResponse.statusCode).toBe(200)
+    expect(detailResponse.json()).toMatchObject({
+      description: 'Descricao inicial da tarefa',
+      priority: 'URGENT',
+    })
+
+    await app.close()
+  })
+
   it('reorders columns for company owners', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)

@@ -19,6 +19,9 @@ import { authenticateRequest } from '../auth-guard.js'
 const createTaskBodySchema = z.object({
   title: z.string().trim().min(2),
   columnId: z.string().min(1),
+  description: z.string().trim().optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+  assigneeId: z.string().min(1).optional(),
 })
 
 const moveTaskBodySchema = z.object({
@@ -118,6 +121,9 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
         userId: request.user.userId,
         columnId: bodyValidation.data.columnId,
         title: bodyValidation.data.title,
+        description: bodyValidation.data.description,
+        priority: bodyValidation.data.priority,
+        assigneeId: bodyValidation.data.assigneeId,
       })
 
       return reply.status(201).send(board)

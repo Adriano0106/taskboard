@@ -24,6 +24,20 @@ export async function createTaskInCompanyKanbanBoard(
   }
 
   const updatedBoard = await prisma.$transaction(async (transaction) => {
+    const assigneeId = input.assigneeId ?? input.userId
+    const assigneeMembership = await transaction.companyMember.findUnique({
+      where: {
+        userId_companyId: {
+          userId: assigneeId,
+          companyId: input.companyId,
+        },
+      },
+    })
+
+    if (!assigneeMembership) {
+      throw new BoardError('Assignee does not belong to the current company')
+    }
+
     const boardWithNextNumber = await transaction.board.update({
       where: {
         id: board.id,
@@ -50,10 +64,12 @@ export async function createTaskInCompanyKanbanBoard(
         friendlyId: `${board.key}-${sequenceNumber}`,
         sequenceNumber,
         title: input.title.trim(),
+        description: input.description?.trim() || null,
+        priority: input.priority ?? 'MEDIUM',
         boardId: board.id,
         columnId: input.columnId,
         position: (lastTaskInColumn?.position ?? 0) + 1,
-        assigneeId: input.userId,
+        assigneeId,
       },
     })
 
