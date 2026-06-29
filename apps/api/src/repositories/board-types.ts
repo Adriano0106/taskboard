@@ -49,6 +49,21 @@ export interface KanbanTaskWatcher {
   createdAt: string
 }
 
+export type TaskActivityType =
+  | 'CREATED'
+  | 'COMMENTED'
+  | 'MOVED'
+  | 'PRIORITY_CHANGED'
+  | 'ASSIGNEE_CHANGED'
+
+export interface KanbanTaskActivity {
+  id: string
+  type: TaskActivityType
+  actorName: string
+  metadata: Record<string, string | null>
+  createdAt: string
+}
+
 export class BoardError extends Error {
   constructor(message: string) {
     super(message)
@@ -143,6 +158,12 @@ export interface CreateTaskCommentInput extends TaskCommentInput {
 }
 
 export interface TaskWatcherInput {
+  companyId: string
+  taskId: string
+  userId: string
+}
+
+export interface TaskActivityInput {
   companyId: string
   taskId: string
   userId: string

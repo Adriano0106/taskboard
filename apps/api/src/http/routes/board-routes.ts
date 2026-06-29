@@ -12,6 +12,7 @@ import {
   getCompanyKanbanBoard,
   getKanbanTaskDetail,
   getOrCreateCompanyKanbanBoard,
+  listTaskActivities,
   listTaskComments,
   listTaskWatchers,
   moveTaskInCompanyKanbanBoard,
@@ -224,6 +225,37 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       throw error
     }
   })
+
+  app.get(
+    '/tasks/:taskId/activities',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = taskParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await listTaskActivities(prismaClient, {
+          companyId: request.user.companyId,
+          taskId: paramsValidation.data.taskId,
+          userId: request.user.userId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 
   app.get(
     '/tasks/:taskId/comments',

@@ -24,6 +24,7 @@ import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { ProfilePage } from './components/ProfilePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
+import { useTaskActivities } from './hooks/useTaskActivities.js'
 import { useTaskComments } from './hooks/useTaskComments.js'
 import { useTaskWatchers } from './hooks/useTaskWatchers.js'
 import { useWorkspaceData } from './hooks/useWorkspaceData.js'
@@ -76,6 +77,10 @@ export function App() {
     session,
   })
   const { addComment, comments, commentsStatusMessage, isCommentSubmitting } = useTaskComments({
+    taskId: selectedTaskDetail?.id ?? null,
+    token: session?.token ?? null,
+  })
+  const { activities, activitiesStatusMessage, reloadActivities } = useTaskActivities({
     taskId: selectedTaskDetail?.id ?? null,
     token: session?.token ?? null,
   })
@@ -341,6 +346,7 @@ export function App() {
 
       setKanbanBoard(updatedTask.board)
       setSelectedTaskDetail(updatedTask.task)
+      await reloadActivities()
     } catch (error) {
       setKanbanStatusMessage(
         error instanceof Error ? error.message : 'Nao foi possivel atualizar a task',
@@ -348,6 +354,11 @@ export function App() {
     } finally {
       setUpdatingTaskId(null)
     }
+  }
+
+  async function handleCreateComment(content: string) {
+    await addComment(content)
+    await reloadActivities()
   }
 
   function handleOpenTask(taskId: string) {
@@ -453,6 +464,9 @@ export function App() {
       })
 
       setKanbanBoard(updatedBoard)
+      if (selectedTaskDetail?.id === activeTaskId) {
+        await reloadActivities()
+      }
     } catch (error) {
       setKanbanBoard(kanbanBoard)
       setKanbanStatusMessage(
@@ -498,6 +512,8 @@ export function App() {
         {shouldShowKanbanBoard && kanbanBoard ? (
           <BoardPage
             activeTask={activeTask}
+            activities={activities}
+            activitiesStatusMessage={activitiesStatusMessage}
             canManageColumns={canManageColumns}
             comments={comments}
             commentsStatusMessage={commentsStatusMessage}
@@ -522,7 +538,7 @@ export function App() {
             onCloseCreateTaskDialog={() => setIsCreateTaskDialogOpen(false)}
             onCloseTaskDetail={handleCloseTaskDetail}
             onCloseTaskLoading={() => setIsTaskDetailLoading(false)}
-            onCreateComment={addComment}
+            onCreateComment={handleCreateComment}
             onCreateColumn={handleCreateColumn}
             onCreateTask={handleCreateTask}
             onDeleteColumn={handleDeleteColumn}

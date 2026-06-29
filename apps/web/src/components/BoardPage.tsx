@@ -13,6 +13,7 @@ import type {
   CompanyMember,
   KanbanBoard,
   KanbanColumn,
+  KanbanTaskActivity,
   KanbanTaskCard,
   KanbanTaskComment,
   KanbanTaskDetail,
@@ -40,6 +41,8 @@ const kanbanPanIgnoredSelector = [
 
 interface BoardPageProps {
   activeTask: KanbanTaskCard | null
+  activities: KanbanTaskActivity[]
+  activitiesStatusMessage: string
   canManageColumns: boolean
   comments: KanbanTaskComment[]
   commentsStatusMessage: string
@@ -83,6 +86,8 @@ interface BoardPageProps {
 
 export function BoardPage({
   activeTask,
+  activities,
+  activitiesStatusMessage,
   canManageColumns,
   comments,
   commentsStatusMessage,
@@ -263,6 +268,8 @@ export function BoardPage({
 
       {selectedTaskDetail ? (
         <TaskDetailDialog
+          activities={activities}
+          activitiesStatusMessage={activitiesStatusMessage}
           companyMembers={companyMembers}
           comments={comments}
           commentsStatusMessage={commentsStatusMessage}

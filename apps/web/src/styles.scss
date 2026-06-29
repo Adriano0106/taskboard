@@ -744,6 +744,7 @@ textarea {
 }
 
 .task-watchers,
+.task-activities,
 .task-comments {
   display: grid;
   gap: 14px;
@@ -780,6 +781,42 @@ textarea {
 .task-watchers-list {
   display: grid;
   gap: 8px;
+}
+
+.task-activities-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-activity {
+  display: grid;
+  gap: 6px;
+  border-left: 3px solid colors.$brand-primary;
+  background: colors.$surface-soft;
+  padding: 10px 12px;
+
+  div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    line-height: 1.4;
+  }
+
+  strong {
+    color: colors.$text-strong;
+  }
+
+  span,
+  small {
+    color: colors.$text-muted;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: colors.$text-default;
+    line-height: 1.45;
+  }
 }
 
 .task-watcher {

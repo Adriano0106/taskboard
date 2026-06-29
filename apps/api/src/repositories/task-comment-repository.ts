@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { BoardError } from './board-types.js'
 import type { CreateTaskCommentInput, KanbanTaskComment, TaskCommentInput } from './board-types.js'
+import { createTaskActivity } from './task-activity-writer.js'
 
 export async function listTaskComments(
   prisma: PrismaClient,
@@ -34,15 +35,28 @@ export async function createTaskComment(
 ): Promise<KanbanTaskComment> {
   await assertTaskBelongsToCompany(prisma, input)
 
-  const comment = await prisma.taskComment.create({
-    data: {
-      content: input.content.trim(),
+  const comment = await prisma.$transaction(async (transaction) => {
+    const createdComment = await transaction.taskComment.create({
+      data: {
+        content: input.content.trim(),
+        taskId: input.taskId,
+        authorId: input.userId,
+      },
+      include: {
+        author: true,
+      },
+    })
+
+    await createTaskActivity(transaction, {
+      actorId: input.userId,
       taskId: input.taskId,
-      authorId: input.userId,
-    },
-    include: {
-      author: true,
-    },
+      type: 'COMMENTED',
+      metadata: {
+        commentId: createdComment.id,
+      },
+    })
+
+    return createdComment
   })
 
   return {

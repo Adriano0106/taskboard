@@ -77,6 +77,21 @@ export interface KanbanTaskWatcher {
   createdAt: string
 }
 
+export type TaskActivityType =
+  | 'CREATED'
+  | 'COMMENTED'
+  | 'MOVED'
+  | 'PRIORITY_CHANGED'
+  | 'ASSIGNEE_CHANGED'
+
+export interface KanbanTaskActivity {
+  id: string
+  type: TaskActivityType
+  actorName: string
+  metadata: Record<string, string | null>
+  createdAt: string
+}
+
 export interface CompanyWorkspace {
   id: string
   name: string
@@ -278,6 +293,18 @@ export async function getTaskDetail(token: string, taskId: string): Promise<Kanb
 
 export async function getTaskComments(token: string, taskId: string): Promise<KanbanTaskComment[]> {
   return sendRequest<KanbanTaskComment[]>(`/tasks/${taskId}/comments`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function getTaskActivities(
+  token: string,
+  taskId: string,
+): Promise<KanbanTaskActivity[]> {
+  return sendRequest<KanbanTaskActivity[]>(`/tasks/${taskId}/activities`, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,

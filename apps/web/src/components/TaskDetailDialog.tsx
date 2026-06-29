@@ -1,11 +1,13 @@
 import type { FormEvent } from 'react'
 import type {
   CompanyMember,
+  KanbanTaskActivity,
   KanbanTaskComment,
   KanbanTaskDetail,
   KanbanTaskWatcher,
 } from '../api.js'
 import { formatDateTime } from '../kanban-helpers.js'
+import { TaskActivities } from './TaskActivities.js'
 import { TaskComments } from './TaskComments.js'
 import { TaskWatchers } from './TaskWatchers.js'
 
@@ -17,6 +19,8 @@ const priorityLabels = {
 }
 
 interface TaskDetailDialogProps {
+  activities?: KanbanTaskActivity[]
+  activitiesStatusMessage?: string
   companyMembers?: CompanyMember[]
   onClose: () => void
   comments?: KanbanTaskComment[]
@@ -35,6 +39,8 @@ interface TaskDetailDialogProps {
 }
 
 export function TaskDetailDialog({
+  activities = [],
+  activitiesStatusMessage = '',
   companyMembers = [],
   comments = [],
   commentsStatusMessage = '',
@@ -152,6 +158,9 @@ export function TaskDetailDialog({
             onAddWatcher={onAddWatcher}
             onRemoveWatcher={onRemoveWatcher}
           />
+        ) : null}
+        {taskDetail ? (
+          <TaskActivities activities={activities} statusMessage={activitiesStatusMessage} />
         ) : null}
         {taskDetail && onCreateComment ? (
           <TaskComments

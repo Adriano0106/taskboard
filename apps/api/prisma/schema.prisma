@@ -20,6 +20,14 @@ enum TaskPriority {
   URGENT
 }
 
+enum TaskActivityType {
+  CREATED
+  COMMENTED
+  MOVED
+  PRIORITY_CHANGED
+  ASSIGNEE_CHANGED
+}
+
 model User {
   id           String          @id @default(cuid())
   name         String
@@ -30,6 +38,7 @@ model User {
   assignedTasks Task[]         @relation("TaskAssignee")
   taskComments TaskComment[]
   taskWatchers  TaskWatcher[]
+  taskActivities TaskActivity[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 }
@@ -125,6 +134,7 @@ model Task {
   assigneeId     String?
   comments       TaskComment[]
   watchers       TaskWatcher[]
+  activities     TaskActivity[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -156,4 +166,17 @@ model TaskWatcher {
 
   @@unique([taskId, userId])
   @@index([userId])
+}
+
+model TaskActivity {
+  id        String           @id @default(cuid())
+  type      TaskActivityType
+  metadata  Json?
+  task      Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  actor     User             @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  actorId   String
+  createdAt DateTime         @default(now())
+
+  @@index([taskId, createdAt])
 }

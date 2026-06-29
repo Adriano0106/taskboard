@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
 import { getKanbanTaskDetail, getOrCreateCompanyKanbanBoard } from './board-query-repository.js'
 import { BoardError } from './board-types.js'
+import { createTaskActivity } from './task-activity-writer.js'
 import type {
   CreateKanbanTaskInput,
   KanbanBoard,
@@ -65,7 +66,7 @@ export async function createTaskInCompanyKanbanBoard(
       },
     })
 
-    await transaction.task.create({
+    const task = await transaction.task.create({
       data: {
         friendlyId: `${board.key}-${sequenceNumber}`,
         sequenceNumber,
@@ -76,6 +77,15 @@ export async function createTaskInCompanyKanbanBoard(
         columnId: input.columnId,
         position: (lastTaskInColumn?.position ?? 0) + 1,
         assigneeId,
+      },
+    })
+
+    await createTaskActivity(transaction, {
+      actorId: input.userId,
+      taskId: task.id,
+      type: 'CREATED',
+      metadata: {
+        title: task.title,
       },
     })
 
@@ -99,6 +109,9 @@ export async function moveTaskInCompanyKanbanBoard(
     userId: input.userId,
   })
   const targetColumn = board.columns.find((column) => column.id === input.columnId)
+  const sourceColumn = board.columns.find((column) =>
+    column.tasks.some((task) => task.id === input.taskId),
+  )
   const movingTask = board.columns
     .flatMap((column) => column.tasks)
     .find((task) => task.id === input.taskId)
@@ -150,6 +163,16 @@ export async function moveTaskInCompanyKanbanBoard(
       }
     }
 
+    await createTaskActivity(transaction, {
+      actorId: input.userId,
+      taskId: input.taskId,
+      type: 'MOVED',
+      metadata: {
+        fromColumn: sourceColumn?.name ?? null,
+        toColumn: targetColumn.name,
+      },
+    })
+
     return transaction.board.findUniqueOrThrow({
       where: {
         id: board.id,
@@ -175,7 +198,10 @@ export async function updateTaskInCompanyKanbanBoard(
       },
     },
     select: {
+      assignee: true,
+      assigneeId: true,
       boardId: true,
+      priority: true,
     },
   })
 
@@ -198,21 +224,53 @@ export async function updateTaskInCompanyKanbanBoard(
     }
   }
 
-  await prisma.task.update({
-    where: {
-      id: input.taskId,
-    },
-    data: {
-      title: input.title.trim(),
-      description: input.description?.trim() || null,
-      priority: input.priority,
-      assigneeId: input.assigneeId ?? null,
-    },
+  const updatedAssigneeId = input.assigneeId ?? null
+  const updatedTask = await prisma.$transaction(async (transaction) => {
+    const task = await transaction.task.update({
+      where: {
+        id: input.taskId,
+      },
+      data: {
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        priority: input.priority,
+        assigneeId: updatedAssigneeId,
+      },
+      include: {
+        assignee: true,
+      },
+    })
+
+    if (existingTask.priority !== input.priority) {
+      await createTaskActivity(transaction, {
+        actorId: input.userId,
+        taskId: input.taskId,
+        type: 'PRIORITY_CHANGED',
+        metadata: {
+          fromPriority: existingTask.priority,
+          toPriority: input.priority,
+        },
+      })
+    }
+
+    if (existingTask.assigneeId !== updatedAssigneeId) {
+      await createTaskActivity(transaction, {
+        actorId: input.userId,
+        taskId: input.taskId,
+        type: 'ASSIGNEE_CHANGED',
+        metadata: {
+          fromAssignee: existingTask.assignee?.name ?? null,
+          toAssignee: task.assignee?.name ?? null,
+        },
+      })
+    }
+
+    return task
   })
 
   const board = await prisma.board.findUniqueOrThrow({
     where: {
-      id: existingTask.boardId,
+      id: updatedTask.boardId,
     },
     include: boardInclude,
   })

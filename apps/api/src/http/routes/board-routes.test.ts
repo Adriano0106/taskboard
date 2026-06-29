@@ -363,6 +363,99 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('records and lists task activity history', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+    const secondColumn = getBoardColumn(board, 1)
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa com historico',
+        priority: 'LOW',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find((task: { title: string }) => task.title === 'Tarefa com historico')
+
+    await app.inject({
+      method: 'POST',
+      url: `/tasks/${createdTask.id}/comments`,
+      headers: createAuthHeader(token),
+      payload: {
+        content: 'Comentario para historico',
+      },
+    })
+    await app.inject({
+      method: 'PATCH',
+      url: `/tasks/${createdTask.id}`,
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Tarefa com historico editada',
+        priority: 'URGENT',
+        assigneeId: null,
+      },
+    })
+    await app.inject({
+      method: 'PATCH',
+      url: `/tasks/${createdTask.id}/move`,
+      headers: createAuthHeader(token),
+      payload: {
+        columnId: secondColumn.id,
+        position: 1,
+      },
+    })
+    const activitiesResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/activities`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(activitiesResponse.statusCode).toBe(200)
+    expect(activitiesResponse.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'CREATED',
+          actorName: 'Board Test Owner',
+          metadata: expect.objectContaining({
+            title: 'Tarefa com historico',
+          }),
+        }),
+        expect.objectContaining({
+          type: 'COMMENTED',
+        }),
+        expect.objectContaining({
+          type: 'PRIORITY_CHANGED',
+          metadata: expect.objectContaining({
+            fromPriority: 'LOW',
+            toPriority: 'URGENT',
+          }),
+        }),
+        expect.objectContaining({
+          type: 'ASSIGNEE_CHANGED',
+          metadata: expect.objectContaining({
+            fromAssignee: 'Board Test Owner',
+            toAssignee: null,
+          }),
+        }),
+        expect.objectContaining({
+          type: 'MOVED',
+          metadata: expect.objectContaining({
+            fromColumn: 'A fazer',
+            toColumn: 'Em progresso',
+          }),
+        }),
+      ]),
+    )
+
+    await app.close()
+  })
+
   it('reorders columns for company owners', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)
