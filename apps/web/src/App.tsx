@@ -1,13 +1,4 @@
-import {
-  DndContext,
-  type DragEndEvent,
-  type DragOverEvent,
-  DragOverlay,
-  type DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type AuthSession,
@@ -34,26 +25,22 @@ import {
   reorderColumn,
 } from './api.js'
 import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
-import { ColumnOrganizerDialog } from './components/ColumnOrganizerDialog.js'
+import { AuthPage } from './components/AuthPage.js'
+import { BoardPage } from './components/BoardPage.js'
 import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
-import { KanbanColumnView, TaskCardPreview } from './components/KanbanColumnView.js'
-import { TaskDetailDialog } from './components/TaskDetailDialog.js'
+import { WorkspaceHeader } from './components/WorkspaceHeader.js'
+import { useAppNavigation } from './hooks/useAppNavigation.js'
 import { areTaskLocationsEqual, findDropLocation, findTaskLocation } from './kanban-helpers.js'
-import { createBoardPath, createCompanyPath, createTaskPath, parseAppRoute } from './routing.js'
+import { createBoardPath, createTaskPath } from './routing.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
 
 type AuthMode = 'login' | 'register'
 
-const taskDropAnimation = {
-  duration: 180,
-  easing: 'cubic-bezier(0.2, 0, 0, 1)',
-}
-
 export function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
-  const [currentPath, setCurrentPath] = useState(() => window.location.pathname)
+  const { currentRoute, navigateTo } = useAppNavigation()
   const [companyWorkspace, setCompanyWorkspace] = useState<CompanyWorkspace | null>(null)
   const [platformCompanies, setPlatformCompanies] = useState<PlatformCompanySummary[]>([])
   const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
@@ -72,26 +59,6 @@ export function App() {
   const [statusMessage, setStatusMessage] = useState('')
   const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
-  const currentRoute = useMemo(() => parseAppRoute(currentPath), [currentPath])
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-  )
-
-  useEffect(() => {
-    function handlePopState() {
-      setCurrentPath(window.location.pathname)
-    }
-
-    window.addEventListener('popstate', handlePopState)
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-    }
-  }, [])
 
   useEffect(() => {
     if (!session?.token) {
@@ -249,7 +216,7 @@ export function App() {
     return () => {
       shouldIgnoreResult = true
     }
-  }, [session?.token, session?.company.id, currentRoute])
+  }, [session?.token, session?.company.id, currentRoute, navigateTo])
 
   useEffect(() => {
     if (!session?.token || currentRoute.type !== 'task') {
@@ -296,23 +263,8 @@ export function App() {
     [],
   )
   const canManageColumns = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
-  const visibleKanbanBoard = kanbanBoard
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
-
-  function navigateTo(path: string, options: { replace?: boolean } = {}) {
-    if (window.location.pathname === path) {
-      return
-    }
-
-    if (options.replace) {
-      window.history.replaceState(null, '', path)
-    } else {
-      window.history.pushState(null, '', path)
-    }
-
-    setCurrentPath(path)
-  }
 
   async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
@@ -617,34 +569,12 @@ export function App() {
   if (session) {
     return (
       <main className="app-shell">
-        <section className="workspace">
-          <div>
-            <p className="eyebrow">TaskBoard</p>
-            <h1>{companyWorkspace?.name ?? session.company.name}</h1>
-            <p className="muted">
-              Sessao ativa para {session.user.name} com perfil {session.company.role}.
-            </p>
-          </div>
-          <div className="workspace-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => navigateTo(createCompanyPath(session.company.id))}
-            >
-              Empresa
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => navigateTo('/admin/companies')}
-            >
-              Admin geral
-            </button>
-            <button type="button" className="secondary-button" onClick={handleLogout}>
-              Sair
-            </button>
-          </div>
-        </section>
+        <WorkspaceHeader
+          companyWorkspace={companyWorkspace}
+          session={session}
+          onLogout={handleLogout}
+          onNavigate={navigateTo}
+        />
 
         {isKanbanLoading ? <p className="surface-message">Carregando quadro...</p> : null}
 
@@ -669,105 +599,30 @@ export function App() {
         ) : null}
 
         {shouldShowKanbanBoard && kanbanBoard ? (
-          <>
-            <section className="board-header">
-              <div>
-                <p className="eyebrow">{visibleKanbanBoard?.key}</p>
-                <h2>{visibleKanbanBoard?.name}</h2>
-                {visibleKanbanBoard?.description ? (
-                  <p className="muted">{visibleKanbanBoard.description}</p>
-                ) : null}
-              </div>
-              <div className="board-actions">
-                <form className="task-create-form" onSubmit={handleCreateTask}>
-                  <input
-                    name="title"
-                    type="text"
-                    minLength={2}
-                    placeholder="Adicionar nova tarefa"
-                    aria-label="Adicionar nova tarefa"
-                    disabled={!visibleKanbanBoard?.columns[0] || creatingTaskColumnId !== null}
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="secondary-button"
-                    disabled={!visibleKanbanBoard?.columns[0] || creatingTaskColumnId !== null}
-                  >
-                    {creatingTaskColumnId ? 'Criando...' : 'Adicionar nova tarefa'}
-                  </button>
-                </form>
-                {canManageColumns ? (
-                  <div className="column-management">
-                    <form className="column-create-form" onSubmit={handleCreateColumn}>
-                      <input
-                        name="name"
-                        type="text"
-                        minLength={2}
-                        placeholder="Nova coluna"
-                        required
-                      />
-                      <button type="submit" className="secondary-button">
-                        Adicionar coluna
-                      </button>
-                    </form>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => setIsColumnOrganizerOpen(true)}
-                    >
-                      Reorganizar colunas
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            <DndContext
-              sensors={sensors}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragCancel={handleDragCancel}
-              onDragEnd={handleDragEnd}
-            >
-              <section className="kanban-preview" aria-label="Quadro Kanban">
-                {visibleKanbanBoard?.columns.map((column) => (
-                  <KanbanColumnView
-                    column={column}
-                    canManageColumns={canManageColumns}
-                    editingColumnId={editingColumnId}
-                    key={column.id}
-                    onOpenTask={handleOpenTask}
-                    onRenameColumn={handleRenameColumn}
-                  />
-                ))}
-              </section>
-              <DragOverlay dropAnimation={taskDropAnimation}>
-                {activeTask ? <TaskCardPreview task={activeTask} /> : null}
-              </DragOverlay>
-            </DndContext>
-          </>
-        ) : null}
-
-        {isTaskDetailLoading ? (
-          <TaskDetailDialog title="Carregando task" onClose={() => setIsTaskDetailLoading(false)} />
-        ) : null}
-
-        {selectedTaskDetail ? (
-          <TaskDetailDialog
-            taskDetail={selectedTaskDetail}
-            title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
-            onClose={handleCloseTaskDetail}
-          />
-        ) : null}
-
-        {isColumnOrganizerOpen && kanbanBoard ? (
-          <ColumnOrganizerDialog
-            columns={kanbanBoard.columns}
+          <BoardPage
+            activeTask={activeTask}
+            canManageColumns={canManageColumns}
+            creatingTaskColumnId={creatingTaskColumnId}
             deletingColumnId={deletingColumnId}
+            editingColumnId={editingColumnId}
+            isColumnOrganizerOpen={isColumnOrganizerOpen}
+            isTaskDetailLoading={isTaskDetailLoading}
+            kanbanBoard={kanbanBoard}
             reorderingColumnId={reorderingColumnId}
-            onClose={() => setIsColumnOrganizerOpen(false)}
+            selectedTaskDetail={selectedTaskDetail}
+            onCloseColumnOrganizer={() => setIsColumnOrganizerOpen(false)}
+            onCloseTaskDetail={handleCloseTaskDetail}
+            onCloseTaskLoading={() => setIsTaskDetailLoading(false)}
+            onCreateColumn={handleCreateColumn}
+            onCreateTask={handleCreateTask}
             onDeleteColumn={handleDeleteColumn}
+            onDragCancel={handleDragCancel}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDragStart={handleDragStart}
+            onOpenColumnOrganizer={() => setIsColumnOrganizerOpen(true)}
+            onOpenTask={handleOpenTask}
+            onRenameColumn={handleRenameColumn}
             onReorderColumn={handleReorderColumn}
           />
         ) : null}
@@ -776,61 +631,13 @@ export function App() {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-panel">
-        <div>
-          <p className="eyebrow">TaskBoard</p>
-          <h1>{authModeLabels[authMode]}</h1>
-          <p className="muted">Acesse sua empresa e prepare seus quadros de trabalho.</p>
-        </div>
-
-        <div className="mode-switch" aria-label="Modo de autenticacao">
-          <button
-            type="button"
-            className={authMode === 'login' ? 'active' : ''}
-            onClick={() => setAuthMode('login')}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            className={authMode === 'register' ? 'active' : ''}
-            onClick={() => setAuthMode('register')}
-          >
-            Criar conta
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          {authMode === 'register' ? (
-            <>
-              <label>
-                Nome
-                <input name="name" type="text" minLength={2} required />
-              </label>
-              <label>
-                Empresa
-                <input name="companyName" type="text" minLength={2} required />
-              </label>
-            </>
-          ) : null}
-
-          <label>
-            Email
-            <input name="email" type="email" required />
-          </label>
-          <label>
-            Senha
-            <input name="password" type="password" minLength={8} required />
-          </label>
-
-          {statusMessage ? <p className="error-message">{statusMessage}</p> : null}
-
-          <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? 'Enviando...' : authModeLabels[authMode]}
-          </button>
-        </form>
-      </section>
-    </main>
+    <AuthPage
+      authMode={authMode}
+      authModeLabels={authModeLabels}
+      isSubmitting={isSubmitting}
+      statusMessage={statusMessage}
+      onAuthModeChange={setAuthMode}
+      onSubmit={handleSubmit}
+    />
   )
 }
