@@ -2,22 +2,13 @@ import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type AuthSession,
-  type CompanyWorkspace,
   type KanbanBoard,
   type KanbanColumn,
   type KanbanTaskCard,
-  type KanbanTaskDetail,
-  type PlatformCompanySummary,
   createColumn,
   createTask,
   deleteColumn,
-  getCompanyKanbanBoard,
-  getCompanyWorkspace,
-  getCurrentCompanyWorkspace,
-  getCurrentKanbanBoard,
   getCurrentSession,
-  getPlatformCompanies,
-  getTaskDetail,
   login,
   moveTask,
   registerAccount,
@@ -30,6 +21,7 @@ import { BoardPage } from './components/BoardPage.js'
 import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
+import { useWorkspaceData } from './hooks/useWorkspaceData.js'
 import { areTaskLocationsEqual, findDropLocation, findTaskLocation } from './kanban-helpers.js'
 import { createBoardPath, createTaskPath } from './routing.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
@@ -41,24 +33,35 @@ export function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
   const { currentRoute, navigateTo } = useAppNavigation()
-  const [companyWorkspace, setCompanyWorkspace] = useState<CompanyWorkspace | null>(null)
-  const [platformCompanies, setPlatformCompanies] = useState<PlatformCompanySummary[]>([])
-  const [kanbanBoard, setKanbanBoard] = useState<KanbanBoard | null>(null)
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
-  const [selectedTaskDetail, setSelectedTaskDetail] = useState<KanbanTaskDetail | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isKanbanLoading, setIsKanbanLoading] = useState(false)
-  const [isCompanyLoading, setIsCompanyLoading] = useState(false)
-  const [isAdminCompaniesLoading, setIsAdminCompaniesLoading] = useState(false)
-  const [isTaskDetailLoading, setIsTaskDetailLoading] = useState(false)
   const [isColumnOrganizerOpen, setIsColumnOrganizerOpen] = useState(false)
   const [creatingTaskColumnId, setCreatingTaskColumnId] = useState<string | null>(null)
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
   const [deletingColumnId, setDeletingColumnId] = useState<string | null>(null)
   const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
-  const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
+  const {
+    companyWorkspace,
+    isAdminCompaniesLoading,
+    isCompanyLoading,
+    isKanbanLoading,
+    isTaskDetailLoading,
+    kanbanBoard,
+    kanbanStatusMessage,
+    platformCompanies,
+    selectedTaskDetail,
+    resetWorkspaceData,
+    setIsTaskDetailLoading,
+    setKanbanBoard,
+    setKanbanStatusMessage,
+    setSelectedTaskDetail,
+  } = useWorkspaceData({
+    currentRoute,
+    navigateTo,
+    session,
+  })
 
   useEffect(() => {
     if (!session?.token) {
@@ -78,182 +81,9 @@ export function App() {
       .catch(() => {
         localStorage.removeItem(sessionStorageKey)
         setSession(null)
-        setKanbanBoard(null)
+        resetWorkspaceData()
       })
-  }, [session?.token])
-
-  useEffect(() => {
-    if (!session?.token) {
-      return
-    }
-
-    const routeCompanyId =
-      currentRoute.type === 'company' ||
-      currentRoute.type === 'board' ||
-      currentRoute.type === 'task'
-        ? currentRoute.companyId
-        : session.company.id
-    let shouldIgnoreResult = false
-
-    setIsCompanyLoading(true)
-    setKanbanStatusMessage('')
-
-    const workspaceRequest =
-      currentRoute.type === 'home'
-        ? getCurrentCompanyWorkspace(session.token)
-        : getCompanyWorkspace(session.token, routeCompanyId)
-
-    workspaceRequest
-      .then((workspace) => {
-        if (!shouldIgnoreResult) {
-          setCompanyWorkspace(workspace)
-        }
-      })
-      .catch((error) => {
-        if (!shouldIgnoreResult) {
-          setKanbanStatusMessage(
-            error instanceof Error ? error.message : 'Nao foi possivel carregar a empresa',
-          )
-        }
-      })
-      .finally(() => {
-        if (!shouldIgnoreResult) {
-          setIsCompanyLoading(false)
-        }
-      })
-
-    return () => {
-      shouldIgnoreResult = true
-    }
-  }, [session?.token, session?.company.id, currentRoute])
-
-  useEffect(() => {
-    if (!session?.token) {
-      return
-    }
-
-    if (currentRoute.type !== 'adminCompanies') {
-      setPlatformCompanies([])
-      return
-    }
-
-    let shouldIgnoreResult = false
-
-    setIsAdminCompaniesLoading(true)
-    setKanbanStatusMessage('')
-
-    getPlatformCompanies(session.token)
-      .then((companies) => {
-        if (!shouldIgnoreResult) {
-          setPlatformCompanies(companies)
-        }
-      })
-      .catch((error) => {
-        if (!shouldIgnoreResult) {
-          setKanbanStatusMessage(
-            error instanceof Error ? error.message : 'Nao foi possivel carregar as empresas',
-          )
-        }
-      })
-      .finally(() => {
-        if (!shouldIgnoreResult) {
-          setIsAdminCompaniesLoading(false)
-        }
-      })
-
-    return () => {
-      shouldIgnoreResult = true
-    }
-  }, [session?.token, currentRoute])
-
-  useEffect(() => {
-    if (!session?.token) {
-      return
-    }
-
-    if (currentRoute.type === 'adminCompanies' || currentRoute.type === 'company') {
-      setKanbanBoard(null)
-      return
-    }
-
-    let shouldIgnoreResult = false
-
-    setIsKanbanLoading(true)
-    setKanbanStatusMessage('')
-
-    const boardRequest =
-      currentRoute.type === 'board' || currentRoute.type === 'task'
-        ? getCompanyKanbanBoard(session.token, currentRoute.companyId, currentRoute.boardId)
-        : getCurrentKanbanBoard(session.token)
-
-    boardRequest
-      .then((board) => {
-        if (shouldIgnoreResult) {
-          return
-        }
-
-        setKanbanBoard(board)
-
-        if (currentRoute.type === 'home') {
-          navigateTo(createBoardPath(session.company.id, board.id), {
-            replace: true,
-          })
-        }
-      })
-      .catch((error) => {
-        if (!shouldIgnoreResult) {
-          setKanbanStatusMessage(
-            error instanceof Error ? error.message : 'Nao foi possivel carregar o quadro',
-          )
-        }
-      })
-      .finally(() => {
-        if (!shouldIgnoreResult) {
-          setIsKanbanLoading(false)
-        }
-      })
-
-    return () => {
-      shouldIgnoreResult = true
-    }
-  }, [session?.token, session?.company.id, currentRoute, navigateTo])
-
-  useEffect(() => {
-    if (!session?.token || currentRoute.type !== 'task') {
-      setSelectedTaskDetail(null)
-      setIsTaskDetailLoading(false)
-      return
-    }
-
-    let shouldIgnoreResult = false
-
-    setSelectedTaskDetail(null)
-    setIsTaskDetailLoading(true)
-    setKanbanStatusMessage('')
-
-    getTaskDetail(session.token, currentRoute.taskId)
-      .then((taskDetail) => {
-        if (!shouldIgnoreResult) {
-          setSelectedTaskDetail(taskDetail)
-        }
-      })
-      .catch((error) => {
-        if (!shouldIgnoreResult) {
-          setKanbanStatusMessage(
-            error instanceof Error ? error.message : 'Nao foi possivel carregar a task',
-          )
-        }
-      })
-      .finally(() => {
-        if (!shouldIgnoreResult) {
-          setIsTaskDetailLoading(false)
-        }
-      })
-
-    return () => {
-      shouldIgnoreResult = true
-    }
-  }, [session?.token, currentRoute])
+  }, [session?.token, resetWorkspaceData])
 
   const authModeLabels = useMemo(
     () => ({
@@ -301,12 +131,8 @@ export function App() {
   function handleLogout() {
     localStorage.removeItem(sessionStorageKey)
     setSession(null)
-    setCompanyWorkspace(null)
-    setPlatformCompanies([])
-    setKanbanBoard(null)
-    setSelectedTaskDetail(null)
+    resetWorkspaceData()
     setStatusMessage('')
-    setKanbanStatusMessage('')
     navigateTo('/', {
       replace: true,
     })
