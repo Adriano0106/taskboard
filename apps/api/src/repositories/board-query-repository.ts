@@ -165,7 +165,11 @@ export async function getKanbanTaskDetail(
       assignee: true,
       board: {
         include: {
-          department: true,
+          department: {
+            include: {
+              company: true,
+            },
+          },
         },
       },
       column: true,
@@ -182,6 +186,7 @@ export async function getKanbanTaskDetail(
     title: task.title,
     description: task.description,
     priority: task.priority,
+    companySlug: task.board.department.company.slug,
     departmentKey: createRouteKeyBase(task.board.department.name),
     boardKey: task.board.key,
     boardName: task.board.name,

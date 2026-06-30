@@ -98,6 +98,7 @@ function mapUserToAuthenticatedAccount(user: UserWithPrimaryCompany): Authentica
     publicCompany: {
       id: primaryMembership.company.id,
       name: primaryMembership.company.name,
+      slug: primaryMembership.company.slug,
       role: primaryMembership.role,
       permissions: getCompanyPermissions(primaryMembership.role),
     },

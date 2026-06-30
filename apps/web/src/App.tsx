@@ -22,6 +22,7 @@ import {
   renameDepartment,
   reorderColumn,
   updateBoard,
+  updateCompany,
   updateTask,
 } from './api.js'
 import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
@@ -42,7 +43,12 @@ import {
   findDropLocation,
   findTaskLocation,
 } from './kanban-helpers.js'
-import { createBoardPath, createFriendlyBoardPath, createFriendlyTaskPath } from './routing.js'
+import {
+  createBoardPath,
+  createCompanySlugPath,
+  createFriendlyBoardPath,
+  createFriendlyTaskPath,
+} from './routing.js'
 import { hasCompanyPermission } from './permissions.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
@@ -166,6 +172,7 @@ export function App() {
   const selectedTaskUrl =
     selectedTaskDetail && kanbanBoard
       ? createFriendlyTaskPath(
+          selectedTaskDetail.companySlug,
           selectedTaskDetail.departmentKey,
           selectedTaskDetail.boardKey,
           selectedTaskDetail.friendlyId,
@@ -423,6 +430,53 @@ export function App() {
     }
   }
 
+  async function handleUpdateCompany(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault()
+
+    if (!session?.token) {
+      return
+    }
+
+    const formData = new FormData(formEvent.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const slug = String(formData.get('slug') ?? '').trim()
+
+    if (!name || !slug) {
+      return
+    }
+
+    setWorkspaceStructureMessage('')
+
+    try {
+      const updatedWorkspace = await updateCompany(session.token, {
+        name,
+        slug,
+      })
+      const updatedSession = {
+        ...session,
+        company: {
+          ...session.company,
+          name: updatedWorkspace.name,
+          slug: updatedWorkspace.slug,
+        },
+      }
+
+      setCompanyWorkspace(updatedWorkspace)
+      setSession(updatedSession)
+      localStorage.setItem(sessionStorageKey, JSON.stringify(updatedSession))
+
+      if (currentRoute.type === 'companySlug') {
+        navigateTo(createCompanySlugPath(updatedWorkspace.slug), {
+          replace: true,
+        })
+      }
+    } catch (error) {
+      setWorkspaceStructureMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel atualizar a empresa',
+      )
+    }
+  }
+
   async function handleRenameDepartment(
     formEvent: FormEvent<HTMLFormElement>,
     departmentId: string,
@@ -662,7 +716,12 @@ export function App() {
 
     navigateTo(
       task
-        ? createFriendlyTaskPath(kanbanBoard.departmentKey, kanbanBoard.key, task.friendlyId)
+        ? createFriendlyTaskPath(
+            kanbanBoard.companySlug,
+            kanbanBoard.departmentKey,
+            kanbanBoard.key,
+            task.friendlyId,
+          )
         : createBoardPath(companyId, kanbanBoard.id),
     )
   }
@@ -674,7 +733,9 @@ export function App() {
     }
 
     if (currentRoute.type === 'friendlyTask' && kanbanBoard) {
-      navigateTo(createFriendlyBoardPath(kanbanBoard.departmentKey, kanbanBoard.key))
+      navigateTo(
+        createFriendlyBoardPath(kanbanBoard.companySlug, kanbanBoard.departmentKey, kanbanBoard.key),
+      )
       return
     }
 
@@ -793,7 +854,7 @@ export function App() {
           />
         ) : null}
 
-        {currentRoute.type === 'company' ? (
+        {currentRoute.type === 'company' || currentRoute.type === 'companySlug' ? (
           <CompanyWorkspacePage
             canManageWorkspace={canManageWorkspace}
             canDeleteBoard={canDeleteBoard}
@@ -810,6 +871,7 @@ export function App() {
             onDeleteDepartment={handleDeleteDepartment}
             onNavigate={navigateTo}
             onRenameDepartment={handleRenameDepartment}
+            onUpdateCompany={handleUpdateCompany}
             onUpdateBoard={handleUpdateBoard}
           />
         ) : null}

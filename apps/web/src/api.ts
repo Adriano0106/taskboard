@@ -11,6 +11,7 @@ export interface AuthSession {
   company: {
     id: string
     name: string
+    slug: string
     role: string
     permissions: CompanyPermission[]
   }
@@ -46,6 +47,7 @@ export interface KanbanColumn {
 
 export interface KanbanBoard {
   id: string
+  companySlug: string
   departmentKey: string
   key: string
   name: string
@@ -59,6 +61,7 @@ export interface KanbanTaskDetail {
   title: string
   description: string | null
   priority: TaskPriority
+  companySlug: string
   departmentKey: string
   boardKey: string
   boardName: string
@@ -116,6 +119,7 @@ export interface KanbanTaskAttachment {
 export interface CompanyWorkspace {
   id: string
   name: string
+  slug: string
   role: string
   permissions: CompanyPermission[]
   departments: Array<{
@@ -192,6 +196,11 @@ export interface BoardPayload {
   description?: string
 }
 
+export interface CompanyPayload {
+  name: string
+  slug: string
+}
+
 export async function registerAccount(payload: RegisterAccountPayload): Promise<AuthSession> {
   return sendRequest<AuthSession>('/auth/register', {
     method: 'POST',
@@ -255,6 +264,31 @@ export async function getCompanyWorkspace(
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  })
+}
+
+export async function getCompanyWorkspaceBySlug(
+  token: string,
+  companySlug: string,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>(`/companies/by-slug/${companySlug}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function updateCompany(
+  token: string,
+  payload: CompanyPayload,
+): Promise<CompanyWorkspace> {
+  return sendRequest<CompanyWorkspace>('/companies/current', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
   })
 }
 

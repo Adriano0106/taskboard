@@ -10,6 +10,7 @@ import type {
 import {
   getCompanyKanbanBoard,
   getCompanyWorkspace,
+  getCompanyWorkspaceBySlug,
   getCurrentCompanyMembers,
   getCurrentCompanyWorkspace,
   getCurrentKanbanBoard,
@@ -36,6 +37,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
   const [isTaskDetailLoading, setIsTaskDetailLoading] = useState(false)
   const [kanbanStatusMessage, setKanbanStatusMessage] = useState('')
   const routeCompanyId = getRouteCompanyId(currentRoute, session?.company.id ?? null)
+  const routeCompanySlug = getRouteCompanySlug(currentRoute)
   const workspaceRouteIdentity = getWorkspaceRouteIdentity(currentRoute, routeCompanyId)
   const boardRouteIdentity = getBoardRouteIdentity(currentRoute, companyWorkspace)
   const taskRouteIdentity = getTaskRouteIdentity(currentRoute, kanbanBoard)
@@ -78,6 +80,8 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     const workspaceRequest =
       workspaceRouteIdentity === 'current'
         ? getCurrentCompanyWorkspace(session.token)
+        : routeCompanySlug
+          ? getCompanyWorkspaceBySlug(session.token, routeCompanySlug)
         : getCompanyWorkspace(session.token, routeCompanyId ?? session.company.id)
 
     workspaceRequest
@@ -102,7 +106,13 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     return () => {
       shouldIgnoreResult = true
     }
-  }, [session?.token, session?.company.id, routeCompanyId, workspaceRouteIdentity])
+  }, [
+    session?.token,
+    session?.company.id,
+    routeCompanyId,
+    routeCompanySlug,
+    workspaceRouteIdentity,
+  ])
 
   useEffect(() => {
     if (!session?.token) {
@@ -191,7 +201,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     } else if (currentRoute.type === 'friendlyBoard' || currentRoute.type === 'friendlyTask') {
       boardRequest = getCompanyKanbanBoard(
         session.token,
-        session.company.id,
+        companyWorkspace?.id ?? session.company.id,
         friendlyBoard!.board.id,
       )
     } else {
@@ -207,7 +217,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
         setKanbanBoard(board)
 
         if (currentRoute.type === 'home') {
-          navigateTo(createFriendlyBoardPath(board.departmentKey, board.key), {
+          navigateTo(createFriendlyBoardPath(board.companySlug, board.departmentKey, board.key), {
             replace: true,
           })
         }
@@ -350,16 +360,41 @@ function getRouteCompanyId(route: AppRoute, fallbackCompanyId: string | null) {
   return fallbackCompanyId
 }
 
+function getRouteCompanySlug(route: AppRoute) {
+  if (
+    route.type === 'companySlug' ||
+    route.type === 'friendlyBoard' ||
+    route.type === 'friendlyTask'
+  ) {
+    return route.companySlug
+  }
+
+  return null
+}
+
 function getWorkspaceRouteIdentity(route: AppRoute, routeCompanyId: string | null) {
   if (route.type === 'home') {
     return 'current'
+  }
+
+  if (
+    route.type === 'companySlug' ||
+    route.type === 'friendlyBoard' ||
+    route.type === 'friendlyTask'
+  ) {
+    return `company-slug:${route.companySlug}`
   }
 
   return routeCompanyId ? `company:${routeCompanyId}` : 'none'
 }
 
 function getBoardRouteIdentity(route: AppRoute, workspace: CompanyWorkspace | null) {
-  if (route.type === 'adminCompanies' || route.type === 'company' || route.type === 'profile') {
+  if (
+    route.type === 'adminCompanies' ||
+    route.type === 'company' ||
+    route.type === 'companySlug' ||
+    route.type === 'profile'
+  ) {
     return null
   }
 
@@ -373,7 +408,7 @@ function getBoardRouteIdentity(route: AppRoute, workspace: CompanyWorkspace | nu
 
   const friendlyBoard = findWorkspaceBoardByKeys(workspace, route.departmentKey, route.boardKey)
 
-  return `friendly:${route.departmentKey}:${route.boardKey}:${friendlyBoard?.board.id ?? 'pending'}`
+  return `friendly:${route.companySlug}:${route.departmentKey}:${route.boardKey}:${friendlyBoard?.board.id ?? 'pending'}`
 }
 
 function getTaskRouteIdentity(route: AppRoute, board: KanbanBoard | null) {

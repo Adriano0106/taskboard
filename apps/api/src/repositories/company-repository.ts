@@ -1,10 +1,12 @@
 import type { PrismaClient } from '@prisma/client'
 import { assertCompanyPermission, getCompanyPermissions } from '../permissions.js'
 import { defaultBoardColumns, isClosedColumnName } from './board-defaults.js'
+import { assertValidCompanySlug } from './company-slug.js'
 
 export interface CompanyWorkspace {
   id: string
   name: string
+  slug: string
   role: string
   permissions: string[]
   departments: Array<{
@@ -41,6 +43,11 @@ export interface CompanyMutationInput {
   userId: string
 }
 
+export interface UpdateCompanyInput extends CompanyMutationInput {
+  name: string
+  slug: string
+}
+
 export interface CreateDepartmentInput extends CompanyMutationInput {
   name: string
 }
@@ -75,6 +82,42 @@ export class CompanyError extends Error {
     super(message)
     this.name = 'CompanyError'
   }
+}
+
+export async function updateCompany(
+  prisma: PrismaClient,
+  input: UpdateCompanyInput,
+): Promise<CompanyWorkspace> {
+  await assertCanManageCompanyWorkspace(prisma, input)
+
+  const slug = normalizeCompanySlugOrThrow(input.slug)
+  const existingCompany = await prisma.company.findFirst({
+    where: {
+      slug,
+      NOT: {
+        id: input.companyId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (existingCompany) {
+    throw new CompanyError('Company URL is already in use')
+  }
+
+  await prisma.company.update({
+    where: {
+      id: input.companyId,
+    },
+    data: {
+      name: input.name,
+      slug,
+    },
+  })
+
+  return getCompanyWorkspace(prisma, input)
 }
 
 export async function createDepartment(
@@ -272,6 +315,34 @@ export async function getCompanyWorkspace(
   return mapCompanyWorkspace(membership.company, membership.role)
 }
 
+export async function getCompanyWorkspaceBySlug(
+  prisma: PrismaClient,
+  input: {
+    allowPlatformAdmin?: boolean
+    slug: string
+    userId: string
+  },
+): Promise<CompanyWorkspace> {
+  const company = await prisma.company.findUnique({
+    where: {
+      slug: input.slug,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (!company) {
+    throw new CompanyError('Company not found')
+  }
+
+  return getCompanyWorkspace(prisma, {
+    allowPlatformAdmin: input.allowPlatformAdmin,
+    companyId: company.id,
+    userId: input.userId,
+  })
+}
+
 async function assertCanManageCompanyWorkspace(prisma: PrismaClient, input: CompanyMutationInput) {
   const membership = await prisma.companyMember.findUnique({
     where: {
@@ -439,6 +510,7 @@ function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): Compa
   return {
     id: company.id,
     name: company.name,
+    slug: company.slug,
     role,
     permissions: getCompanyPermissions(role),
     departments: company.departments.map((department) => ({
@@ -452,6 +524,18 @@ function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): Compa
         description: board.description,
       })),
     })),
+  }
+}
+
+function normalizeCompanySlugOrThrow(value: string) {
+  try {
+    return assertValidCompanySlug(value)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new CompanyError(error.message)
+    }
+
+    throw error
   }
 }
 

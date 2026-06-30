@@ -27,6 +27,7 @@ export function createInMemoryUserRepository(): UserRepository {
             company: {
               id: `company-${users.length + 1}`,
               name: input.companyName,
+              slug: input.companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
             },
           },
         ],

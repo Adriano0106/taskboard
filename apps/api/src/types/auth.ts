@@ -16,6 +16,7 @@ export interface PublicUser {
 export interface PublicCompany {
   id: string
   name: string
+  slug: string
   role: string
   permissions: CompanyPermission[]
 }

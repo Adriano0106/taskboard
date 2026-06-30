@@ -25,9 +25,16 @@ describe('company routes', () => {
   afterEach(async () => {
     await prisma.company.deleteMany({
       where: {
-        name: {
-          startsWith: testCompanyNamePrefix,
-        },
+        OR: [
+          {
+            name: {
+              startsWith: testCompanyNamePrefix,
+            },
+          },
+          {
+            slug: 'folha',
+          },
+        ],
       },
     })
     await prisma.user.deleteMany({
@@ -63,6 +70,7 @@ describe('company routes', () => {
     expect(response.json()).toMatchObject({
       id: company.id,
       name: company.name,
+      slug: company.slug,
       role: 'OWNER',
       permissions: expect.arrayContaining(['ManageWorkspace', 'ManageColumns']),
       departments: [
@@ -100,6 +108,41 @@ describe('company routes', () => {
         }),
       ]),
     )
+
+    await app.close()
+  })
+
+  it('updates company name and URL slug for owners', async () => {
+    const app = await createTestApp()
+    const { company, token } = await registerOwnerSession(app)
+
+    const updateResponse = await app.inject({
+      method: 'PATCH',
+      url: '/companies/current',
+      headers: createAuthHeader(token),
+      payload: {
+        name: 'Folha de Sao Paulo',
+        slug: 'folha',
+      },
+    })
+    const slugResponse = await app.inject({
+      method: 'GET',
+      url: '/companies/by-slug/folha',
+      headers: createAuthHeader(token),
+    })
+
+    expect(updateResponse.statusCode).toBe(200)
+    expect(updateResponse.json()).toMatchObject({
+      id: company.id,
+      name: 'Folha de Sao Paulo',
+      slug: 'folha',
+    })
+    expect(slugResponse.statusCode).toBe(200)
+    expect(slugResponse.json()).toMatchObject({
+      id: company.id,
+      name: 'Folha de Sao Paulo',
+      slug: 'folha',
+    })
 
     await app.close()
   })
@@ -434,6 +477,7 @@ async function registerOwnerSession(
     company: {
       id: string
       name: string
+      slug: string
     }
     token: string
   }

@@ -9,15 +9,21 @@ import {
   deleteBoard,
   deleteDepartment,
   getCompanyWorkspace,
+  getCompanyWorkspaceBySlug,
   listCompaniesForPlatformAdmin,
   listCompanyMembers,
   renameDepartment,
   updateBoard,
+  updateCompany,
 } from '../../repositories/company-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
 const companyParamsSchema = z.object({
   companyId: z.string().min(1),
+})
+
+const companySlugParamsSchema = z.object({
+  companySlug: z.string().min(1),
 })
 
 const departmentParamsSchema = z.object({
@@ -35,6 +41,11 @@ const departmentBodySchema = z.object({
 const boardBodySchema = z.object({
   name: z.string().trim().min(2),
   description: z.string().trim().optional(),
+})
+
+const companyBodySchema = z.object({
+  name: z.string().trim().min(2),
+  slug: z.string().trim().min(2).max(48),
 })
 
 interface CompanyRoutesOptions {
@@ -63,6 +74,34 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
       companyId: request.user.companyId,
       userId: request.user.userId,
     })
+  })
+
+  app.patch('/companies/current', { preHandler: authenticateRequest }, async (request, reply) => {
+    const bodyValidation = companyBodySchema.safeParse(request.body)
+
+    if (!bodyValidation.success) {
+      return reply.status(400).send({
+        message: 'Invalid company payload',
+        issues: bodyValidation.error.flatten().fieldErrors,
+      })
+    }
+
+    try {
+      return await updateCompany(prismaClient, {
+        companyId: request.user.companyId,
+        userId: request.user.userId,
+        name: bodyValidation.data.name,
+        slug: bodyValidation.data.slug,
+      })
+    } catch (error) {
+      if (error instanceof CompanyError) {
+        return reply.status(getCompanyErrorStatus(error)).send({
+          message: error.message,
+        })
+      }
+
+      throw error
+    }
   })
 
   app.get('/companies/current/members', { preHandler: authenticateRequest }, async (request) => {
@@ -306,6 +345,38 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
       throw error
     }
   })
+
+  app.get(
+    '/companies/by-slug/:companySlug',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = companySlugParamsSchema.safeParse(request.params)
+      const isPlatformAdmin = platformAdminEmails.has(request.user.email.toLowerCase())
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid company slug params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await getCompanyWorkspaceBySlug(prismaClient, {
+          allowPlatformAdmin: isPlatformAdmin,
+          slug: paramsValidation.data.companySlug,
+          userId: request.user.userId,
+        })
+      } catch (error) {
+        if (error instanceof CompanyError) {
+          return reply.status(404).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 }
 
 function getCompanyErrorStatus(error: CompanyError) {
@@ -315,7 +386,8 @@ function getCompanyErrorStatus(error: CompanyError) {
 
   if (
     error.message.includes('empty departments') ||
-    error.message.includes('without open tasks')
+    error.message.includes('without open tasks') ||
+    error.message.includes('already in use')
   ) {
     return 409
   }

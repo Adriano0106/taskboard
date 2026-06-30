@@ -371,6 +371,53 @@ textarea {
   width: min(100%, 420px);
 }
 
+.company-settings-card {
+  border: 1px solid colors.$border-default;
+  background: colors.$surface-panel;
+  padding: 18px 20px;
+}
+
+.company-settings-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.slug-input-group {
+  display: grid;
+  grid-template-columns: auto minmax(110px, 1fr);
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid colors.$border-strong;
+  border-radius: 8px;
+  background: colors.$surface-panel;
+
+  span {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    border-right: 1px solid colors.$border-default;
+    padding: 0 12px;
+    color: colors.$text-muted;
+    font-weight: 800;
+  }
+
+  input {
+    border: 0;
+    border-radius: 0;
+
+    &:focus {
+      outline-offset: -3px;
+    }
+  }
+}
+
+.company-settings-readonly {
+  color: colors.$text-strong;
+  font-weight: 800;
+}
+
 .department-section {
   display: grid;
   gap: 14px;
@@ -1145,6 +1192,7 @@ textarea {
   .task-attachment,
   .task-watcher-form,
   .workspace-create-form,
+  .company-settings-form,
   .department-header,
   .department-title-form,
   .board-create-form,

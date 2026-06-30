@@ -1,5 +1,5 @@
 import type { AuthSession, CompanyWorkspace } from '../api.js'
-import { createCompanyPath } from '../routing.js'
+import { createCompanyPath, createCompanySlugPath } from '../routing.js'
 
 interface WorkspaceHeaderProps {
   companyWorkspace: CompanyWorkspace | null
@@ -21,6 +21,10 @@ export function WorkspaceHeader({
     .map((namePart) => namePart[0])
     .join('')
     .toUpperCase()
+  const companySlug = companyWorkspace?.slug ?? session.company.slug
+  const companyPath = companySlug
+    ? createCompanySlugPath(companySlug)
+    : createCompanyPath(session.company.id)
 
   return (
     <nav className="workspace">
@@ -31,7 +35,7 @@ export function WorkspaceHeader({
         <button
           type="button"
           className="workspace-company-button"
-          onClick={() => onNavigate(createCompanyPath(session.company.id))}
+          onClick={() => onNavigate(companyPath)}
         >
           {companyWorkspace?.name ?? session.company.name}
         </button>
@@ -40,7 +44,7 @@ export function WorkspaceHeader({
         <button
           type="button"
           className="secondary-button"
-          onClick={() => onNavigate(createCompanyPath(session.company.id))}
+          onClick={() => onNavigate(companyPath)}
         >
           Empresa
         </button>

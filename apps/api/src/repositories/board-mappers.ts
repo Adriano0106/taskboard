@@ -2,7 +2,11 @@ import type { Prisma } from '@prisma/client'
 import type { KanbanBoard } from './board-types.js'
 
 export const boardInclude = {
-  department: true,
+  department: {
+    include: {
+      company: true,
+    },
+  },
   columns: {
     orderBy: {
       position: 'asc',
@@ -31,6 +35,7 @@ export function mapBoardToKanbanBoard(board: BoardWithKanbanRelations | null): K
 
   return {
     id: board.id,
+    companySlug: board.department.company.slug,
     departmentKey: createRouteKeyBase(board.department.name),
     key: board.key,
     name: board.name,

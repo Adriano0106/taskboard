@@ -15,6 +15,7 @@ export interface KanbanColumn {
 
 export interface KanbanBoard {
   id: string
+  companySlug: string
   departmentKey: string
   key: string
   name: string
@@ -28,6 +29,7 @@ export interface KanbanTaskDetail {
   title: string
   description: string | null
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  companySlug: string
   departmentKey: string
   boardKey: string
   boardName: string

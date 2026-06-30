@@ -53,6 +53,7 @@ model User {
 model Company {
   id          String          @id @default(cuid())
   name        String
+  slug        String          @unique
   members     CompanyMember[]
   departments Department[]
   createdAt   DateTime        @default(now())

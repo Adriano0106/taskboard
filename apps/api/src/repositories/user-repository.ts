@@ -1,4 +1,5 @@
-import type { CompanyRole, PrismaClient } from '@prisma/client'
+import type { CompanyRole, Prisma, PrismaClient } from '@prisma/client'
+import { createCompanySlugFromName } from './company-slug.js'
 
 export interface UserWithPrimaryCompany {
   id: string
@@ -10,6 +11,7 @@ export interface UserWithPrimaryCompany {
     company: {
       id: string
       name: string
+      slug: string
     }
   }>
 }
@@ -47,9 +49,11 @@ export function createPrismaUserRepository(prisma: PrismaClient): UserRepository
     },
     createWithCompany(input) {
       return prisma.$transaction(async (transaction) => {
+        const slug = await createUniqueCompanySlug(transaction, input.companyName)
         const company = await transaction.company.create({
           data: {
             name: input.companyName,
+            slug,
           },
         })
 
@@ -72,6 +76,33 @@ export function createPrismaUserRepository(prisma: PrismaClient): UserRepository
       })
     },
   }
+}
+
+async function createUniqueCompanySlug(
+  prisma: Prisma.TransactionClient | PrismaClient,
+  value: string,
+) {
+  const baseSlug = createCompanySlugFromName(value)
+
+  for (let suffix = 0; suffix < 100; suffix += 1) {
+    const suffixText = `-${suffix + 1}`
+    const slug =
+      suffix === 0 ? baseSlug : `${baseSlug.slice(0, 48 - suffixText.length)}${suffixText}`
+    const existingCompany = await prisma.company.findUnique({
+      where: {
+        slug,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    if (!existingCompany) {
+      return slug
+    }
+  }
+
+  throw new Error('Could not create a unique company URL')
 }
 
 const primaryCompanyInclude = {

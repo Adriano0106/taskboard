@@ -22,6 +22,7 @@ interface CompanyWorkspacePageProps {
   onDeleteDepartment: (departmentId: string, departmentName: string) => void
   onNavigate: (path: string) => void
   onRenameDepartment: (formEvent: FormEvent<HTMLFormElement>, departmentId: string) => void
+  onUpdateCompany: (formEvent: FormEvent<HTMLFormElement>) => void
   onUpdateBoard: (formEvent: FormEvent<HTMLFormElement>, boardId: string) => void
 }
 
@@ -41,6 +42,7 @@ export function CompanyWorkspacePage({
   onDeleteDepartment,
   onNavigate,
   onRenameDepartment,
+  onUpdateCompany,
   onUpdateBoard,
 }: CompanyWorkspacePageProps) {
   return (
@@ -65,6 +67,47 @@ export function CompanyWorkspacePage({
           </form>
         ) : null}
       </div>
+
+      {companyWorkspace ? (
+        <Card className="company-settings-card">
+          {canManageWorkspace ? (
+            <form className="company-settings-form" onSubmit={onUpdateCompany}>
+              <label>
+                Nome da empresa
+                <TextInput
+                  name="name"
+                  type="text"
+                  minLength={2}
+                  defaultValue={companyWorkspace.name}
+                  required
+                />
+              </label>
+              <label>
+                URL
+                <div className="slug-input-group">
+                  <span>{window.location.origin}/</span>
+                  <TextInput
+                    name="slug"
+                    type="text"
+                    minLength={2}
+                    maxLength={48}
+                    defaultValue={companyWorkspace.slug}
+                    pattern="[a-zA-Z0-9-]+"
+                    required
+                  />
+                </div>
+              </label>
+              <Button type="submit" variant="primary">
+                Salvar empresa
+              </Button>
+            </form>
+          ) : (
+            <div className="company-settings-readonly">
+              <span>{window.location.origin}/{companyWorkspace.slug}</span>
+            </div>
+          )}
+        </Card>
+      ) : null}
 
       {isLoading ? <p className="surface-message">Carregando empresa...</p> : null}
       {workspaceStructureMessage ? (
@@ -130,7 +173,9 @@ export function CompanyWorkspacePage({
                   <button
                     type="button"
                     className="board-open-button"
-                    onClick={() => onNavigate(createFriendlyBoardPath(department.key, board.key))}
+                    onClick={() =>
+                      onNavigate(createFriendlyBoardPath(companyWorkspace.slug, department.key, board.key))
+                    }
                   >
                     <Badge>{board.key}</Badge>
                     <strong>{board.name}</strong>

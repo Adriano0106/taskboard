@@ -30,6 +30,7 @@ describe('auth routes', () => {
       },
       company: {
         name: 'TaskBoard',
+        slug: 'taskboard',
         role: 'OWNER',
         permissions: expect.arrayContaining(['ManageWorkspace', 'ManageColumns', 'CreateTask']),
       },
