@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import { getCompanyPermissions } from '../permissions.js'
 import type { UserRepository, UserWithPrimaryCompany } from '../repositories/user-repository.js'
 import type { AuthenticatedUser, PublicCompany, PublicUser } from '../types/auth.js'
 
@@ -98,6 +99,7 @@ function mapUserToAuthenticatedAccount(user: UserWithPrimaryCompany): Authentica
       id: primaryMembership.company.id,
       name: primaryMembership.company.name,
       role: primaryMembership.role,
+      permissions: getCompanyPermissions(primaryMembership.role),
     },
   }
 }

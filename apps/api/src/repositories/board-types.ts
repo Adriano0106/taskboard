@@ -88,6 +88,7 @@ export class BoardError extends Error {
 
 export interface CreateKanbanTaskInput {
   companyId: string
+  companyRole: string
   userId: string
   columnId: string
   title: string
@@ -98,6 +99,7 @@ export interface CreateKanbanTaskInput {
 
 export interface MoveKanbanTaskInput {
   companyId: string
+  companyRole: string
   userId: string
   taskId: string
   columnId: string
@@ -106,6 +108,7 @@ export interface MoveKanbanTaskInput {
 
 export interface UpdateKanbanTaskInput {
   companyId: string
+  companyRole: string
   userId: string
   taskId: string
   title: string
@@ -164,6 +167,7 @@ export interface GetCompanyKanbanBoardInput {
 
 export interface TaskCommentInput {
   companyId: string
+  companyRole: string
   taskId: string
   userId: string
 }
@@ -174,18 +178,21 @@ export interface CreateTaskCommentInput extends TaskCommentInput {
 
 export interface TaskWatcherInput {
   companyId: string
+  companyRole: string
   taskId: string
   userId: string
 }
 
 export interface TaskActivityInput {
   companyId: string
+  companyRole: string
   taskId: string
   userId: string
 }
 
 export interface TaskAttachmentInput {
   companyId: string
+  companyRole: string
   taskId: string
   userId: string
 }

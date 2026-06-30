@@ -1,3 +1,5 @@
+import type { CompanyPermission } from './permissions.js'
+
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3333'
 
 export interface AuthSession {
@@ -10,6 +12,7 @@ export interface AuthSession {
     id: string
     name: string
     role: string
+    permissions: CompanyPermission[]
   }
   token: string
 }
@@ -111,6 +114,7 @@ export interface CompanyWorkspace {
   id: string
   name: string
   role: string
+  permissions: CompanyPermission[]
   departments: Array<{
     id: string
     name: string

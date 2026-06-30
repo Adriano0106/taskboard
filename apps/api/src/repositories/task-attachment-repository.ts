@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
+import { assertCompanyPermission } from '../permissions.js'
 import { BoardError } from './board-types.js'
 import type {
   CreateTaskAttachmentInput,
@@ -40,6 +41,9 @@ export async function createTaskAttachment(
   storageProvider: StorageProvider,
   input: CreateTaskAttachmentInput,
 ): Promise<KanbanTaskAttachment> {
+  assertCompanyPermission(input.companyRole, 'ManageTaskAttachments', (message) =>
+    new BoardError(message),
+  )
   await assertTaskBelongsToCompany(prisma, input)
 
   const content = Buffer.from(input.contentBase64, 'base64')
@@ -123,6 +127,9 @@ export async function deleteTaskAttachment(
   storageProvider: StorageProvider,
   input: DeleteTaskAttachmentInput,
 ): Promise<KanbanTaskAttachment[]> {
+  assertCompanyPermission(input.companyRole, 'ManageTaskAttachments', (message) =>
+    new BoardError(message),
+  )
   await assertTaskBelongsToCompany(prisma, input)
 
   const attachment = await prisma.taskAttachment.findFirst({

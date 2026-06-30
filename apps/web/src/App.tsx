@@ -43,6 +43,7 @@ import {
   findTaskLocation,
 } from './kanban-helpers.js'
 import { createBoardPath, createTaskPath } from './routing.js'
+import { hasCompanyPermission } from './permissions.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
 
@@ -150,8 +151,11 @@ export function App() {
     }),
     [],
   )
-  const canManageColumns = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
-  const canManageWorkspace = session ? ['OWNER', 'ADMIN'].includes(session.company.role) : false
+  const canManageColumns = hasCompanyPermission(session?.company.permissions, 'ManageColumns')
+  const canManageWorkspace = hasCompanyPermission(
+    session?.company.permissions,
+    'ManageWorkspace',
+  )
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
 

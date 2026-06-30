@@ -163,6 +163,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
     try {
       const board = await createTaskInCompanyKanbanBoard(prismaClient, {
         companyId: request.user.companyId,
+        companyRole: request.user.role,
         userId: request.user.userId,
         columnId: bodyValidation.data.columnId,
         title: bodyValidation.data.title,
@@ -174,7 +175,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       return reply.status(201).send(board)
     } catch (error) {
       if (error instanceof BoardError) {
-        return reply.status(409).send({
+        return reply.status(getBoardErrorStatus(error)).send({
           message: error.message,
         })
       }
@@ -200,7 +201,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       })
     } catch (error) {
       if (error instanceof BoardError) {
-        return reply.status(404).send({
+        return reply.status(getBoardErrorStatus(error)).send({
           message: error.message,
         })
       }
@@ -226,6 +227,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
     try {
       return await updateTaskInCompanyKanbanBoard(prismaClient, {
         companyId: request.user.companyId,
+        companyRole: request.user.role,
         userId: request.user.userId,
         taskId: paramsValidation.data.taskId,
         title: bodyValidation.data.title,
@@ -235,7 +237,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       })
     } catch (error) {
       if (error instanceof BoardError) {
-        return reply.status(404).send({
+        return reply.status(getBoardErrorStatus(error)).send({
           message: error.message,
         })
       }
@@ -260,12 +262,13 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         return await listTaskAttachments(prismaClient, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -298,6 +301,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         const attachment = await createTaskAttachment(prismaClient, storageProvider, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
           fileName: bodyValidation.data.fileName,
@@ -308,7 +312,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
         return reply.status(201).send(attachment)
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(409).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -334,6 +338,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         const attachment = await downloadTaskAttachment(prismaClient, storageProvider, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
           attachmentId: paramsValidation.data.attachmentId,
@@ -345,7 +350,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
           .send(attachment.content)
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -371,13 +376,14 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         return await deleteTaskAttachment(prismaClient, storageProvider, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
           attachmentId: paramsValidation.data.attachmentId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -403,12 +409,13 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         return await listTaskActivities(prismaClient, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -434,12 +441,13 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         return await listTaskComments(prismaClient, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -465,12 +473,13 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         return await listTaskWatchers(prismaClient, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -500,6 +509,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         const watchers = await addTaskWatcher(prismaClient, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
           watcherUserId: bodyValidation.data.userId,
@@ -508,7 +518,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
         return reply.status(201).send(watchers)
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -534,13 +544,14 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         return await removeTaskWatcher(prismaClient, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
           watcherUserId: paramsValidation.data.userId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -570,6 +581,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       try {
         const comment = await createTaskComment(prismaClient, {
           companyId: request.user.companyId,
+          companyRole: request.user.role,
           taskId: paramsValidation.data.taskId,
           userId: request.user.userId,
           content: bodyValidation.data.content,
@@ -605,6 +617,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
     try {
       return await moveTaskInCompanyKanbanBoard(prismaClient, {
         companyId: request.user.companyId,
+        companyRole: request.user.role,
         userId: request.user.userId,
         taskId: paramsValidation.data.taskId,
         columnId: bodyValidation.data.columnId,
@@ -612,7 +625,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       })
     } catch (error) {
       if (error instanceof BoardError) {
-        return reply.status(404).send({
+        return reply.status(getBoardErrorStatus(error)).send({
           message: error.message,
         })
       }
@@ -764,14 +777,18 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
 }
 
 function getBoardErrorStatus(error: BoardError) {
-  if (error.message.includes('owners and admins')) {
+  if (error.message.includes('owners and admins') || error.message.includes('Missing permission')) {
     return 403
   }
 
   if (
     error.message.includes('empty columns') ||
     error.message.includes('at least one column') ||
-    error.message.includes('Protected board columns')
+    error.message.includes('Protected board columns') ||
+    error.message.includes('New tasks can only') ||
+    error.message.includes('Assignee does not belong') ||
+    error.message.includes('Attachment exceeds') ||
+    error.message.includes('Attachment file is empty')
   ) {
     return 409
   }

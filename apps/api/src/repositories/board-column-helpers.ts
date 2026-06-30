@@ -1,10 +1,11 @@
 import type { Prisma } from '@prisma/client'
+import { assertCompanyPermission } from '../permissions.js'
 import { BoardError } from './board-types.js'
 
 export function assertCanManageColumns(companyRole: string) {
-  if (!['OWNER', 'ADMIN'].includes(companyRole)) {
-    throw new BoardError('Only company owners and admins can manage board columns')
-  }
+  assertCompanyPermission(companyRole, 'ManageColumns', () =>
+    new BoardError('Only company owners and admins can manage board columns'),
+  )
 }
 
 export function normalizeColumnPosition(position: number, maxPosition: number) {

@@ -1,9 +1,11 @@
 import type { PrismaClient } from '@prisma/client'
+import { assertCompanyPermission, getCompanyPermissions } from '../permissions.js'
 
 export interface CompanyWorkspace {
   id: string
   name: string
   role: string
+  permissions: string[]
   departments: Array<{
     id: string
     name: string
@@ -290,9 +292,9 @@ async function assertCanManageCompanyWorkspace(prisma: PrismaClient, input: Comp
     throw new CompanyError('Company does not belong to the authenticated user')
   }
 
-  if (!['OWNER', 'ADMIN'].includes(membership.role)) {
-    throw new CompanyError('Only company owners and admins can manage workspace structure')
-  }
+  assertCompanyPermission(membership.role, 'ManageWorkspace', () =>
+    new CompanyError('Only company owners and admins can manage workspace structure'),
+  )
 }
 
 async function assertDepartmentBelongsToCompany(
@@ -404,6 +406,7 @@ function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): Compa
     id: company.id,
     name: company.name,
     role,
+    permissions: getCompanyPermissions(role),
     departments: company.departments.map((department) => ({
       id: department.id,
       name: department.name,

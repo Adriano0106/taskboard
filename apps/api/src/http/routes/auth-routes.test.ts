@@ -31,6 +31,7 @@ describe('auth routes', () => {
       company: {
         name: 'TaskBoard',
         role: 'OWNER',
+        permissions: expect.arrayContaining(['ManageWorkspace', 'ManageColumns', 'CreateTask']),
       },
     })
     expect(response.json().token).toEqual(expect.any(String))

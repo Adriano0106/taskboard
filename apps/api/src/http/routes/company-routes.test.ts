@@ -64,6 +64,7 @@ describe('company routes', () => {
       id: company.id,
       name: company.name,
       role: 'OWNER',
+      permissions: expect.arrayContaining(['ManageWorkspace', 'ManageColumns']),
       departments: [
         {
           name: 'Produto',

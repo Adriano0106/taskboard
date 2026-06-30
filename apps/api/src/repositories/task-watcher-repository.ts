@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { assertCompanyPermission } from '../permissions.js'
 import { BoardError } from './board-types.js'
 import type {
   KanbanTaskWatcher,
@@ -37,6 +38,9 @@ export async function addTaskWatcher(
   prisma: PrismaClient,
   input: UpdateTaskWatcherInput,
 ): Promise<KanbanTaskWatcher[]> {
+  assertCompanyPermission(input.companyRole, 'ManageTaskWatchers', (message) =>
+    new BoardError(message),
+  )
   await assertTaskBelongsToCompany(prisma, input)
   await assertUserBelongsToCompany(prisma, input)
 
@@ -82,6 +86,9 @@ export async function removeTaskWatcher(
   prisma: PrismaClient,
   input: UpdateTaskWatcherInput,
 ): Promise<KanbanTaskWatcher[]> {
+  assertCompanyPermission(input.companyRole, 'ManageTaskWatchers', (message) =>
+    new BoardError(message),
+  )
   await assertTaskBelongsToCompany(prisma, input)
 
   await prisma.$transaction(async (transaction) => {
