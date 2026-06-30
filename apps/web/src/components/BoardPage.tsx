@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { type FormEvent, type PointerEvent, useRef, useState } from 'react'
+import { type FormEvent, type PointerEvent, useEffect, useRef, useState } from 'react'
 import type {
   CompanyMember,
   KanbanBoard,
@@ -151,6 +151,10 @@ export function BoardPage({
     x: 0,
   })
   const [isKanbanPanning, setIsKanbanPanning] = useState(false)
+  const shouldShowTaskLoadingDialog = useDelayedVisibility(
+    isTaskDetailLoading && !selectedTaskDetail,
+    180,
+  )
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -269,7 +273,7 @@ export function BoardPage({
         </DragOverlay>
       </DndContext>
 
-      {isTaskDetailLoading ? (
+      {shouldShowTaskLoadingDialog ? (
         <TaskDetailDialog title="Carregando task" onClose={onCloseTaskLoading} />
       ) : null}
 
@@ -329,4 +333,25 @@ export function BoardPage({
 
 function shouldIgnoreKanbanPan(target: EventTarget) {
   return target instanceof Element && Boolean(target.closest(kanbanPanIgnoredSelector))
+}
+
+function useDelayedVisibility(isVisible: boolean, delayMs: number) {
+  const [shouldRender, setShouldRender] = useState(false)
+
+  useEffect(() => {
+    if (!isVisible) {
+      setShouldRender(false)
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShouldRender(true)
+    }, delayMs)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [delayMs, isVisible])
+
+  return shouldRender
 }
