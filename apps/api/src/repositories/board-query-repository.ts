@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import { defaultBoardColumns } from './board-defaults.js'
-import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
+import { boardInclude, createRouteKeyBase, mapBoardToKanbanBoard } from './board-mappers.js'
 import { BoardError } from './board-types.js'
 import type {
   GetCompanyKanbanBoardInput,
@@ -163,7 +163,11 @@ export async function getKanbanTaskDetail(
     },
     include: {
       assignee: true,
-      board: true,
+      board: {
+        include: {
+          department: true,
+        },
+      },
       column: true,
     },
   })
@@ -178,6 +182,8 @@ export async function getKanbanTaskDetail(
     title: task.title,
     description: task.description,
     priority: task.priority,
+    departmentKey: createRouteKeyBase(task.board.department.name),
+    boardKey: task.board.key,
     boardName: task.board.name,
     columnName: task.column.name,
     assigneeId: task.assigneeId,

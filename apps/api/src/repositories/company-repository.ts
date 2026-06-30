@@ -9,6 +9,7 @@ export interface CompanyWorkspace {
   permissions: string[]
   departments: Array<{
     id: string
+    key: string
     name: string
     boards: Array<{
       id: string
@@ -442,6 +443,7 @@ function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): Compa
     permissions: getCompanyPermissions(role),
     departments: company.departments.map((department) => ({
       id: department.id,
+      key: createBoardKeyBase(department.name),
       name: department.name,
       boards: department.boards.map((board) => ({
         id: board.id,

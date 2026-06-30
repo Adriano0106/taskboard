@@ -33,6 +33,7 @@ interface TaskDetailDialogProps {
   isAttachmentUploading?: boolean
   isTaskUpdating?: boolean
   taskDetail?: KanbanTaskDetail
+  taskUrl?: string | null
   title: string
   updatingWatcherUserId?: string | null
   updatingAttachmentId?: string | null
@@ -67,6 +68,7 @@ export function TaskDetailDialog({
   onUploadAttachment,
   onUpdateTask,
   taskDetail,
+  taskUrl = null,
   title,
   updatingAttachmentId = null,
   updatingWatcherUserId = null,
@@ -74,13 +76,35 @@ export function TaskDetailDialog({
   watchersStatusMessage = '',
 }: TaskDetailDialogProps) {
   return (
-    <div className="modal-backdrop" role="presentation">
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
+    >
       <dialog aria-modal="true" className="task-detail-modal" open>
         <div className="modal-header">
           <h2>{title}</h2>
-          <button type="button" className="icon-button" onClick={onClose}>
-            Fechar
-          </button>
+          <div className="modal-header-actions">
+            {taskUrl ? (
+              <a
+                aria-label="Abrir task em nova aba"
+                className="icon-button"
+                href={taskUrl}
+                rel="noreferrer"
+                target="_blank"
+                title="Abrir em nova aba"
+              >
+                Abrir
+              </a>
+            ) : null}
+            <button type="button" className="icon-button" onClick={onClose}>
+              Fechar
+            </button>
+          </div>
         </div>
         {taskDetail ? (
           <>

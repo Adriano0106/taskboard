@@ -63,6 +63,7 @@ interface BoardPageProps {
   kanbanBoard: KanbanBoard
   reorderingColumnId: string | null
   selectedTaskDetail: KanbanTaskDetail | null
+  selectedTaskUrl: string | null
   updatingAttachmentId: string | null
   updatingWatcherUserId: string | null
   watchers: KanbanTaskWatcher[]
@@ -115,6 +116,7 @@ export function BoardPage({
   kanbanBoard,
   reorderingColumnId,
   selectedTaskDetail,
+  selectedTaskUrl,
   updatingAttachmentId,
   updatingWatcherUserId,
   watchers,
@@ -294,6 +296,7 @@ export function BoardPage({
           isAttachmentUploading={isAttachmentUploading}
           isTaskUpdating={isTaskUpdating}
           taskDetail={selectedTaskDetail}
+          taskUrl={selectedTaskUrl}
           title={`${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`}
           updatingAttachmentId={updatingAttachmentId}
           updatingWatcherUserId={updatingWatcherUserId}

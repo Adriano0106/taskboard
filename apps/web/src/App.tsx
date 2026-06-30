@@ -42,7 +42,7 @@ import {
   findDropLocation,
   findTaskLocation,
 } from './kanban-helpers.js'
-import { createBoardPath, createTaskPath } from './routing.js'
+import { createBoardPath, createFriendlyBoardPath, createFriendlyTaskPath } from './routing.js'
 import { hasCompanyPermission } from './permissions.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
@@ -158,7 +158,19 @@ export function App() {
   )
   const canDeleteBoard = hasCompanyPermission(session?.company.permissions, 'DeleteBoard')
   const shouldShowKanbanBoard =
-    currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
+    currentRoute.type === 'home' ||
+    currentRoute.type === 'board' ||
+    currentRoute.type === 'task' ||
+    currentRoute.type === 'friendlyBoard' ||
+    currentRoute.type === 'friendlyTask'
+  const selectedTaskUrl =
+    selectedTaskDetail && kanbanBoard
+      ? createFriendlyTaskPath(
+          selectedTaskDetail.departmentKey,
+          selectedTaskDetail.boardKey,
+          selectedTaskDetail.friendlyId,
+        )
+      : null
 
   function getActiveCompanyId() {
     if (currentRoute.type === 'board' || currentRoute.type === 'task') {
@@ -644,12 +656,25 @@ export function App() {
       return
     }
 
-    navigateTo(createTaskPath(companyId, kanbanBoard.id, taskId))
+    const task = kanbanBoard.columns
+      .flatMap((column) => column.tasks)
+      .find((kanbanTask) => kanbanTask.id === taskId)
+
+    navigateTo(
+      task
+        ? createFriendlyTaskPath(kanbanBoard.departmentKey, kanbanBoard.key, task.friendlyId)
+        : createBoardPath(companyId, kanbanBoard.id),
+    )
   }
 
   function handleCloseTaskDetail() {
     if (currentRoute.type === 'task') {
       navigateTo(createBoardPath(currentRoute.companyId, currentRoute.boardId))
+      return
+    }
+
+    if (currentRoute.type === 'friendlyTask' && kanbanBoard) {
+      navigateTo(createFriendlyBoardPath(kanbanBoard.departmentKey, kanbanBoard.key))
       return
     }
 
@@ -815,6 +840,7 @@ export function App() {
             kanbanBoard={kanbanBoard}
             reorderingColumnId={reorderingColumnId}
             selectedTaskDetail={selectedTaskDetail}
+            selectedTaskUrl={selectedTaskUrl}
             updatingAttachmentId={updatingAttachmentId}
             updatingWatcherUserId={updatingWatcherUserId}
             watchers={watchers}

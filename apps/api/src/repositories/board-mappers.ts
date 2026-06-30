@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client'
 import type { KanbanBoard } from './board-types.js'
 
 export const boardInclude = {
+  department: true,
   columns: {
     orderBy: {
       position: 'asc',
@@ -30,6 +31,7 @@ export function mapBoardToKanbanBoard(board: BoardWithKanbanRelations | null): K
 
   return {
     id: board.id,
+    departmentKey: createRouteKeyBase(board.department.name),
     key: board.key,
     name: board.name,
     description: board.description,
@@ -46,4 +48,21 @@ export function mapBoardToKanbanBoard(board: BoardWithKanbanRelations | null): K
       })),
     })),
   }
+}
+
+export function createRouteKeyBase(name: string) {
+  const words = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 ]/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  const initials =
+    words.length === 1
+      ? words[0]?.slice(0, 2)
+      : words.map((word) => word[0] ?? '').join('').slice(0, 3)
+  const fallbackKey = name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3)
+
+  return (initials || fallbackKey || 'DP').toUpperCase().padEnd(2, 'X')
 }

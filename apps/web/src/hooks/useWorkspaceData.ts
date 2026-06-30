@@ -16,7 +16,7 @@ import {
   getPlatformCompanies,
   getTaskDetail,
 } from '../api.js'
-import { type AppRoute, createBoardPath } from '../routing.js'
+import { type AppRoute, createFriendlyBoardPath } from '../routing.js'
 
 interface UseWorkspaceDataInput {
   currentRoute: AppRoute
@@ -163,10 +163,45 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     setIsKanbanLoading(true)
     setKanbanStatusMessage('')
 
-    const boardRequest =
-      currentRoute.type === 'board' || currentRoute.type === 'task'
-        ? getCompanyKanbanBoard(session.token, currentRoute.companyId, currentRoute.boardId)
-        : getCurrentKanbanBoard(session.token)
+    const friendlyBoard =
+      currentRoute.type === 'friendlyBoard' || currentRoute.type === 'friendlyTask'
+        ? findWorkspaceBoardByKeys(
+            companyWorkspace,
+            currentRoute.departmentKey,
+            currentRoute.boardKey,
+          )
+        : null
+
+    if (
+      (currentRoute.type === 'friendlyBoard' || currentRoute.type === 'friendlyTask') &&
+      !friendlyBoard
+    ) {
+      if (companyWorkspace) {
+        setKanbanStatusMessage('Nao foi possivel encontrar o quadro pela URL')
+        setKanbanBoard(null)
+        setIsKanbanLoading(false)
+      }
+
+      return
+    }
+
+    let boardRequest: Promise<KanbanBoard>
+
+    if (currentRoute.type === 'board' || currentRoute.type === 'task') {
+      boardRequest = getCompanyKanbanBoard(
+        session.token,
+        currentRoute.companyId,
+        currentRoute.boardId,
+      )
+    } else if (currentRoute.type === 'friendlyBoard' || currentRoute.type === 'friendlyTask') {
+      boardRequest = getCompanyKanbanBoard(
+        session.token,
+        session.company.id,
+        friendlyBoard!.board.id,
+      )
+    } else {
+      boardRequest = getCurrentKanbanBoard(session.token)
+    }
 
     boardRequest
       .then((board) => {
@@ -177,7 +212,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
         setKanbanBoard(board)
 
         if (currentRoute.type === 'home') {
-          navigateTo(createBoardPath(session.company.id, board.id), {
+          navigateTo(createFriendlyBoardPath(board.departmentKey, board.key), {
             replace: true,
           })
         }
@@ -198,12 +233,30 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     return () => {
       shouldIgnoreResult = true
     }
-  }, [session?.token, session?.company.id, currentRoute, navigateTo])
+  }, [session?.token, session?.company.id, currentRoute, navigateTo, companyWorkspace])
 
   useEffect(() => {
-    if (!session?.token || currentRoute.type !== 'task') {
+    if (
+      !session?.token ||
+      (currentRoute.type !== 'task' && currentRoute.type !== 'friendlyTask')
+    ) {
       setSelectedTaskDetail(null)
       setIsTaskDetailLoading(false)
+      return
+    }
+
+    const routeTaskId =
+      currentRoute.type === 'task'
+        ? currentRoute.taskId
+        : findTaskIdByFriendlyId(kanbanBoard, currentRoute.taskFriendlyId)
+
+    if (!routeTaskId) {
+      if (kanbanBoard) {
+        setSelectedTaskDetail(null)
+        setIsTaskDetailLoading(false)
+        setKanbanStatusMessage('Nao foi possivel encontrar a task pela URL')
+      }
+
       return
     }
 
@@ -213,7 +266,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     setIsTaskDetailLoading(true)
     setKanbanStatusMessage('')
 
-    getTaskDetail(session.token, currentRoute.taskId)
+    getTaskDetail(session.token, routeTaskId)
       .then((taskDetail) => {
         if (!shouldIgnoreResult) {
           setSelectedTaskDetail(taskDetail)
@@ -235,7 +288,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     return () => {
       shouldIgnoreResult = true
     }
-  }, [session?.token, currentRoute])
+  }, [session?.token, currentRoute, kanbanBoard])
 
   const resetWorkspaceData = useCallback(() => {
     setCompanyWorkspace(null)
@@ -264,4 +317,42 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     setKanbanStatusMessage,
     setSelectedTaskDetail,
   }
+}
+
+function findWorkspaceBoardByKeys(
+  workspace: CompanyWorkspace | null,
+  departmentKey: string,
+  boardKey: string,
+) {
+  const normalizedDepartmentKey = departmentKey.toUpperCase()
+  const normalizedBoardKey = boardKey.toUpperCase()
+
+  for (const department of workspace?.departments ?? []) {
+    if (department.key.toUpperCase() !== normalizedDepartmentKey) {
+      continue
+    }
+
+    const board = department.boards.find(
+      (workspaceBoard) => workspaceBoard.key.toUpperCase() === normalizedBoardKey,
+    )
+
+    if (board) {
+      return {
+        board,
+        department,
+      }
+    }
+  }
+
+  return null
+}
+
+function findTaskIdByFriendlyId(board: KanbanBoard | null, taskFriendlyId: string) {
+  const normalizedTaskFriendlyId = taskFriendlyId.toUpperCase()
+
+  return (
+    board?.columns
+      .flatMap((column) => column.tasks)
+      .find((task) => task.friendlyId.toUpperCase() === normalizedTaskFriendlyId)?.id ?? null
+  )
 }

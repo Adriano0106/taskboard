@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import type { CompanyWorkspace } from '../api.js'
-import { createBoardPath } from '../routing.js'
+import { createFriendlyBoardPath } from '../routing.js'
 import { Badge } from './ui/Badge.js'
 import { Button } from './ui/Button.js'
 import { Card } from './ui/Card.js'
@@ -130,7 +130,7 @@ export function CompanyWorkspacePage({
                   <button
                     type="button"
                     className="board-open-button"
-                    onClick={() => onNavigate(createBoardPath(companyWorkspace.id, board.id))}
+                    onClick={() => onNavigate(createFriendlyBoardPath(department.key, board.key))}
                   >
                     <Badge>{board.key}</Badge>
                     <strong>{board.name}</strong>

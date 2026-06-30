@@ -18,6 +18,17 @@ export type AppRoute =
       taskId: string
     }
   | {
+      type: 'friendlyBoard'
+      departmentKey: string
+      boardKey: string
+    }
+  | {
+      type: 'friendlyTask'
+      departmentKey: string
+      boardKey: string
+      taskFriendlyId: string
+    }
+  | {
       type: 'home'
     }
   | {
@@ -63,6 +74,32 @@ export function parseAppRoute(pathname: string): AppRoute {
     }
   }
 
+  const firstSegment = pathSegments[0]
+  const secondSegment = pathSegments[1]
+  const thirdSegment = pathSegments[2]
+
+  if (pathSegments.length === 2 && isRouteKey(firstSegment) && isRouteKey(secondSegment)) {
+    return {
+      type: 'friendlyBoard',
+      departmentKey: firstSegment,
+      boardKey: secondSegment,
+    }
+  }
+
+  if (
+    pathSegments.length === 3 &&
+    isRouteKey(firstSegment) &&
+    isRouteKey(secondSegment) &&
+    isRouteKey(thirdSegment)
+  ) {
+    return {
+      type: 'friendlyTask',
+      departmentKey: firstSegment,
+      boardKey: secondSegment,
+      taskFriendlyId: thirdSegment,
+    }
+  }
+
   return {
     type: 'home',
   }
@@ -78,4 +115,20 @@ export function createBoardPath(companyId: string, boardId: string) {
 
 export function createTaskPath(companyId: string, boardId: string, taskId: string) {
   return `${createBoardPath(companyId, boardId)}/tasks/${taskId}`
+}
+
+export function createFriendlyBoardPath(departmentKey: string, boardKey: string) {
+  return `/${departmentKey}/${boardKey}`
+}
+
+export function createFriendlyTaskPath(
+  departmentKey: string,
+  boardKey: string,
+  taskFriendlyId: string,
+) {
+  return `${createFriendlyBoardPath(departmentKey, boardKey)}/${taskFriendlyId}`
+}
+
+function isRouteKey(value: string | undefined): value is string {
+  return Boolean(value && /^[a-zA-Z0-9-]+$/.test(value))
 }
