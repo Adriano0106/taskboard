@@ -1,5 +1,6 @@
 export type CompanyPermission =
   | 'ManageWorkspace'
+  | 'DeleteBoard'
   | 'ManageColumns'
   | 'CreateTask'
   | 'EditTask'
@@ -11,6 +12,7 @@ export type CompanyPermission =
 const rolePermissions: Record<string, CompanyPermission[]> = {
   OWNER: [
     'ManageWorkspace',
+    'DeleteBoard',
     'ManageColumns',
     'CreateTask',
     'EditTask',
@@ -21,6 +23,7 @@ const rolePermissions: Record<string, CompanyPermission[]> = {
   ],
   ADMIN: [
     'ManageWorkspace',
+    'DeleteBoard',
     'ManageColumns',
     'CreateTask',
     'EditTask',

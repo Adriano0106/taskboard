@@ -56,7 +56,7 @@ describe('board routes', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toMatchObject({
-      key: 'TB',
+      key: 'PR',
       name: 'TaskBoard',
       columns: [
         {
@@ -70,6 +70,10 @@ describe('board routes', () => {
         {
           name: 'Concluido',
           position: 3,
+        },
+        {
+          name: 'Cancelada',
+          position: 4,
         },
       ],
     })
@@ -91,7 +95,7 @@ describe('board routes', () => {
     expect(response.statusCode).toBe(200)
     expect(response.json()).toMatchObject({
       id: currentBoard.id,
-      key: 'TB',
+      key: 'PR',
       name: 'TaskBoard',
     })
 
@@ -113,7 +117,7 @@ describe('board routes', () => {
     expect(response.statusCode).toBe(200)
     expect(response.json()).toMatchObject({
       id: currentBoard.id,
-      key: 'TB',
+      key: 'PR',
     })
 
     await app.close()
@@ -641,6 +645,7 @@ describe('board routes', () => {
       'Concluido',
       'A fazer',
       'Em progresso',
+      'Cancelada',
     ])
 
     await app.close()
@@ -709,9 +714,9 @@ describe('board routes', () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)
     const board = await getCurrentBoard(app, token)
-    const protectedColumns = board.columns.filter((column) =>
-      ['A fazer', 'Concluido'].includes(column.name),
-    )
+    const protectedColumns = board.columns.filter((column) => {
+      return ['A fazer', 'Concluido', 'Cancelada'].includes(column.name)
+    })
 
     for (const protectedColumn of protectedColumns) {
       const response = await app.inject({

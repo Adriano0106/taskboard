@@ -86,7 +86,7 @@ interface SortableColumnOrderRowProps {
   onDeleteColumn: (column: KanbanColumn) => void
 }
 
-const protectedColumnNames = ['A fazer', 'Concluido']
+const protectedColumnNames = ['A fazer', 'Concluido', 'Cancelada']
 
 function SortableColumnOrderRow({
   column,

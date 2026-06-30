@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { defaultBoardColumns } from './board-defaults.js'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
 import { BoardError } from './board-types.js'
 import type {
@@ -31,7 +32,7 @@ export async function getOrCreateCompanyKanbanBoard(
 
     const board = await transaction.board.create({
       data: {
-        key: 'TB',
+        key: 'PR',
         name: 'TaskBoard',
         description: 'Quadro inicial para organizar tarefas do projeto.',
         departmentId: department.id,
@@ -42,20 +43,7 @@ export async function getOrCreateCompanyKanbanBoard(
           },
         },
         columns: {
-          create: [
-            {
-              name: 'A fazer',
-              position: 1,
-            },
-            {
-              name: 'Em progresso',
-              position: 2,
-            },
-            {
-              name: 'Concluido',
-              position: 3,
-            },
-          ],
+          create: defaultBoardColumns,
         },
       },
       include: {
@@ -70,15 +58,16 @@ export async function getOrCreateCompanyKanbanBoard(
     const todoColumn = board.columns.find((column) => column.position === 1)
     const progressColumn = board.columns.find((column) => column.position === 2)
     const doneColumn = board.columns.find((column) => column.position === 3)
+    const canceledColumn = board.columns.find((column) => column.position === 4)
 
-    if (!todoColumn || !progressColumn || !doneColumn) {
+    if (!todoColumn || !progressColumn || !doneColumn || !canceledColumn) {
       throw new Error('Starter board columns were not created')
     }
 
     await transaction.task.createMany({
       data: [
         {
-          friendlyId: 'TB-1',
+          friendlyId: 'PR-1',
           sequenceNumber: 1,
           title: 'Mapear fluxo inicial do Kanban',
           boardId: board.id,
@@ -87,7 +76,7 @@ export async function getOrCreateCompanyKanbanBoard(
           assigneeId: input.userId,
         },
         {
-          friendlyId: 'TB-2',
+          friendlyId: 'PR-2',
           sequenceNumber: 2,
           title: 'Conectar cards ao backend',
           boardId: board.id,
@@ -96,7 +85,7 @@ export async function getOrCreateCompanyKanbanBoard(
           assigneeId: input.userId,
         },
         {
-          friendlyId: 'TB-3',
+          friendlyId: 'PR-3',
           sequenceNumber: 3,
           title: 'Definir regras de desenvolvimento',
           boardId: board.id,

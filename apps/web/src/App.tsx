@@ -156,6 +156,7 @@ export function App() {
     session?.company.permissions,
     'ManageWorkspace',
   )
+  const canDeleteBoard = hasCompanyPermission(session?.company.permissions, 'DeleteBoard')
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
 
@@ -531,7 +532,12 @@ export function App() {
   }
 
   async function handleDeleteBoard(boardId: string, boardName: string) {
-    if (!session?.token || !window.confirm(`Remover quadro "${boardName}"?`)) {
+    if (
+      !session?.token ||
+      !window.confirm(
+        `Remover quadro "${boardName}"? So sera possivel se nao houver tasks abertas.`,
+      )
+    ) {
       return
     }
 
@@ -765,6 +771,7 @@ export function App() {
         {currentRoute.type === 'company' ? (
           <CompanyWorkspacePage
             canManageWorkspace={canManageWorkspace}
+            canDeleteBoard={canDeleteBoard}
             companyWorkspace={companyWorkspace}
             deletingBoardId={deletingBoardId}
             deletingDepartmentId={deletingDepartmentId}

@@ -1,5 +1,6 @@
 export type CompanyPermission =
   | 'ManageWorkspace'
+  | 'DeleteBoard'
   | 'ManageColumns'
   | 'CreateTask'
   | 'EditTask'

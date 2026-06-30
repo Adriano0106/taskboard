@@ -1,8 +1,13 @@
 import type { FormEvent } from 'react'
 import type { CompanyWorkspace } from '../api.js'
 import { createBoardPath } from '../routing.js'
+import { Badge } from './ui/Badge.js'
+import { Button } from './ui/Button.js'
+import { Card } from './ui/Card.js'
+import { TextInput } from './ui/TextInput.js'
 
 interface CompanyWorkspacePageProps {
+  canDeleteBoard: boolean
   canManageWorkspace: boolean
   companyWorkspace: CompanyWorkspace | null
   deletingBoardId: string | null
@@ -21,6 +26,7 @@ interface CompanyWorkspacePageProps {
 }
 
 export function CompanyWorkspacePage({
+  canDeleteBoard,
   canManageWorkspace,
   companyWorkspace,
   deletingBoardId,
@@ -46,10 +52,16 @@ export function CompanyWorkspacePage({
         </div>
         {canManageWorkspace ? (
           <form className="workspace-create-form" onSubmit={onCreateDepartment}>
-            <input name="name" type="text" minLength={2} placeholder="Novo departamento" required />
-            <button type="submit" className="secondary-button">
+            <TextInput
+              name="name"
+              type="text"
+              minLength={2}
+              placeholder="Novo departamento"
+              required
+            />
+            <Button type="submit">
               Adicionar
-            </button>
+            </Button>
           </form>
         ) : null}
       </div>
@@ -71,7 +83,7 @@ export function CompanyWorkspacePage({
                 className="department-title-form"
                 onSubmit={(event) => onRenameDepartment(event, department.id)}
               >
-                <input
+                <TextInput
                   name="name"
                   type="text"
                   minLength={2}
@@ -79,22 +91,22 @@ export function CompanyWorkspacePage({
                   disabled={editingDepartmentId === department.id}
                   required
                 />
-                <button type="submit" className="icon-button">
+                <Button type="submit" variant="icon">
                   Salvar
-                </button>
+                </Button>
               </form>
             ) : (
               <h3>{department.name}</h3>
             )}
             {canManageWorkspace ? (
-              <button
+              <Button
                 type="button"
-                className="icon-button danger-button"
+                variant="danger"
                 disabled={deletingDepartmentId === department.id || department.boards.length > 0}
                 onClick={() => onDeleteDepartment(department.id, department.name)}
               >
                 Remover
-              </button>
+              </Button>
             ) : null}
           </div>
 
@@ -103,24 +115,24 @@ export function CompanyWorkspacePage({
               className="board-create-form"
               onSubmit={(event) => onCreateBoard(event, department.id)}
             >
-              <input name="name" type="text" minLength={2} placeholder="Novo quadro" required />
-              <input name="description" type="text" placeholder="Descricao opcional" />
-              <button type="submit" className="secondary-button">
+              <TextInput name="name" type="text" minLength={2} placeholder="Novo quadro" required />
+              <TextInput name="description" type="text" placeholder="Descricao opcional" />
+              <Button type="submit">
                 Criar quadro
-              </button>
+              </Button>
             </form>
           ) : null}
 
           {department.boards.length > 0 ? (
             <div className="board-grid">
               {department.boards.map((board) => (
-                <article className="board-card" key={board.id}>
+                <Card className="board-card" key={board.id}>
                   <button
                     type="button"
                     className="board-open-button"
                     onClick={() => onNavigate(createBoardPath(companyWorkspace.id, board.id))}
                   >
-                    <span>{board.key}</span>
+                    <Badge>{board.key}</Badge>
                     <strong>{board.name}</strong>
                     {board.description ? <small>{board.description}</small> : null}
                   </button>
@@ -129,7 +141,7 @@ export function CompanyWorkspacePage({
                       className="board-edit-form"
                       onSubmit={(event) => onUpdateBoard(event, board.id)}
                     >
-                      <input
+                      <TextInput
                         name="name"
                         type="text"
                         minLength={2}
@@ -137,7 +149,7 @@ export function CompanyWorkspacePage({
                         disabled={editingBoardId === board.id}
                         required
                       />
-                      <input
+                      <TextInput
                         name="description"
                         type="text"
                         defaultValue={board.description ?? ''}
@@ -145,21 +157,23 @@ export function CompanyWorkspacePage({
                         placeholder="Descricao"
                       />
                       <div className="board-edit-actions">
-                        <button type="submit" className="icon-button">
+                        <Button type="submit" variant="icon">
                           Salvar
-                        </button>
-                        <button
-                          type="button"
-                          className="icon-button danger-button"
-                          disabled={deletingBoardId === board.id}
-                          onClick={() => onDeleteBoard(board.id, board.name)}
-                        >
-                          Remover
-                        </button>
+                        </Button>
+                        {canDeleteBoard ? (
+                          <Button
+                            type="button"
+                            variant="danger"
+                            disabled={deletingBoardId === board.id}
+                            onClick={() => onDeleteBoard(board.id, board.name)}
+                          >
+                            Remover
+                          </Button>
+                        ) : null}
                       </div>
                     </form>
                   ) : null}
-                </article>
+                </Card>
               ))}
             </div>
           ) : (

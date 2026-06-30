@@ -313,7 +313,10 @@ function getCompanyErrorStatus(error: CompanyError) {
     return 403
   }
 
-  if (error.message.includes('empty departments')) {
+  if (
+    error.message.includes('empty departments') ||
+    error.message.includes('without open tasks')
+  ) {
     return 409
   }
 

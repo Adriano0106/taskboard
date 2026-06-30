@@ -70,7 +70,7 @@ describe('company routes', () => {
           name: 'Produto',
           boards: [
             {
-              key: 'TB',
+              key: 'PR',
               name: 'TaskBoard',
             },
           ],
@@ -161,7 +161,7 @@ describe('company routes', () => {
           name: 'Produto',
           boards: [
             {
-              key: 'TB',
+              key: 'PR',
             },
           ],
         },
@@ -191,7 +191,7 @@ describe('company routes', () => {
 
   it('creates, updates and deletes departments and boards for owners', async () => {
     const app = await createTestApp()
-    const { token } = await registerOwnerSession(app)
+    const { company, token } = await registerOwnerSession(app)
 
     const createdDepartmentResponse = await app.inject({
       method: 'POST',
@@ -236,6 +236,7 @@ describe('company routes', () => {
         description: 'Novo planejamento',
       },
     })
+    const boardColumnNames = await getBoardColumnNames(app, token, company.id, board.id)
     const deletedBoardResponse = await app.inject({
       method: 'DELETE',
       url: `/companies/current/boards/${board.id}`,
@@ -250,9 +251,10 @@ describe('company routes', () => {
     expect(createdDepartmentResponse.statusCode).toBe(201)
     expect(createdBoardResponse.statusCode).toBe(201)
     expect(board).toMatchObject({
-      key: 'RP',
+      key: 'EN',
       description: 'Planejamento do trimestre',
     })
+    expect(boardColumnNames).toEqual(['A fazer', 'Em progresso', 'Concluido', 'Cancelada'])
     expect(renamedDepartmentResponse.statusCode).toBe(200)
     expect(renamedDepartmentResponse.json().departments).toEqual(
       expect.arrayContaining([
@@ -285,6 +287,89 @@ describe('company routes', () => {
         }),
       ]),
     )
+
+    await app.close()
+  })
+
+  it('blocks deleting boards with open tasks and allows deletion after tasks are closed', async () => {
+    const app = await createTestApp()
+    const { company, token } = await registerOwnerSession(app)
+
+    const createdDepartmentResponse = await app.inject({
+      method: 'POST',
+      url: '/companies/current/departments',
+      headers: createAuthHeader(token),
+      payload: {
+        name: 'Atendimento',
+      },
+    })
+    const department = createdDepartmentResponse
+      .json()
+      .departments.find((workspaceDepartment: { name: string }) => {
+        return workspaceDepartment.name === 'Atendimento'
+      })
+    const createdBoardResponse = await app.inject({
+      method: 'POST',
+      url: `/companies/current/departments/${department.id}/boards`,
+      headers: createAuthHeader(token),
+      payload: {
+        name: 'Fila de suporte',
+      },
+    })
+    const board = createdBoardResponse
+      .json()
+      .departments.find((workspaceDepartment: { id: string }) => workspaceDepartment.id === department.id)
+      .boards.find((workspaceBoard: { name: string }) => workspaceBoard.name === 'Fila de suporte')
+    const kanbanResponse = await app.inject({
+      method: 'GET',
+      url: `/companies/${company.id}/boards/${board.id}/kanban`,
+      headers: createAuthHeader(token),
+    })
+    const firstColumn = kanbanResponse.json().columns[0]
+    const canceledColumn = kanbanResponse
+      .json()
+      .columns.find((column: { name: string }) => column.name === 'Cancelada')
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: `/companies/${company.id}/boards/${board.id}/tasks`,
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Ticket aberto',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find((task: { title: string }) => task.title === 'Ticket aberto')
+    const blockedDeleteResponse = await app.inject({
+      method: 'DELETE',
+      url: `/companies/current/boards/${board.id}`,
+      headers: createAuthHeader(token),
+    })
+
+    await app.inject({
+      method: 'PATCH',
+      url: `/tasks/${createdTask.id}/move`,
+      headers: createAuthHeader(token),
+      payload: {
+        columnId: canceledColumn.id,
+        position: 1,
+      },
+    })
+
+    const deletedBoardResponse = await app.inject({
+      method: 'DELETE',
+      url: `/companies/current/boards/${board.id}`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(createdBoardResponse.statusCode).toBe(201)
+    expect(board.key).toBe('AT')
+    expect(blockedDeleteResponse.statusCode).toBe(409)
+    expect(blockedDeleteResponse.json()).toMatchObject({
+      message: 'Only boards without open tasks can be deleted',
+    })
+    expect(deletedBoardResponse.statusCode).toBe(200)
 
     await app.close()
   })
@@ -376,6 +461,23 @@ async function createMemberToken(app: FastifyInstance, companyId: string) {
     companyId,
     role: 'MEMBER',
   })
+}
+
+async function getBoardColumnNames(
+  app: FastifyInstance,
+  token: string,
+  companyId: string,
+  boardId: string,
+) {
+  const response = await app.inject({
+    method: 'GET',
+    url: `/companies/${companyId}/boards/${boardId}/kanban`,
+    headers: createAuthHeader(token),
+  })
+
+  expect(response.statusCode).toBe(200)
+
+  return response.json().columns.map((column: { name: string }) => column.name)
 }
 
 function createAuthHeader(token: string) {

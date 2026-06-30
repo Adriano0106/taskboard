@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { isProtectedColumnName } from './board-defaults.js'
 import {
   assertCanManageColumns,
   normalizeColumnPosition,
@@ -17,8 +18,6 @@ import type {
   ReorderKanbanColumnInput,
   UpdateKanbanColumnInput,
 } from './board-types.js'
-
-const protectedColumnNames = ['A fazer', 'Concluido']
 
 export async function createColumnInCompanyKanbanBoard(
   prisma: PrismaClient,
@@ -184,7 +183,7 @@ export async function deleteColumnFromCompanyKanbanBoard(
     throw new BoardError('Board must keep at least one column')
   }
 
-  if (protectedColumnNames.includes(column.name)) {
+  if (isProtectedColumnName(column.name)) {
     throw new BoardError('Protected board columns cannot be deleted')
   }
 

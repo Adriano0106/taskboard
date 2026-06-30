@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import { assertCompanyPermission, getCompanyPermissions } from '../permissions.js'
+import { defaultBoardColumns, isClosedColumnName } from './board-defaults.js'
 
 export interface CompanyWorkspace {
   id: string
@@ -152,9 +153,13 @@ export async function createBoard(
   input: CreateBoardInput,
 ): Promise<CompanyWorkspace> {
   await assertCanManageCompanyWorkspace(prisma, input)
-  await assertDepartmentBelongsToCompany(prisma, input.companyId, input.departmentId)
+  const department = await assertDepartmentBelongsToCompany(
+    prisma,
+    input.companyId,
+    input.departmentId,
+  )
 
-  const key = await createUniqueBoardKey(prisma, input.departmentId, input.name)
+  const key = await createUniqueBoardKey(prisma, input.departmentId, department.name)
 
   await prisma.board.create({
     data: {
@@ -169,20 +174,7 @@ export async function createBoard(
         },
       },
       columns: {
-        create: [
-          {
-            name: 'A fazer',
-            position: 1,
-          },
-          {
-            name: 'Em progresso',
-            position: 2,
-          },
-          {
-            name: 'Concluido',
-            position: 3,
-          },
-        ],
+        create: defaultBoardColumns,
       },
     },
   })
@@ -214,8 +206,9 @@ export async function deleteBoard(
   prisma: PrismaClient,
   input: DeleteBoardInput,
 ): Promise<CompanyWorkspace> {
-  await assertCanManageCompanyWorkspace(prisma, input)
+  await assertCanDeleteBoard(prisma, input)
   await assertBoardBelongsToCompany(prisma, input.companyId, input.boardId)
+  await assertBoardHasNoOpenTasks(prisma, input.boardId)
 
   await prisma.board.delete({
     where: {
@@ -312,6 +305,27 @@ async function assertDepartmentBelongsToCompany(
   if (!department) {
     throw new CompanyError('Department does not belong to the current company')
   }
+
+  return department
+}
+
+async function assertCanDeleteBoard(prisma: PrismaClient, input: CompanyMutationInput) {
+  const membership = await prisma.companyMember.findUnique({
+    where: {
+      userId_companyId: {
+        userId: input.userId,
+        companyId: input.companyId,
+      },
+    },
+  })
+
+  if (!membership) {
+    throw new CompanyError('Company does not belong to the authenticated user')
+  }
+
+  assertCompanyPermission(membership.role, 'DeleteBoard', () =>
+    new CompanyError('Only company owners and admins can delete boards'),
+  )
 }
 
 async function assertBoardBelongsToCompany(
@@ -330,6 +344,22 @@ async function assertBoardBelongsToCompany(
 
   if (!board) {
     throw new CompanyError('Board does not belong to the current company')
+  }
+}
+
+async function assertBoardHasNoOpenTasks(prisma: PrismaClient, boardId: string) {
+  const tasks = await prisma.task.findMany({
+    where: {
+      boardId,
+    },
+    include: {
+      column: true,
+    },
+  })
+  const hasOpenTasks = tasks.some((task) => !isClosedColumnName(task.column.name))
+
+  if (hasOpenTasks) {
+    throw new CompanyError('Only boards without open tasks can be deleted')
   }
 }
 
@@ -371,7 +401,10 @@ function createBoardKeyBase(name: string) {
     .trim()
     .split(/\s+/)
     .filter(Boolean)
-  const initials = words.map((word) => word[0]).join('').slice(0, 3)
+  const initials =
+    words.length === 1
+      ? words[0]?.slice(0, 2)
+      : words.map((word) => word[0] ?? '').join('').slice(0, 3)
   const fallbackKey = name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3)
 
   return (initials || fallbackKey || 'BD').toUpperCase().padEnd(2, 'X')

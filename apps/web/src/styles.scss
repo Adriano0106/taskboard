@@ -482,6 +482,16 @@ textarea {
   color: colors.$danger;
 }
 
+.ui-card {
+  border-radius: 8px;
+}
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+}
+
 .board-card {
   span {
     width: fit-content;
