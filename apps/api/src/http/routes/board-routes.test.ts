@@ -347,6 +347,11 @@ describe('board routes', () => {
       url: `/tasks/${createdTask.id}/watchers/${watcherPayload?.userId}`,
       headers: createAuthHeader(token),
     })
+    const activitiesResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/activities`,
+      headers: createAuthHeader(token),
+    })
 
     expect(addWatcherResponse.statusCode).toBe(201)
     expect(addWatcherResponse.json()).toEqual([
@@ -359,6 +364,23 @@ describe('board routes', () => {
     expect(listWatchersResponse.json()).toHaveLength(1)
     expect(removeWatcherResponse.statusCode).toBe(200)
     expect(removeWatcherResponse.json()).toEqual([])
+    expect(activitiesResponse.statusCode).toBe(200)
+    expect(activitiesResponse.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'WATCHER_ADDED',
+          metadata: expect.objectContaining({
+            watcherName: 'Board Test Member',
+          }),
+        }),
+        expect.objectContaining({
+          type: 'WATCHER_REMOVED',
+          metadata: expect.objectContaining({
+            watcherName: 'Board Test Member',
+          }),
+        }),
+      ]),
+    )
 
     await app.close()
   })
@@ -375,6 +397,7 @@ describe('board routes', () => {
       headers: createAuthHeader(token),
       payload: {
         title: 'Tarefa com historico',
+        description: 'Descricao original',
         priority: 'LOW',
         columnId: firstColumn.id,
       },
@@ -397,6 +420,7 @@ describe('board routes', () => {
       headers: createAuthHeader(token),
       payload: {
         title: 'Tarefa com historico editada',
+        description: 'Descricao revisada',
         priority: 'URGENT',
         assigneeId: null,
       },
@@ -428,6 +452,20 @@ describe('board routes', () => {
         }),
         expect.objectContaining({
           type: 'COMMENTED',
+        }),
+        expect.objectContaining({
+          type: 'TITLE_CHANGED',
+          metadata: expect.objectContaining({
+            fromTitle: 'Tarefa com historico',
+            toTitle: 'Tarefa com historico editada',
+          }),
+        }),
+        expect.objectContaining({
+          type: 'DESCRIPTION_CHANGED',
+          metadata: expect.objectContaining({
+            fromDescription: 'Descricao original',
+            toDescription: 'Descricao revisada',
+          }),
         }),
         expect.objectContaining({
           type: 'PRIORITY_CHANGED',
@@ -500,6 +538,11 @@ describe('board routes', () => {
       url: `/tasks/${createdTask.id}/attachments/${attachment.id}`,
       headers: createAuthHeader(token),
     })
+    const activitiesResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/activities`,
+      headers: createAuthHeader(token),
+    })
 
     expect(uploadResponse.statusCode).toBe(201)
     expect(uploadResponse.json()).toMatchObject({
@@ -518,6 +561,23 @@ describe('board routes', () => {
     expect(downloadResponse.body).toBe('conteudo do anexo')
     expect(deleteResponse.statusCode).toBe(200)
     expect(deleteResponse.json()).toEqual([])
+    expect(activitiesResponse.statusCode).toBe(200)
+    expect(activitiesResponse.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'ATTACHMENT_ADDED',
+          metadata: expect.objectContaining({
+            fileName: 'arquivo.txt',
+          }),
+        }),
+        expect.objectContaining({
+          type: 'ATTACHMENT_REMOVED',
+          metadata: expect.objectContaining({
+            fileName: 'arquivo.txt',
+          }),
+        }),
+      ]),
+    )
 
     await app.close()
   })

@@ -10,8 +10,14 @@ const activityLabels: Record<TaskActivityType, string> = {
   CREATED: 'criou a task',
   COMMENTED: 'comentou',
   MOVED: 'moveu a task',
+  TITLE_CHANGED: 'alterou o titulo',
+  DESCRIPTION_CHANGED: 'alterou a descricao',
   PRIORITY_CHANGED: 'alterou a prioridade',
   ASSIGNEE_CHANGED: 'alterou o responsavel',
+  WATCHER_ADDED: 'adicionou um observador',
+  WATCHER_REMOVED: 'removeu um observador',
+  ATTACHMENT_ADDED: 'adicionou um anexo',
+  ATTACHMENT_REMOVED: 'removeu um anexo',
 }
 
 const priorityLabels: Record<string, string> = {
@@ -70,6 +76,19 @@ function renderActivityDetail(activity: KanbanTaskActivity) {
     )
   }
 
+  if (activity.type === 'TITLE_CHANGED') {
+    return (
+      <p>
+        {activity.metadata.fromTitle ?? 'Sem titulo'} {'->'}{' '}
+        {activity.metadata.toTitle ?? 'Sem titulo'}
+      </p>
+    )
+  }
+
+  if (activity.type === 'DESCRIPTION_CHANGED') {
+    return <p>Descricao atualizada</p>
+  }
+
   if (activity.type === 'ASSIGNEE_CHANGED') {
     return (
       <p>
@@ -81,6 +100,20 @@ function renderActivityDetail(activity: KanbanTaskActivity) {
 
   if (activity.type === 'CREATED' && activity.metadata.title) {
     return <p>{activity.metadata.title}</p>
+  }
+
+  if (
+    activity.type === 'WATCHER_ADDED' ||
+    activity.type === 'WATCHER_REMOVED'
+  ) {
+    return <p>{activity.metadata.watcherName ?? 'Observador'}</p>
+  }
+
+  if (
+    activity.type === 'ATTACHMENT_ADDED' ||
+    activity.type === 'ATTACHMENT_REMOVED'
+  ) {
+    return <p>{activity.metadata.fileName ?? 'Anexo'}</p>
   }
 
   return null

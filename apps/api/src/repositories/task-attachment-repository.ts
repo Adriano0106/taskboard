@@ -10,6 +10,7 @@ import type {
   TaskAttachmentInput,
 } from './board-types.js'
 import type { StorageProvider } from './storage-provider.js'
+import { createTaskActivity } from './task-activity-writer.js'
 
 export const taskAttachmentMaxSizeBytes = 3 * 1024 * 1024
 
@@ -57,18 +58,32 @@ export async function createTaskAttachment(
   await storageProvider.write(storageKey, content)
 
   try {
-    const attachment = await prisma.taskAttachment.create({
-      data: {
-        fileName: safeFileName,
-        contentType: input.contentType || 'application/octet-stream',
-        sizeBytes: content.byteLength,
-        storageKey,
+    const attachment = await prisma.$transaction(async (transaction) => {
+      const createdAttachment = await transaction.taskAttachment.create({
+        data: {
+          fileName: safeFileName,
+          contentType: input.contentType || 'application/octet-stream',
+          sizeBytes: content.byteLength,
+          storageKey,
+          taskId: input.taskId,
+          uploaderId: input.userId,
+        },
+        include: {
+          uploader: true,
+        },
+      })
+
+      await createTaskActivity(transaction, {
+        actorId: input.userId,
         taskId: input.taskId,
-        uploaderId: input.userId,
-      },
-      include: {
-        uploader: true,
-      },
+        type: 'ATTACHMENT_ADDED',
+        metadata: {
+          attachmentId: createdAttachment.id,
+          fileName: createdAttachment.fileName,
+        },
+      })
+
+      return createdAttachment
     })
 
     return mapTaskAttachment(attachment)
@@ -121,10 +136,21 @@ export async function deleteTaskAttachment(
     throw new BoardError('Attachment does not belong to the current task')
   }
 
-  await prisma.taskAttachment.delete({
-    where: {
-      id: attachment.id,
-    },
+  await prisma.$transaction(async (transaction) => {
+    await transaction.taskAttachment.delete({
+      where: {
+        id: attachment.id,
+      },
+    })
+    await createTaskActivity(transaction, {
+      actorId: input.userId,
+      taskId: input.taskId,
+      type: 'ATTACHMENT_REMOVED',
+      metadata: {
+        attachmentId: attachment.id,
+        fileName: attachment.fileName,
+      },
+    })
   })
   await storageProvider.delete(attachment.storageKey)
 

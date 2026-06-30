@@ -201,7 +201,9 @@ export async function updateTaskInCompanyKanbanBoard(
       assignee: true,
       assigneeId: true,
       boardId: true,
+      description: true,
       priority: true,
+      title: true,
     },
   })
 
@@ -225,14 +227,16 @@ export async function updateTaskInCompanyKanbanBoard(
   }
 
   const updatedAssigneeId = input.assigneeId ?? null
+  const updatedTitle = input.title.trim()
+  const updatedDescription = input.description?.trim() || null
   const updatedTask = await prisma.$transaction(async (transaction) => {
     const task = await transaction.task.update({
       where: {
         id: input.taskId,
       },
       data: {
-        title: input.title.trim(),
-        description: input.description?.trim() || null,
+        title: updatedTitle,
+        description: updatedDescription,
         priority: input.priority,
         assigneeId: updatedAssigneeId,
       },
@@ -240,6 +244,30 @@ export async function updateTaskInCompanyKanbanBoard(
         assignee: true,
       },
     })
+
+    if (existingTask.title !== updatedTitle) {
+      await createTaskActivity(transaction, {
+        actorId: input.userId,
+        taskId: input.taskId,
+        type: 'TITLE_CHANGED',
+        metadata: {
+          fromTitle: existingTask.title,
+          toTitle: updatedTitle,
+        },
+      })
+    }
+
+    if (existingTask.description !== updatedDescription) {
+      await createTaskActivity(transaction, {
+        actorId: input.userId,
+        taskId: input.taskId,
+        type: 'DESCRIPTION_CHANGED',
+        metadata: {
+          fromDescription: existingTask.description,
+          toDescription: updatedDescription,
+        },
+      })
+    }
 
     if (existingTask.priority !== input.priority) {
       await createTaskActivity(transaction, {

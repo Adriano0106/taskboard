@@ -5,6 +5,7 @@ import type {
   TaskWatcherInput,
   UpdateTaskWatcherInput,
 } from './board-types.js'
+import { createTaskActivity } from './task-activity-writer.js'
 
 export async function listTaskWatchers(
   prisma: PrismaClient,
@@ -39,18 +40,39 @@ export async function addTaskWatcher(
   await assertTaskBelongsToCompany(prisma, input)
   await assertUserBelongsToCompany(prisma, input)
 
-  await prisma.taskWatcher.upsert({
-    where: {
-      taskId_userId: {
+  await prisma.$transaction(async (transaction) => {
+    const existingWatcher = await transaction.taskWatcher.findUnique({
+      where: {
+        taskId_userId: {
+          taskId: input.taskId,
+          userId: input.watcherUserId,
+        },
+      },
+    })
+
+    if (existingWatcher) {
+      return
+    }
+
+    const createdWatcher = await transaction.taskWatcher.create({
+      data: {
         taskId: input.taskId,
         userId: input.watcherUserId,
       },
-    },
-    update: {},
-    create: {
+      include: {
+        user: true,
+      },
+    })
+
+    await createTaskActivity(transaction, {
+      actorId: input.userId,
       taskId: input.taskId,
-      userId: input.watcherUserId,
-    },
+      type: 'WATCHER_ADDED',
+      metadata: {
+        watcherId: createdWatcher.userId,
+        watcherName: createdWatcher.user.name,
+      },
+    })
   })
 
   return listTaskWatchers(prisma, input)
@@ -62,11 +84,40 @@ export async function removeTaskWatcher(
 ): Promise<KanbanTaskWatcher[]> {
   await assertTaskBelongsToCompany(prisma, input)
 
-  await prisma.taskWatcher.deleteMany({
-    where: {
+  await prisma.$transaction(async (transaction) => {
+    const existingWatcher = await transaction.taskWatcher.findUnique({
+      where: {
+        taskId_userId: {
+          taskId: input.taskId,
+          userId: input.watcherUserId,
+        },
+      },
+      include: {
+        user: true,
+      },
+    })
+
+    if (!existingWatcher) {
+      return
+    }
+
+    await transaction.taskWatcher.delete({
+      where: {
+        taskId_userId: {
+          taskId: input.taskId,
+          userId: input.watcherUserId,
+        },
+      },
+    })
+    await createTaskActivity(transaction, {
+      actorId: input.userId,
       taskId: input.taskId,
-      userId: input.watcherUserId,
-    },
+      type: 'WATCHER_REMOVED',
+      metadata: {
+        watcherId: existingWatcher.userId,
+        watcherName: existingWatcher.user.name,
+      },
+    })
   })
 
   return listTaskWatchers(prisma, input)

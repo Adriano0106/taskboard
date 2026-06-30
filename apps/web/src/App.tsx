@@ -569,10 +569,26 @@ export function App() {
 
   async function handleUploadAttachment(file: File) {
     await uploadAttachment(file)
+    await reloadActivities()
   }
 
   async function handleDownloadAttachment(attachment: KanbanTaskAttachment) {
     await downloadAttachment(attachment)
+  }
+
+  async function handleRemoveAttachment(attachmentId: string) {
+    await removeAttachment(attachmentId)
+    await reloadActivities()
+  }
+
+  async function handleAddWatcher(userId: string) {
+    await addWatcher(userId)
+    await reloadActivities()
+  }
+
+  async function handleRemoveWatcher(userId: string) {
+    await removeWatcher(userId)
+    await reloadActivities()
   }
 
   function handleOpenTask(taskId: string) {
@@ -763,7 +779,7 @@ export function App() {
             updatingWatcherUserId={updatingWatcherUserId}
             watchers={watchers}
             watchersStatusMessage={watchersStatusMessage}
-            onAddWatcher={addWatcher}
+            onAddWatcher={handleAddWatcher}
             onCloseColumnOrganizer={() => setIsColumnOrganizerOpen(false)}
             onCloseCreateTaskDialog={() => setIsCreateTaskDialogOpen(false)}
             onCloseTaskDetail={handleCloseTaskDetail}
@@ -781,8 +797,8 @@ export function App() {
             onOpenCreateTaskDialog={() => setIsCreateTaskDialogOpen(true)}
             onOpenTask={handleOpenTask}
             onRenameColumn={handleRenameColumn}
-            onRemoveAttachment={removeAttachment}
-            onRemoveWatcher={removeWatcher}
+            onRemoveAttachment={handleRemoveAttachment}
+            onRemoveWatcher={handleRemoveWatcher}
             onReorderColumn={handleReorderColumn}
             onUploadAttachment={handleUploadAttachment}
             onUpdateTask={handleUpdateTask}

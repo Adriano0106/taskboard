@@ -81,8 +81,14 @@ export type TaskActivityType =
   | 'CREATED'
   | 'COMMENTED'
   | 'MOVED'
+  | 'TITLE_CHANGED'
+  | 'DESCRIPTION_CHANGED'
   | 'PRIORITY_CHANGED'
   | 'ASSIGNEE_CHANGED'
+  | 'WATCHER_ADDED'
+  | 'WATCHER_REMOVED'
+  | 'ATTACHMENT_ADDED'
+  | 'ATTACHMENT_REMOVED'
 
 export interface KanbanTaskActivity {
   id: string
