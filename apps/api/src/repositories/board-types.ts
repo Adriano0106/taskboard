@@ -87,6 +87,7 @@ export class BoardError extends Error {
 }
 
 export interface CreateKanbanTaskInput {
+  boardId?: string
   companyId: string
   companyRole: string
   userId: string
@@ -123,6 +124,7 @@ export interface UpdateKanbanTaskResult {
 }
 
 export interface KanbanColumnInput {
+  boardId?: string
   companyId: string
   companyRole: string
   userId: string
@@ -131,6 +133,7 @@ export interface KanbanColumnInput {
 }
 
 export interface UpdateKanbanColumnInput {
+  boardId?: string
   columnId: string
   companyId: string
   companyRole: string
@@ -139,6 +142,7 @@ export interface UpdateKanbanColumnInput {
 }
 
 export interface ReorderKanbanColumnInput {
+  boardId?: string
   columnId: string
   companyId: string
   companyRole: string
@@ -147,6 +151,7 @@ export interface ReorderKanbanColumnInput {
 }
 
 export interface DeleteKanbanColumnInput {
+  boardId?: string
   companyId: string
   companyRole: string
   userId: string

@@ -98,6 +98,17 @@ const columnParamsSchema = z.object({
   columnId: z.string().min(1),
 })
 
+const boardColumnParamsSchema = z.object({
+  companyId: z.string().min(1),
+  boardId: z.string().min(1),
+  columnId: z.string().min(1),
+})
+
+const boardParamsSchema = z.object({
+  companyId: z.string().min(1),
+  boardId: z.string().min(1),
+})
+
 interface BoardRoutesOptions {
   platformAdminEmails?: string[]
   prismaClient?: PrismaClient
@@ -183,6 +194,49 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       throw error
     }
   })
+
+  app.post(
+    '/companies/:companyId/boards/:boardId/tasks',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = boardParamsSchema.safeParse(request.params)
+      const bodyValidation = createTaskBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid task payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        const board = await createTaskInCompanyKanbanBoard(prismaClient, {
+          boardId: paramsValidation.data.boardId,
+          companyId: paramsValidation.data.companyId,
+          companyRole: request.user.role,
+          userId: request.user.userId,
+          columnId: bodyValidation.data.columnId,
+          title: bodyValidation.data.title,
+          description: bodyValidation.data.description,
+          priority: bodyValidation.data.priority,
+          assigneeId: bodyValidation.data.assigneeId,
+        })
+
+        return reply.status(201).send(board)
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(getBoardErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 
   app.get('/tasks/:taskId', { preHandler: authenticateRequest }, async (request, reply) => {
     const paramsValidation = taskParamsSchema.safeParse(request.params)
@@ -633,6 +687,155 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
       throw error
     }
   })
+
+  app.post(
+    '/companies/:companyId/boards/:boardId/columns',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = boardParamsSchema.safeParse(request.params)
+      const bodyValidation = createColumnBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid column payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        const board = await createColumnInCompanyKanbanBoard(prismaClient, {
+          boardId: paramsValidation.data.boardId,
+          companyId: paramsValidation.data.companyId,
+          companyRole: request.user.role,
+          userId: request.user.userId,
+          name: bodyValidation.data.name,
+          position: bodyValidation.data.position,
+        })
+
+        return reply.status(201).send(board)
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(getBoardErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.patch(
+    '/companies/:companyId/boards/:boardId/columns/:columnId',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = boardColumnParamsSchema.safeParse(request.params)
+      const bodyValidation = columnBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid column payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        return await renameColumnInCompanyKanbanBoard(prismaClient, {
+          boardId: paramsValidation.data.boardId,
+          companyId: paramsValidation.data.companyId,
+          companyRole: request.user.role,
+          userId: request.user.userId,
+          columnId: paramsValidation.data.columnId,
+          name: bodyValidation.data.name,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(getBoardErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.patch(
+    '/companies/:companyId/boards/:boardId/columns/:columnId/reorder',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = boardColumnParamsSchema.safeParse(request.params)
+      const bodyValidation = reorderColumnBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid column reorder payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        return await reorderColumnInCompanyKanbanBoard(prismaClient, {
+          boardId: paramsValidation.data.boardId,
+          companyId: paramsValidation.data.companyId,
+          companyRole: request.user.role,
+          userId: request.user.userId,
+          columnId: paramsValidation.data.columnId,
+          position: bodyValidation.data.position,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(getBoardErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.delete(
+    '/companies/:companyId/boards/:boardId/columns/:columnId',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = boardColumnParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid column params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await deleteColumnFromCompanyKanbanBoard(prismaClient, {
+          boardId: paramsValidation.data.boardId,
+          companyId: paramsValidation.data.companyId,
+          companyRole: request.user.role,
+          userId: request.user.userId,
+          columnId: paramsValidation.data.columnId,
+        })
+      } catch (error) {
+        if (error instanceof BoardError) {
+          return reply.status(getBoardErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 
   app.post(
     '/boards/current/columns',

@@ -646,6 +646,65 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('creates columns in the selected board instead of the first company board', async () => {
+    const app = await createTestApp()
+    const { company, token } = await registerOwnerSession(app)
+    const firstBoard = await getCurrentBoard(app, token)
+    const departmentResponse = await app.inject({
+      method: 'POST',
+      url: '/companies/current/departments',
+      headers: createAuthHeader(token),
+      payload: {
+        name: 'Operacoes',
+      },
+    })
+    const department = departmentResponse
+      .json()
+      .departments.find((workspaceDepartment: { name: string }) => {
+        return workspaceDepartment.name === 'Operacoes'
+      })
+    const boardResponse = await app.inject({
+      method: 'POST',
+      url: `/companies/current/departments/${department.id}/boards`,
+      headers: createAuthHeader(token),
+      payload: {
+        name: 'Suporte',
+      },
+    })
+    const secondBoard = boardResponse
+      .json()
+      .departments.flatMap((workspaceDepartment: { boards: Array<{ name: string }> }) => {
+        return workspaceDepartment.boards
+      })
+      .find((board: { name: string }) => board.name === 'Suporte')
+
+    const createColumnResponse = await app.inject({
+      method: 'POST',
+      url: `/companies/${company.id}/boards/${secondBoard.id}/columns`,
+      headers: createAuthHeader(token),
+      payload: {
+        name: 'Cancelado',
+        position: 4,
+      },
+    })
+    const firstBoardResponse = await app.inject({
+      method: 'GET',
+      url: `/companies/${company.id}/boards/${firstBoard.id}/kanban`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(createColumnResponse.statusCode).toBe(201)
+    expect(createColumnResponse.json().id).toBe(secondBoard.id)
+    expect(createColumnResponse.json().columns.map((column: { name: string }) => column.name)).toContain(
+      'Cancelado',
+    )
+    expect(firstBoardResponse.json().columns.map((column: { name: string }) => column.name)).not.toContain(
+      'Cancelado',
+    )
+
+    await app.close()
+  })
+
   it('prevents deleting protected initial columns', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)

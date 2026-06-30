@@ -1,7 +1,11 @@
 import type { PrismaClient } from '@prisma/client'
 import { assertCompanyPermission } from '../permissions.js'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
-import { getKanbanTaskDetail, getOrCreateCompanyKanbanBoard } from './board-query-repository.js'
+import {
+  getCompanyKanbanBoard,
+  getKanbanTaskDetail,
+  getOrCreateCompanyKanbanBoard,
+} from './board-query-repository.js'
 import { BoardError } from './board-types.js'
 import { createTaskActivity } from './task-activity-writer.js'
 import type {
@@ -18,10 +22,7 @@ export async function createTaskInCompanyKanbanBoard(
 ): Promise<KanbanBoard> {
   assertCompanyPermission(input.companyRole, 'CreateTask', (message) => new BoardError(message))
 
-  const board = await getOrCreateCompanyKanbanBoard(prisma, {
-    companyId: input.companyId,
-    userId: input.userId,
-  })
+  const board = await getTargetBoard(prisma, input)
   const targetColumn = board.columns.find((column) => column.id === input.columnId)
   const firstColumn = board.columns[0]
 
@@ -318,4 +319,26 @@ export async function updateTaskInCompanyKanbanBoard(
     board: mapBoardToKanbanBoard(board),
     task,
   }
+}
+
+function getTargetBoard(
+  prisma: PrismaClient,
+  input: {
+    boardId?: string
+    companyId: string
+    userId: string
+  },
+) {
+  if (input.boardId) {
+    return getCompanyKanbanBoard(prisma, {
+      boardId: input.boardId,
+      companyId: input.companyId,
+      userId: input.userId,
+    })
+  }
+
+  return getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
 }

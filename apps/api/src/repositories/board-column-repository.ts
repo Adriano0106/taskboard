@@ -5,7 +5,10 @@ import {
   shiftColumnsFromPosition,
 } from './board-column-helpers.js'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
-import { getOrCreateCompanyKanbanBoard } from './board-query-repository.js'
+import {
+  getCompanyKanbanBoard,
+  getOrCreateCompanyKanbanBoard,
+} from './board-query-repository.js'
 import { BoardError } from './board-types.js'
 import type {
   DeleteKanbanColumnInput,
@@ -23,10 +26,7 @@ export async function createColumnInCompanyKanbanBoard(
 ): Promise<KanbanBoard> {
   assertCanManageColumns(input.companyRole)
 
-  const board = await getOrCreateCompanyKanbanBoard(prisma, {
-    companyId: input.companyId,
-    userId: input.userId,
-  })
+  const board = await getTargetBoard(prisma, input)
   const targetPosition = normalizeColumnPosition(input.position, board.columns.length + 1)
 
   const updatedBoard = await prisma.$transaction(async (transaction) => {
@@ -57,10 +57,7 @@ export async function renameColumnInCompanyKanbanBoard(
 ): Promise<KanbanBoard> {
   assertCanManageColumns(input.companyRole)
 
-  const board = await getOrCreateCompanyKanbanBoard(prisma, {
-    companyId: input.companyId,
-    userId: input.userId,
-  })
+  const board = await getTargetBoard(prisma, input)
   const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
 
   if (!column) {
@@ -94,10 +91,7 @@ export async function reorderColumnInCompanyKanbanBoard(
 ): Promise<KanbanBoard> {
   assertCanManageColumns(input.companyRole)
 
-  const board = await getOrCreateCompanyKanbanBoard(prisma, {
-    companyId: input.companyId,
-    userId: input.userId,
-  })
+  const board = await getTargetBoard(prisma, input)
   const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
 
   if (!column) {
@@ -179,10 +173,7 @@ export async function deleteColumnFromCompanyKanbanBoard(
 ): Promise<KanbanBoard> {
   assertCanManageColumns(input.companyRole)
 
-  const board = await getOrCreateCompanyKanbanBoard(prisma, {
-    companyId: input.companyId,
-    userId: input.userId,
-  })
+  const board = await getTargetBoard(prisma, input)
   const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
 
   if (!column) {
@@ -232,4 +223,26 @@ export async function deleteColumnFromCompanyKanbanBoard(
   })
 
   return mapBoardToKanbanBoard(updatedBoard)
+}
+
+function getTargetBoard(
+  prisma: PrismaClient,
+  input: {
+    boardId?: string
+    companyId: string
+    userId: string
+  },
+) {
+  if (input.boardId) {
+    return getCompanyKanbanBoard(prisma, {
+      boardId: input.boardId,
+      companyId: input.companyId,
+      userId: input.userId,
+    })
+  }
+
+  return getOrCreateCompanyKanbanBoard(prisma, {
+    companyId: input.companyId,
+    userId: input.userId,
+  })
 }

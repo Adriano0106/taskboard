@@ -159,6 +159,14 @@ export function App() {
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' || currentRoute.type === 'board' || currentRoute.type === 'task'
 
+  function getActiveCompanyId() {
+    if (currentRoute.type === 'board' || currentRoute.type === 'task') {
+      return currentRoute.companyId
+    }
+
+    return session?.company.id ?? null
+  }
+
   async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
     setIsSubmitting(true)
@@ -207,7 +215,9 @@ export function App() {
     const formElement = formEvent.currentTarget
     const firstColumn = kanbanBoard?.columns[0]
 
-    if (!session?.token || !firstColumn) {
+    const companyId = getActiveCompanyId()
+
+    if (!session?.token || !kanbanBoard || !firstColumn || !companyId) {
       return
     }
 
@@ -222,13 +232,18 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      const updatedBoard = await createTask(session.token, {
-        columnId: firstColumn.id,
-        title,
-        description: String(formData.get('description') ?? '').trim(),
-        priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
-        assigneeId: String(formData.get('assigneeId') ?? '') || undefined,
-      })
+      const updatedBoard = await createTask(
+        session.token,
+        companyId,
+        kanbanBoard.id,
+        {
+          columnId: firstColumn.id,
+          title,
+          description: String(formData.get('description') ?? '').trim(),
+          priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
+          assigneeId: String(formData.get('assigneeId') ?? '') || undefined,
+        },
+      )
 
       setKanbanBoard(updatedBoard)
       formElement.reset()
@@ -247,7 +262,9 @@ export function App() {
 
     const formElement = formEvent.currentTarget
 
-    if (!session?.token) {
+    const companyId = getActiveCompanyId()
+
+    if (!session?.token || !kanbanBoard || !companyId) {
       return
     }
 
@@ -261,9 +278,9 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      const updatedBoard = await createColumn(session.token, {
+      const updatedBoard = await createColumn(session.token, companyId, kanbanBoard.id, {
         name,
-        position: (kanbanBoard?.columns.length ?? 0) + 1,
+        position: kanbanBoard.columns.length + 1,
       })
 
       setKanbanBoard(updatedBoard)
@@ -278,7 +295,9 @@ export function App() {
   async function handleRenameColumn(formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) {
     formEvent.preventDefault()
 
-    if (!session?.token) {
+    const companyId = getActiveCompanyId()
+
+    if (!session?.token || !kanbanBoard || !companyId) {
       return
     }
 
@@ -293,7 +312,7 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      const updatedBoard = await renameColumn(session.token, column.id, {
+      const updatedBoard = await renameColumn(session.token, companyId, kanbanBoard.id, column.id, {
         name,
       })
 
@@ -308,7 +327,9 @@ export function App() {
   }
 
   async function handleDeleteColumn(column: KanbanColumn) {
-    if (!session?.token) {
+    const companyId = getActiveCompanyId()
+
+    if (!session?.token || !kanbanBoard || !companyId) {
       return
     }
 
@@ -316,7 +337,7 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      const updatedBoard = await deleteColumn(session.token, column.id)
+      const updatedBoard = await deleteColumn(session.token, companyId, kanbanBoard.id, column.id)
       setKanbanBoard(updatedBoard)
     } catch (error) {
       setKanbanStatusMessage(
@@ -328,7 +349,9 @@ export function App() {
   }
 
   async function handleReorderColumn(columnId: string, position: number) {
-    if (!session?.token) {
+    const companyId = getActiveCompanyId()
+
+    if (!session?.token || !kanbanBoard || !companyId) {
       return
     }
 
@@ -336,9 +359,15 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      const updatedBoard = await reorderColumn(session.token, columnId, {
-        position,
-      })
+      const updatedBoard = await reorderColumn(
+        session.token,
+        companyId,
+        kanbanBoard.id,
+        columnId,
+        {
+          position,
+        },
+      )
 
       setKanbanBoard(updatedBoard)
     } catch (error) {

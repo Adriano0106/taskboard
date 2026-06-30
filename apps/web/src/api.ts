@@ -348,8 +348,13 @@ export async function getCurrentCompanyMembers(token: string): Promise<CompanyMe
   })
 }
 
-export async function createTask(token: string, payload: CreateTaskPayload): Promise<KanbanBoard> {
-  return sendRequest<KanbanBoard>('/boards/current/tasks', {
+export async function createTask(
+  token: string,
+  companyId: string,
+  boardId: string,
+  payload: CreateTaskPayload,
+): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(`/companies/${companyId}/boards/${boardId}/tasks`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -544,8 +549,13 @@ export async function removeTaskWatcher(
   })
 }
 
-export async function createColumn(token: string, payload: ColumnPayload): Promise<KanbanBoard> {
-  return sendRequest<KanbanBoard>('/boards/current/columns', {
+export async function createColumn(
+  token: string,
+  companyId: string,
+  boardId: string,
+  payload: ColumnPayload,
+): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(`/companies/${companyId}/boards/${boardId}/columns`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -556,39 +566,57 @@ export async function createColumn(token: string, payload: ColumnPayload): Promi
 
 export async function renameColumn(
   token: string,
+  companyId: string,
+  boardId: string,
   columnId: string,
   payload: ColumnPayload,
 ): Promise<KanbanBoard> {
-  return sendRequest<KanbanBoard>(`/boards/current/columns/${columnId}`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${token}`,
+  return sendRequest<KanbanBoard>(
+    `/companies/${companyId}/boards/${boardId}/columns/${columnId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  })
+  )
 }
 
 export async function reorderColumn(
   token: string,
+  companyId: string,
+  boardId: string,
   columnId: string,
   payload: ReorderColumnPayload,
 ): Promise<KanbanBoard> {
-  return sendRequest<KanbanBoard>(`/boards/current/columns/${columnId}/reorder`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${token}`,
+  return sendRequest<KanbanBoard>(
+    `/companies/${companyId}/boards/${boardId}/columns/${columnId}/reorder`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  })
+  )
 }
 
-export async function deleteColumn(token: string, columnId: string): Promise<KanbanBoard> {
-  return sendRequest<KanbanBoard>(`/boards/current/columns/${columnId}`, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${token}`,
+export async function deleteColumn(
+  token: string,
+  companyId: string,
+  boardId: string,
+  columnId: string,
+): Promise<KanbanBoard> {
+  return sendRequest<KanbanBoard>(
+    `/companies/${companyId}/boards/${boardId}/columns/${columnId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  })
+  )
 }
 
 async function sendRequest<ResponseBody>(path: string, init: RequestInit): Promise<ResponseBody> {
