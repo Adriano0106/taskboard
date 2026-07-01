@@ -1,0 +1,4 @@
+ALTER TABLE "Company" ADD COLUMN "themePrimaryColor" TEXT NOT NULL DEFAULT '#07182f';
+ALTER TABLE "Company" ADD COLUMN "themeSecondaryColor" TEXT NOT NULL DEFAULT '#12335f';
+ALTER TABLE "Company" ADD COLUMN "themeAccentColor" TEXT NOT NULL DEFAULT '#1d4ed8';
+ALTER TABLE "Company" ADD COLUMN "themeBoardBackgroundColor" TEXT NOT NULL DEFAULT '#d9e6f2';

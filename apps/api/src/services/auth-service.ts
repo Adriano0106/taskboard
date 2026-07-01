@@ -99,6 +99,12 @@ function mapUserToAuthenticatedAccount(user: UserWithPrimaryCompany): Authentica
       id: primaryMembership.company.id,
       name: primaryMembership.company.name,
       slug: primaryMembership.company.slug,
+      theme: {
+        primaryColor: primaryMembership.company.themePrimaryColor,
+        secondaryColor: primaryMembership.company.themeSecondaryColor,
+        accentColor: primaryMembership.company.themeAccentColor,
+        boardBackgroundColor: primaryMembership.company.themeBoardBackgroundColor,
+      },
       role: primaryMembership.role,
       permissions: getCompanyPermissions(primaryMembership.role),
     },

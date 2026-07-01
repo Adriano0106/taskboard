@@ -53,6 +53,26 @@ const boardBodySchema = z.object({
 const companyBodySchema = z.object({
   name: z.string().trim().min(2),
   slug: z.string().trim().min(2).max(48),
+  theme: z
+    .object({
+      primaryColor: z
+        .string()
+        .trim()
+        .regex(/^#[0-9a-fA-F]{6}$/),
+      secondaryColor: z
+        .string()
+        .trim()
+        .regex(/^#[0-9a-fA-F]{6}$/),
+      accentColor: z
+        .string()
+        .trim()
+        .regex(/^#[0-9a-fA-F]{6}$/),
+      boardBackgroundColor: z
+        .string()
+        .trim()
+        .regex(/^#[0-9a-fA-F]{6}$/),
+    })
+    .optional(),
 })
 
 const companyRoleSchema = z.enum(['OWNER', 'ADMIN', 'MEMBER'])
@@ -112,6 +132,7 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
         userId: request.user.userId,
         name: bodyValidation.data.name,
         slug: bodyValidation.data.slug,
+        theme: bodyValidation.data.theme,
       })
     } catch (error) {
       if (error instanceof CompanyError) {

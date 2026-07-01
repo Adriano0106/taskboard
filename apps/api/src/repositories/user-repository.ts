@@ -12,6 +12,10 @@ export interface UserWithPrimaryCompany {
       id: string
       name: string
       slug: string
+      themePrimaryColor: string
+      themeSecondaryColor: string
+      themeAccentColor: string
+      themeBoardBackgroundColor: string
     }
   }>
 }

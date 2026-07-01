@@ -9,6 +9,7 @@ export interface CompanyWorkspace {
   id: string
   name: string
   slug: string
+  theme: CompanyTheme
   role: string
   permissions: string[]
   departments: Array<{
@@ -22,6 +23,13 @@ export interface CompanyWorkspace {
       description: string | null
     }>
   }>
+}
+
+export interface CompanyTheme {
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  boardBackgroundColor: string
 }
 
 export interface PlatformCompanySummary {
@@ -64,6 +72,7 @@ export interface CompanyMutationInput {
 export interface UpdateCompanyInput extends CompanyMutationInput {
   name: string
   slug: string
+  theme?: CompanyTheme
 }
 
 export interface CreateDepartmentInput extends CompanyMutationInput {
@@ -132,6 +141,14 @@ export async function updateCompany(
     data: {
       name: input.name,
       slug,
+      ...(input.theme
+        ? {
+            themePrimaryColor: normalizeThemeColor(input.theme.primaryColor),
+            themeSecondaryColor: normalizeThemeColor(input.theme.secondaryColor),
+            themeAccentColor: normalizeThemeColor(input.theme.accentColor),
+            themeBoardBackgroundColor: normalizeThemeColor(input.theme.boardBackgroundColor),
+          }
+        : {}),
     },
   })
 
@@ -694,6 +711,12 @@ function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): Compa
     id: company.id,
     name: company.name,
     slug: company.slug,
+    theme: {
+      primaryColor: company.themePrimaryColor,
+      secondaryColor: company.themeSecondaryColor,
+      accentColor: company.themeAccentColor,
+      boardBackgroundColor: company.themeBoardBackgroundColor,
+    },
     role,
     permissions: getCompanyPermissions(role),
     departments: company.departments.map((department) => ({
@@ -708,6 +731,16 @@ function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): Compa
       })),
     })),
   }
+}
+
+function normalizeThemeColor(value: string) {
+  const color = value.trim().toLowerCase()
+
+  if (!/^#[0-9a-f]{6}$/.test(color)) {
+    throw new CompanyError('Invalid company theme color')
+  }
+
+  return color
 }
 
 function normalizeCompanySlugOrThrow(value: string) {

@@ -17,6 +17,12 @@ export interface PublicCompany {
   id: string
   name: string
   slug: string
+  theme: {
+    primaryColor: string
+    secondaryColor: string
+    accentColor: string
+    boardBackgroundColor: string
+  }
   role: string
   permissions: CompanyPermission[]
 }

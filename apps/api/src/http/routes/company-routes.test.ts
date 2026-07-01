@@ -218,6 +218,12 @@ describe('company routes', () => {
       payload: {
         name: 'Folha de Sao Paulo',
         slug: 'folha',
+        theme: {
+          primaryColor: '#07182f',
+          secondaryColor: '#12335f',
+          accentColor: '#1d4ed8',
+          boardBackgroundColor: '#d9e6f2',
+        },
       },
     })
     const slugResponse = await app.inject({
@@ -231,12 +237,24 @@ describe('company routes', () => {
       id: company.id,
       name: 'Folha de Sao Paulo',
       slug: 'folha',
+      theme: {
+        primaryColor: '#07182f',
+        secondaryColor: '#12335f',
+        accentColor: '#1d4ed8',
+        boardBackgroundColor: '#d9e6f2',
+      },
     })
     expect(slugResponse.statusCode).toBe(200)
     expect(slugResponse.json()).toMatchObject({
       id: company.id,
       name: 'Folha de Sao Paulo',
       slug: 'folha',
+      theme: {
+        primaryColor: '#07182f',
+        secondaryColor: '#12335f',
+        accentColor: '#1d4ed8',
+        boardBackgroundColor: '#d9e6f2',
+      },
     })
 
     await app.close()
