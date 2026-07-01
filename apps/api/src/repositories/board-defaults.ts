@@ -30,7 +30,7 @@ export function isProtectedColumnName(columnName: string) {
 function normalizeColumnName(columnName: string) {
   return columnName
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\p{Diacritic}/gu, '')
     .trim()
     .toLowerCase()
 }

@@ -83,9 +83,7 @@ export function CompanyWorkspacePage({
               placeholder="Novo departamento"
               required
             />
-            <Button type="submit">
-              Adicionar
-            </Button>
+            <Button type="submit">Adicionar</Button>
           </form>
         ) : null}
       </div>
@@ -94,9 +92,10 @@ export function CompanyWorkspacePage({
         <Card className="company-settings-card">
           {canManageWorkspace ? (
             <form className="company-settings-form" onSubmit={onUpdateCompany}>
-              <label>
+              <label htmlFor="company-name-input">
                 Nome da empresa
                 <TextInput
+                  id="company-name-input"
                   name="name"
                   type="text"
                   minLength={2}
@@ -104,11 +103,12 @@ export function CompanyWorkspacePage({
                   required
                 />
               </label>
-              <label>
+              <label htmlFor="company-slug-input">
                 URL
                 <div className="slug-input-group">
                   <span>{window.location.origin}/</span>
                   <TextInput
+                    id="company-slug-input"
                     name="slug"
                     type="text"
                     minLength={2}
@@ -125,7 +125,9 @@ export function CompanyWorkspacePage({
             </form>
           ) : (
             <div className="company-settings-readonly">
-              <span>{window.location.origin}/{companyWorkspace.slug}</span>
+              <span>
+                {window.location.origin}/{companyWorkspace.slug}
+              </span>
             </div>
           )}
         </Card>
@@ -194,9 +196,7 @@ export function CompanyWorkspacePage({
             >
               <TextInput name="name" type="text" minLength={2} placeholder="Novo quadro" required />
               <TextInput name="description" type="text" placeholder="Descricao opcional" />
-              <Button type="submit">
-                Criar quadro
-              </Button>
+              <Button type="submit">Criar quadro</Button>
             </form>
           ) : null}
 

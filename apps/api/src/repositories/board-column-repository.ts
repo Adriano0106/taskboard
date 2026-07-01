@@ -1,15 +1,12 @@
 import type { PrismaClient } from '@prisma/client'
-import { isProtectedColumnName } from './board-defaults.js'
 import {
   assertCanManageColumns,
   normalizeColumnPosition,
   shiftColumnsFromPosition,
 } from './board-column-helpers.js'
+import { isProtectedColumnName } from './board-defaults.js'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
-import {
-  getCompanyKanbanBoard,
-  getOrCreateCompanyKanbanBoard,
-} from './board-query-repository.js'
+import { getCompanyKanbanBoard, getOrCreateCompanyKanbanBoard } from './board-query-repository.js'
 import { BoardError } from './board-types.js'
 import type {
   DeleteKanbanColumnInput,

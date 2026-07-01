@@ -658,9 +658,7 @@ describe('board routes', () => {
     })
     const createdTask = createdTaskResponse
       .json()
-      .columns[0].tasks.find(
-        (task: { title: string }) => task.title === 'Tarefa com anexo grande',
-      )
+      .columns[0].tasks.find((task: { title: string }) => task.title === 'Tarefa com anexo grande')
 
     const response = await app.inject({
       method: 'POST',
@@ -756,12 +754,12 @@ describe('board routes', () => {
 
     expect(createColumnResponse.statusCode).toBe(201)
     expect(createColumnResponse.json().id).toBe(secondBoard.id)
-    expect(createColumnResponse.json().columns.map((column: { name: string }) => column.name)).toContain(
-      'Cancelado',
-    )
-    expect(firstBoardResponse.json().columns.map((column: { name: string }) => column.name)).not.toContain(
-      'Cancelado',
-    )
+    expect(
+      createColumnResponse.json().columns.map((column: { name: string }) => column.name),
+    ).toContain('Cancelado')
+    expect(
+      firstBoardResponse.json().columns.map((column: { name: string }) => column.name),
+    ).not.toContain('Cancelado')
 
     await app.close()
   })

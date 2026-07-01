@@ -5,8 +5,8 @@ import { prisma } from '../../prisma.js'
 import {
   CompanyError,
   createBoard,
-  createDepartment,
   createCompanyMember,
+  createDepartment,
   deleteBoard,
   deleteCompanyMember,
   deleteDepartment,

@@ -82,7 +82,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
         ? getCurrentCompanyWorkspace(session.token)
         : routeCompanySlug
           ? getCompanyWorkspaceBySlug(session.token, routeCompanySlug)
-        : getCompanyWorkspace(session.token, routeCompanyId ?? session.company.id)
+          : getCompanyWorkspace(session.token, routeCompanyId ?? session.company.id)
 
     workspaceRequest
       .then((workspace) => {
@@ -153,6 +153,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     }
   }, [session?.token, routeType])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: boardRouteIdentity is the stable fetch key for route and workspace board changes.
   useEffect(() => {
     if (!session?.token) {
       return
@@ -199,10 +200,14 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
         currentRoute.boardId,
       )
     } else if (currentRoute.type === 'friendlyBoard' || currentRoute.type === 'friendlyTask') {
+      if (!friendlyBoard) {
+        return
+      }
+
       boardRequest = getCompanyKanbanBoard(
         session.token,
         companyWorkspace?.id ?? session.company.id,
-        friendlyBoard!.board.id,
+        friendlyBoard.board.id,
       )
     } else {
       boardRequest = getCurrentKanbanBoard(session.token)
@@ -240,11 +245,9 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     }
   }, [session?.token, session?.company.id, navigateTo, boardRouteIdentity])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: taskRouteIdentity is the stable fetch key for route and board task changes.
   useEffect(() => {
-    if (
-      !session?.token ||
-      (currentRoute.type !== 'task' && currentRoute.type !== 'friendlyTask')
-    ) {
+    if (!session?.token || (currentRoute.type !== 'task' && currentRoute.type !== 'friendlyTask')) {
       setSelectedTaskDetail(null)
       setIsTaskDetailLoading(false)
       return

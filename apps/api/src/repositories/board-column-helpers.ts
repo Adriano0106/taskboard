@@ -3,8 +3,10 @@ import { assertCompanyPermission } from '../permissions.js'
 import { BoardError } from './board-types.js'
 
 export function assertCanManageColumns(companyRole: string) {
-  assertCompanyPermission(companyRole, 'ManageColumns', () =>
-    new BoardError('Only company owners and admins can manage board columns'),
+  assertCompanyPermission(
+    companyRole,
+    'ManageColumns',
+    () => new BoardError('Only company owners and admins can manage board columns'),
   )
 }
 

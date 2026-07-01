@@ -41,8 +41,10 @@ export async function createTaskAttachment(
   storageProvider: StorageProvider,
   input: CreateTaskAttachmentInput,
 ): Promise<KanbanTaskAttachment> {
-  assertCompanyPermission(input.companyRole, 'ManageTaskAttachments', (message) =>
-    new BoardError(message),
+  assertCompanyPermission(
+    input.companyRole,
+    'ManageTaskAttachments',
+    (message) => new BoardError(message),
   )
   await assertTaskBelongsToCompany(prisma, input)
 
@@ -127,8 +129,10 @@ export async function deleteTaskAttachment(
   storageProvider: StorageProvider,
   input: DeleteTaskAttachmentInput,
 ): Promise<KanbanTaskAttachment[]> {
-  assertCompanyPermission(input.companyRole, 'ManageTaskAttachments', (message) =>
-    new BoardError(message),
+  assertCompanyPermission(
+    input.companyRole,
+    'ManageTaskAttachments',
+    (message) => new BoardError(message),
   )
   await assertTaskBelongsToCompany(prisma, input)
 

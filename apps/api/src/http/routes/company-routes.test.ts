@@ -355,7 +355,9 @@ describe('company routes', () => {
     })
     const board = createdBoardResponse
       .json()
-      .departments.find((workspaceDepartment: { id: string }) => workspaceDepartment.id === department.id)
+      .departments.find(
+        (workspaceDepartment: { id: string }) => workspaceDepartment.id === department.id,
+      )
       .boards.find((workspaceBoard: { name: string }) => workspaceBoard.name === 'Roadmap Produto')
     const renamedDepartmentResponse = await app.inject({
       method: 'PATCH',
@@ -456,7 +458,9 @@ describe('company routes', () => {
     })
     const board = createdBoardResponse
       .json()
-      .departments.find((workspaceDepartment: { id: string }) => workspaceDepartment.id === department.id)
+      .departments.find(
+        (workspaceDepartment: { id: string }) => workspaceDepartment.id === department.id,
+      )
       .boards.find((workspaceBoard: { name: string }) => workspaceBoard.name === 'Fila de suporte')
     const kanbanResponse = await app.inject({
       method: 'GET',

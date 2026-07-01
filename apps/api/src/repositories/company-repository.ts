@@ -1,6 +1,6 @@
-import bcrypt from 'bcryptjs'
 import type { CompanyRole } from '@prisma/client'
 import type { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 import { assertCompanyPermission, getCompanyPermissions } from '../permissions.js'
 import { defaultBoardColumns, isClosedColumnName } from './board-defaults.js'
 import { assertValidCompanySlug } from './company-slug.js'
@@ -499,8 +499,10 @@ async function assertCanManageCompanyWorkspace(prisma: PrismaClient, input: Comp
     throw new CompanyError('Company does not belong to the authenticated user')
   }
 
-  assertCompanyPermission(membership.role, 'ManageWorkspace', () =>
-    new CompanyError('Only company owners and admins can manage workspace structure'),
+  assertCompanyPermission(
+    membership.role,
+    'ManageWorkspace',
+    () => new CompanyError('Only company owners and admins can manage workspace structure'),
   )
 }
 
@@ -537,8 +539,10 @@ async function assertCanDeleteBoard(prisma: PrismaClient, input: CompanyMutation
     throw new CompanyError('Company does not belong to the authenticated user')
   }
 
-  assertCompanyPermission(membership.role, 'DeleteBoard', () =>
-    new CompanyError('Only company owners and admins can delete boards'),
+  assertCompanyPermission(
+    membership.role,
+    'DeleteBoard',
+    () => new CompanyError('Only company owners and admins can delete boards'),
   )
 }
 
@@ -644,7 +648,7 @@ async function createUniqueBoardKey(prisma: PrismaClient, departmentId: string, 
 function createBoardKeyBase(name: string) {
   const words = name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\p{Diacritic}/gu, '')
     .replace(/[^a-zA-Z0-9 ]/g, ' ')
     .trim()
     .split(/\s+/)
@@ -652,7 +656,10 @@ function createBoardKeyBase(name: string) {
   const initials =
     words.length === 1
       ? words[0]?.slice(0, 2)
-      : words.map((word) => word[0] ?? '').join('').slice(0, 3)
+      : words
+          .map((word) => word[0] ?? '')
+          .join('')
+          .slice(0, 3)
   const fallbackKey = name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3)
 
   return (initials || fallbackKey || 'BD').toUpperCase().padEnd(2, 'X')

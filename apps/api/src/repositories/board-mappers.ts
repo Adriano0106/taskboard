@@ -58,7 +58,7 @@ export function mapBoardToKanbanBoard(board: BoardWithKanbanRelations | null): K
 export function createRouteKeyBase(name: string) {
   const words = name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\p{Diacritic}/gu, '')
     .replace(/[^a-zA-Z0-9 ]/g, ' ')
     .trim()
     .split(/\s+/)
@@ -66,7 +66,10 @@ export function createRouteKeyBase(name: string) {
   const initials =
     words.length === 1
       ? words[0]?.slice(0, 2)
-      : words.map((word) => word[0] ?? '').join('').slice(0, 3)
+      : words
+          .map((word) => word[0] ?? '')
+          .join('')
+          .slice(0, 3)
   const fallbackKey = name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3)
 
   return (initials || fallbackKey || 'DP').toUpperCase().padEnd(2, 'X')

@@ -140,7 +140,9 @@ export function TaskAttachments({
       )}
 
       {statusMessage ? (
-        <p className={isAttachmentErrorMessage(statusMessage) ? 'error-message' : 'surface-message'}>
+        <p
+          className={isAttachmentErrorMessage(statusMessage) ? 'error-message' : 'surface-message'}
+        >
           {statusMessage}
         </p>
       ) : null}

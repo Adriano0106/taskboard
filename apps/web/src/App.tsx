@@ -44,13 +44,13 @@ import {
   findDropLocation,
   findTaskLocation,
 } from './kanban-helpers.js'
+import { hasCompanyPermission } from './permissions.js'
 import {
   createBoardPath,
   createCompanySlugPath,
   createFriendlyBoardPath,
   createFriendlyTaskPath,
 } from './routing.js'
-import { hasCompanyPermission } from './permissions.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
 
@@ -130,16 +130,11 @@ export function App() {
     taskId: selectedTaskDetail?.id ?? null,
     token: session?.token ?? null,
   })
-  const {
-    addWatcher,
-    removeWatcher,
-    updatingWatcherUserId,
-    watchers,
-    watchersStatusMessage,
-  } = useTaskWatchers({
-    taskId: selectedTaskDetail?.id ?? null,
-    token: session?.token ?? null,
-  })
+  const { addWatcher, removeWatcher, updatingWatcherUserId, watchers, watchersStatusMessage } =
+    useTaskWatchers({
+      taskId: selectedTaskDetail?.id ?? null,
+      token: session?.token ?? null,
+    })
 
   useEffect(() => {
     if (!session?.token) {
@@ -171,10 +166,7 @@ export function App() {
     [],
   )
   const canManageColumns = hasCompanyPermission(session?.company.permissions, 'ManageColumns')
-  const canManageWorkspace = hasCompanyPermission(
-    session?.company.permissions,
-    'ManageWorkspace',
-  )
+  const canManageWorkspace = hasCompanyPermission(session?.company.permissions, 'ManageWorkspace')
   const canDeleteBoard = hasCompanyPermission(session?.company.permissions, 'DeleteBoard')
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' ||
@@ -265,18 +257,13 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      const updatedBoard = await createTask(
-        session.token,
-        companyId,
-        kanbanBoard.id,
-        {
-          columnId: firstColumn.id,
-          title,
-          description: String(formData.get('description') ?? '').trim(),
-          priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
-          assigneeId: String(formData.get('assigneeId') ?? '') || undefined,
-        },
-      )
+      const updatedBoard = await createTask(session.token, companyId, kanbanBoard.id, {
+        columnId: firstColumn.id,
+        title,
+        description: String(formData.get('description') ?? '').trim(),
+        priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
+        assigneeId: String(formData.get('assigneeId') ?? '') || undefined,
+      })
 
       setKanbanBoard(updatedBoard)
       formElement.reset()
@@ -392,15 +379,9 @@ export function App() {
     setKanbanStatusMessage('')
 
     try {
-      const updatedBoard = await reorderColumn(
-        session.token,
-        companyId,
-        kanbanBoard.id,
-        columnId,
-        {
-          position,
-        },
-      )
+      const updatedBoard = await reorderColumn(session.token, companyId, kanbanBoard.id, columnId, {
+        position,
+      })
 
       setKanbanBoard(updatedBoard)
     } catch (error) {
@@ -632,7 +613,9 @@ export function App() {
         currentRoute.boardId === boardId &&
         updatedWorkspace.departments[0]?.boards[0]
       ) {
-        navigateTo(createBoardPath(updatedWorkspace.id, updatedWorkspace.departments[0].boards[0].id))
+        navigateTo(
+          createBoardPath(updatedWorkspace.id, updatedWorkspace.departments[0].boards[0].id),
+        )
       }
     } catch (error) {
       setWorkspaceStructureMessage(
@@ -747,7 +730,11 @@ export function App() {
 
     if (currentRoute.type === 'friendlyTask' && kanbanBoard) {
       navigateTo(
-        createFriendlyBoardPath(kanbanBoard.companySlug, kanbanBoard.departmentKey, kanbanBoard.key),
+        createFriendlyBoardPath(
+          kanbanBoard.companySlug,
+          kanbanBoard.departmentKey,
+          kanbanBoard.key,
+        ),
       )
       return
     }

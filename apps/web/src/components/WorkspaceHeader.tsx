@@ -41,11 +41,7 @@ export function WorkspaceHeader({
         </button>
       </div>
       <div className="workspace-actions">
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => onNavigate(companyPath)}
-        >
+        <button type="button" className="secondary-button" onClick={() => onNavigate(companyPath)}>
           Empresa
         </button>
         <button

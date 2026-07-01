@@ -7,7 +7,6 @@ import {
   getOrCreateCompanyKanbanBoard,
 } from './board-query-repository.js'
 import { BoardError } from './board-types.js'
-import { createTaskActivity } from './task-activity-writer.js'
 import type {
   CreateKanbanTaskInput,
   KanbanBoard,
@@ -15,6 +14,7 @@ import type {
   UpdateKanbanTaskInput,
   UpdateKanbanTaskResult,
 } from './board-types.js'
+import { createTaskActivity } from './task-activity-writer.js'
 
 export async function createTaskInCompanyKanbanBoard(
   prisma: PrismaClient,

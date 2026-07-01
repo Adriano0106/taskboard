@@ -102,17 +102,11 @@ function renderActivityDetail(activity: KanbanTaskActivity) {
     return <p>{activity.metadata.title}</p>
   }
 
-  if (
-    activity.type === 'WATCHER_ADDED' ||
-    activity.type === 'WATCHER_REMOVED'
-  ) {
+  if (activity.type === 'WATCHER_ADDED' || activity.type === 'WATCHER_REMOVED') {
     return <p>{activity.metadata.watcherName ?? 'Observador'}</p>
   }
 
-  if (
-    activity.type === 'ATTACHMENT_ADDED' ||
-    activity.type === 'ATTACHMENT_REMOVED'
-  ) {
+  if (activity.type === 'ATTACHMENT_ADDED' || activity.type === 'ATTACHMENT_REMOVED') {
     return <p>{activity.metadata.fileName ?? 'Anexo'}</p>
   }
 

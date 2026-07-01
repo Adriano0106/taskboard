@@ -4,8 +4,8 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '../../prisma.js'
 import {
-  addTaskWatcher,
   BoardError,
+  addTaskWatcher,
   createColumnInCompanyKanbanBoard,
   createTaskAttachment,
   createTaskComment,
@@ -21,15 +21,12 @@ import {
   listTaskComments,
   listTaskWatchers,
   moveTaskInCompanyKanbanBoard,
-  renameColumnInCompanyKanbanBoard,
   removeTaskWatcher,
+  renameColumnInCompanyKanbanBoard,
   reorderColumnInCompanyKanbanBoard,
   updateTaskInCompanyKanbanBoard,
 } from '../../repositories/board-repository.js'
-import {
-  LocalStorageProvider,
-  type StorageProvider,
-} from '../../repositories/storage-provider.js'
+import { LocalStorageProvider, type StorageProvider } from '../../repositories/storage-provider.js'
 import { authenticateRequest } from '../auth-guard.js'
 
 const createTaskBodySchema = z.object({

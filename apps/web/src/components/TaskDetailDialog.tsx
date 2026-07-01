@@ -84,6 +84,11 @@ export function TaskDetailDialog({
           onClose()
         }
       }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          onClose()
+        }
+      }}
     >
       <dialog aria-modal="true" className="task-detail-modal" open>
         <div className="modal-header">
@@ -108,11 +113,7 @@ export function TaskDetailDialog({
         </div>
         {taskDetail ? (
           <>
-            <form
-              className="task-edit-form"
-              key={taskDetail.updatedAt}
-              onSubmit={onUpdateTask}
-            >
+            <form className="task-edit-form" key={taskDetail.updatedAt} onSubmit={onUpdateTask}>
               <label>
                 Titulo
                 <input name="title" type="text" minLength={2} defaultValue={taskDetail.title} />
@@ -120,11 +121,7 @@ export function TaskDetailDialog({
 
               <label>
                 Descricao
-                <textarea
-                  name="description"
-                  rows={4}
-                  defaultValue={taskDetail.description ?? ''}
-                />
+                <textarea name="description" rows={4} defaultValue={taskDetail.description ?? ''} />
               </label>
 
               <div className="form-grid">

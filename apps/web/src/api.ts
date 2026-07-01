@@ -426,10 +426,7 @@ export async function updateCompanyMemberRole(
   })
 }
 
-export async function deleteCompanyMember(
-  token: string,
-  userId: string,
-): Promise<CompanyMember[]> {
+export async function deleteCompanyMember(token: string, userId: string): Promise<CompanyMember[]> {
   return sendRequest<CompanyMember[]>(`/companies/current/members/${userId}`, {
     method: 'DELETE',
     headers: {
@@ -661,16 +658,13 @@ export async function renameColumn(
   columnId: string,
   payload: ColumnPayload,
 ): Promise<KanbanBoard> {
-  return sendRequest<KanbanBoard>(
-    `/companies/${companyId}/boards/${boardId}/columns/${columnId}`,
-    {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
+  return sendRequest<KanbanBoard>(`/companies/${companyId}/boards/${boardId}/columns/${columnId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  )
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function reorderColumn(
@@ -698,15 +692,12 @@ export async function deleteColumn(
   boardId: string,
   columnId: string,
 ): Promise<KanbanBoard> {
-  return sendRequest<KanbanBoard>(
-    `/companies/${companyId}/boards/${boardId}/columns/${columnId}`,
-    {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  return sendRequest<KanbanBoard>(`/companies/${companyId}/boards/${boardId}/columns/${columnId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
-  )
+  })
 }
 
 async function sendRequest<ResponseBody>(path: string, init: RequestInit): Promise<ResponseBody> {
