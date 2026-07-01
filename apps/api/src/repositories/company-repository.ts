@@ -249,7 +249,7 @@ export async function createBoard(
       members: {
         create: {
           userId: input.userId,
-          role: 'OWNER',
+          role: 'MANAGER',
         },
       },
       columns: {

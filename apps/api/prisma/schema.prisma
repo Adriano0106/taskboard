@@ -13,6 +13,24 @@ enum CompanyRole {
   MEMBER
 }
 
+enum ScopedRole {
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AccessRequestScope {
+  DEPARTMENT
+  BOARD
+  EPIC
+}
+
 enum TaskPriority {
   LOW
   MEDIUM
@@ -35,19 +53,22 @@ enum TaskActivityType {
 }
 
 model User {
-  id              String           @id @default(cuid())
-  name            String
-  email           String           @unique
-  passwordHash    String
-  memberships     CompanyMember[]
-  boardMembers    BoardMember[]
-  assignedTasks   Task[]           @relation("TaskAssignee")
-  taskComments    TaskComment[]
-  taskWatchers    TaskWatcher[]
-  taskActivities  TaskActivity[]
-  taskAttachments TaskAttachment[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                     String             @id @default(cuid())
+  name                   String
+  email                  String             @unique
+  passwordHash           String
+  memberships            CompanyMember[]
+  boardMembers           BoardMember[]
+  departmentMembers      DepartmentMember[]
+  accessRequests         AccessRequest[]    @relation("AccessRequestRequester")
+  reviewedAccessRequests AccessRequest[]    @relation("AccessRequestReviewer")
+  assignedTasks          Task[]             @relation("TaskAssignee")
+  taskComments           TaskComment[]
+  taskWatchers           TaskWatcher[]
+  taskActivities         TaskActivity[]
+  taskAttachments        TaskAttachment[]
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 }
 
 model Company {
@@ -60,6 +81,8 @@ model Company {
   themeBoardBackgroundColor String          @default("#d9e6f2")
   members                   CompanyMember[]
   departments               Department[]
+  accessRequests            AccessRequest[]
+  epics                     Epic[]
   createdAt                 DateTime        @default(now())
   updatedAt                 DateTime        @updatedAt
 }
@@ -78,28 +101,47 @@ model CompanyMember {
 }
 
 model Department {
-  id        String   @id @default(cuid())
-  name      String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-  boards    Board[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String             @id @default(cuid())
+  name           String
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId      String
+  boards         Board[]
+  members        DepartmentMember[]
+  accessRequests AccessRequest[]
+  epics          Epic[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model DepartmentMember {
+  id           String     @id @default(cuid())
+  role         ScopedRole @default(MEMBER)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([departmentId, userId])
+  @@index([userId])
 }
 
 model Board {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   key            String
   name           String
   description    String?
-  department     Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  department     Department      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   departmentId   String
   columns        BoardColumn[]
   members        BoardMember[]
   tasks          Task[]
-  nextTaskNumber Int           @default(1)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  accessRequests AccessRequest[]
+  epicTaskLinks  EpicTaskLink[]
+  nextTaskNumber Int             @default(1)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@unique([departmentId, key])
 }
@@ -118,16 +160,17 @@ model BoardColumn {
 }
 
 model BoardMember {
-  id        String   @id @default(cuid())
-  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  id        String     @id @default(cuid())
+  board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
   boardId   String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  role      String   @default("MEMBER")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      ScopedRole @default(MEMBER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@unique([boardId, userId])
+  @@index([userId])
 }
 
 model Task {
@@ -148,12 +191,75 @@ model Task {
   watchers       TaskWatcher[]
   activities     TaskActivity[]
   attachments    TaskAttachment[]
+  epicTaskLinks  EpicTaskLink[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
   @@unique([boardId, friendlyId])
   @@unique([boardId, sequenceNumber])
   @@index([boardId, columnId, position])
+}
+
+model AccessRequest {
+  id              String              @id @default(cuid())
+  scope           AccessRequestScope
+  status          AccessRequestStatus @default(PENDING)
+  message         String?
+  company         Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+  requester       User                @relation("AccessRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId     String
+  reviewer        User?               @relation("AccessRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewerId      String?
+  department      Department?         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId    String?
+  board           Board?              @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId         String?
+  epic            Epic?               @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  epicId          String?
+  requestedRole   ScopedRole          @default(VIEWER)
+  decisionMessage String?
+  decidedAt       DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([companyId, status, createdAt])
+  @@index([requesterId, status])
+  @@index([departmentId, status])
+  @@index([boardId, status])
+  @@index([epicId, status])
+}
+
+model Epic {
+  id                String          @id @default(cuid())
+  title             String
+  description       String?
+  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId         String
+  ownerDepartment   Department      @relation(fields: [ownerDepartmentId], references: [id], onDelete: Cascade)
+  ownerDepartmentId String
+  taskLinks         EpicTaskLink[]
+  accessRequests    AccessRequest[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([companyId, createdAt])
+  @@index([ownerDepartmentId, createdAt])
+}
+
+model EpicTaskLink {
+  id        String   @id @default(cuid())
+  epic      Epic     @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  epicId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId   String
+  createdAt DateTime @default(now())
+
+  @@unique([epicId, taskId])
+  @@index([taskId])
+  @@index([boardId])
 }
 
 model TaskComment {

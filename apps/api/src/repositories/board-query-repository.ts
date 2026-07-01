@@ -39,7 +39,7 @@ export async function getOrCreateCompanyKanbanBoard(
         members: {
           create: {
             userId: input.userId,
-            role: 'OWNER',
+            role: 'MANAGER',
           },
         },
         columns: {
