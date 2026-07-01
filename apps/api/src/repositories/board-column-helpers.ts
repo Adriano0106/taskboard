@@ -1,10 +1,11 @@
-import type { Prisma } from '@prisma/client'
-import { assertCompanyPermission } from '../permissions.js'
+import type { Prisma, PrismaClient } from '@prisma/client'
+import { type BoardPermissionContext, assertBoardPermission } from '../scoped-permissions.js'
 import { BoardError } from './board-types.js'
 
-export function assertCanManageColumns(companyRole: string) {
-  assertCompanyPermission(
-    companyRole,
+export async function assertCanManageColumns(prisma: PrismaClient, input: BoardPermissionContext) {
+  await assertBoardPermission(
+    prisma,
+    input,
     'ManageColumns',
     () => new BoardError('Only company owners and admins can manage board columns'),
   )

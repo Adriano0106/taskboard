@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import { assertCompanyPermission } from '../permissions.js'
+import { assertBoardPermission } from '../scoped-permissions.js'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
 import {
   getCompanyKanbanBoard,
@@ -20,7 +20,7 @@ export async function createTaskInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: CreateKanbanTaskInput,
 ): Promise<KanbanBoard> {
-  assertCompanyPermission(input.companyRole, 'CreateTask', (message) => new BoardError(message))
+  await assertBoardPermission(prisma, input, 'CreateTask', (message) => new BoardError(message))
 
   const board = await getTargetBoard(prisma, input)
   const targetColumn = board.columns.find((column) => column.id === input.columnId)
@@ -108,7 +108,7 @@ export async function moveTaskInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: MoveKanbanTaskInput,
 ): Promise<KanbanBoard> {
-  assertCompanyPermission(input.companyRole, 'MoveTask', (message) => new BoardError(message))
+  await assertBoardPermission(prisma, input, 'MoveTask', (message) => new BoardError(message))
 
   const board = await getOrCreateCompanyKanbanBoard(prisma, {
     companyId: input.companyId,
@@ -194,7 +194,7 @@ export async function updateTaskInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: UpdateKanbanTaskInput,
 ): Promise<UpdateKanbanTaskResult> {
-  assertCompanyPermission(input.companyRole, 'EditTask', (message) => new BoardError(message))
+  await assertBoardPermission(prisma, input, 'EditTask', (message) => new BoardError(message))
 
   const existingTask = await prisma.task.findFirst({
     where: {
@@ -312,7 +312,9 @@ export async function updateTaskInCompanyKanbanBoard(
   })
   const task = await getKanbanTaskDetail(prisma, {
     companyId: input.companyId,
+    companyRole: input.companyRole,
     taskId: input.taskId,
+    userId: input.userId,
   })
 
   return {
@@ -326,6 +328,7 @@ function getTargetBoard(
   input: {
     boardId?: string
     companyId: string
+    companyRole: string
     userId: string
   },
 ) {
@@ -333,6 +336,7 @@ function getTargetBoard(
     return getCompanyKanbanBoard(prisma, {
       boardId: input.boardId,
       companyId: input.companyId,
+      companyRole: input.companyRole,
       userId: input.userId,
     })
   }

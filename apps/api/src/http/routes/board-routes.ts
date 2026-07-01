@@ -148,12 +148,13 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
         return await getCompanyKanbanBoard(prismaClient, {
           allowPlatformAdmin: isPlatformAdmin,
           companyId: paramsValidation.data.companyId,
+          companyRole: request.user.role,
           userId: request.user.userId,
           boardId: paramsValidation.data.boardId,
         })
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }
@@ -253,7 +254,9 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
     try {
       return await getKanbanTaskDetail(prismaClient, {
         companyId: request.user.companyId,
+        companyRole: request.user.role,
         taskId: paramsValidation.data.taskId,
+        userId: request.user.userId,
       })
     } catch (error) {
       if (error instanceof BoardError) {
@@ -646,7 +649,7 @@ export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOpti
         return reply.status(201).send(comment)
       } catch (error) {
         if (error instanceof BoardError) {
-          return reply.status(404).send({
+          return reply.status(getBoardErrorStatus(error)).send({
             message: error.message,
           })
         }

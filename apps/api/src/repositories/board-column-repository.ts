@@ -20,7 +20,7 @@ export async function createColumnInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: KanbanColumnInput,
 ): Promise<KanbanBoard> {
-  assertCanManageColumns(input.companyRole)
+  await assertCanManageColumns(prisma, input)
 
   const board = await getTargetBoard(prisma, input)
   const targetPosition = normalizeColumnPosition(input.position, board.columns.length + 1)
@@ -51,7 +51,7 @@ export async function renameColumnInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: UpdateKanbanColumnInput,
 ): Promise<KanbanBoard> {
-  assertCanManageColumns(input.companyRole)
+  await assertCanManageColumns(prisma, input)
 
   const board = await getTargetBoard(prisma, input)
   const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
@@ -85,7 +85,7 @@ export async function reorderColumnInCompanyKanbanBoard(
   prisma: PrismaClient,
   input: ReorderKanbanColumnInput,
 ): Promise<KanbanBoard> {
-  assertCanManageColumns(input.companyRole)
+  await assertCanManageColumns(prisma, input)
 
   const board = await getTargetBoard(prisma, input)
   const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
@@ -167,7 +167,7 @@ export async function deleteColumnFromCompanyKanbanBoard(
   prisma: PrismaClient,
   input: DeleteKanbanColumnInput,
 ): Promise<KanbanBoard> {
-  assertCanManageColumns(input.companyRole)
+  await assertCanManageColumns(prisma, input)
 
   const board = await getTargetBoard(prisma, input)
   const column = board.columns.find((boardColumn) => boardColumn.id === input.columnId)
@@ -226,6 +226,7 @@ function getTargetBoard(
   input: {
     boardId?: string
     companyId: string
+    companyRole: string
     userId: string
   },
 ) {
@@ -233,6 +234,7 @@ function getTargetBoard(
     return getCompanyKanbanBoard(prisma, {
       boardId: input.boardId,
       companyId: input.companyId,
+      companyRole: input.companyRole,
       userId: input.userId,
     })
   }

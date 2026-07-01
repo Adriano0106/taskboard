@@ -811,6 +811,94 @@ describe('board routes', () => {
 
     await app.close()
   })
+
+  it('allows department managers to manage boards from their department', async () => {
+    const app = await createTestApp()
+    const ownerSession = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, ownerSession.token)
+    const managerToken = await createScopedMemberToken(app, {
+      boardId: board.id,
+      companyId: ownerSession.company.id,
+      departmentRole: 'MANAGER',
+      name: 'Board Test Department Manager',
+    })
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/companies/${ownerSession.company.id}/boards/${board.id}/columns`,
+      headers: createAuthHeader(managerToken),
+      payload: {
+        name: 'Revisao',
+        position: 2,
+      },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json().columns.map((column: { name: string }) => column.name)).toContain(
+      'Revisao',
+    )
+
+    await app.close()
+  })
+
+  it('keeps department viewers in read-only mode', async () => {
+    const app = await createTestApp()
+    const ownerSession = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, ownerSession.token)
+    const firstColumn = getBoardColumn(board, 0)
+    const task = firstColumn.tasks[0]
+
+    if (!task) {
+      throw new Error('Expected starter task in first board column')
+    }
+    const viewerToken = await createScopedMemberToken(app, {
+      boardId: board.id,
+      companyId: ownerSession.company.id,
+      departmentRole: 'VIEWER',
+      name: 'Board Test Viewer',
+    })
+
+    const boardResponse = await app.inject({
+      method: 'GET',
+      url: `/companies/${ownerSession.company.id}/boards/${board.id}/kanban`,
+      headers: createAuthHeader(viewerToken),
+    })
+    const taskResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${task.id}`,
+      headers: createAuthHeader(viewerToken),
+    })
+    const createTaskResponse = await app.inject({
+      method: 'POST',
+      url: `/companies/${ownerSession.company.id}/boards/${board.id}/tasks`,
+      headers: createAuthHeader(viewerToken),
+      payload: {
+        title: 'Tarefa bloqueada para viewer',
+        columnId: firstColumn.id,
+      },
+    })
+    const commentResponse = await app.inject({
+      method: 'POST',
+      url: `/tasks/${task.id}/comments`,
+      headers: createAuthHeader(viewerToken),
+      payload: {
+        content: 'Comentario bloqueado',
+      },
+    })
+
+    expect(boardResponse.statusCode).toBe(200)
+    expect(taskResponse.statusCode).toBe(200)
+    expect(createTaskResponse.statusCode).toBe(403)
+    expect(createTaskResponse.json()).toMatchObject({
+      message: 'Missing permission: CreateTask',
+    })
+    expect(commentResponse.statusCode).toBe(403)
+    expect(commentResponse.json()).toMatchObject({
+      message: 'Missing permission: CommentTask',
+    })
+
+    await app.close()
+  })
 })
 
 async function createTestApp(options: { storageProvider?: StorageProvider } = {}) {
@@ -885,6 +973,7 @@ interface TestBoardColumn {
   id: string
   name: string
   tasks: Array<{
+    id: string
     title: string
   }>
 }
@@ -929,6 +1018,52 @@ async function createMemberToken(app: FastifyInstance, companyId: string) {
     userId: user.id,
     email: user.email,
     companyId,
+    role: 'MEMBER',
+  })
+}
+
+async function createScopedMemberToken(
+  app: FastifyInstance,
+  input: {
+    boardId: string
+    companyId: string
+    departmentRole: 'MANAGER' | 'MEMBER' | 'VIEWER'
+    name: string
+  },
+) {
+  const testId = randomUUID()
+  const board = await prisma.board.findUniqueOrThrow({
+    where: {
+      id: input.boardId,
+    },
+    select: {
+      departmentId: true,
+    },
+  })
+  const user = await prisma.user.create({
+    data: {
+      name: input.name,
+      email: `scoped-${testId}@${testEmailDomain}`,
+      passwordHash: 'not-used-in-this-test',
+      memberships: {
+        create: {
+          companyId: input.companyId,
+          role: 'MEMBER',
+        },
+      },
+      departmentMembers: {
+        create: {
+          departmentId: board.departmentId,
+          role: input.departmentRole,
+        },
+      },
+    },
+  })
+
+  return app.jwt.sign({
+    userId: user.id,
+    email: user.email,
+    companyId: input.companyId,
     role: 'MEMBER',
   })
 }

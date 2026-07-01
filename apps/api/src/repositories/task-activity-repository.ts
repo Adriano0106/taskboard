@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { assertBoardPermission } from '../scoped-permissions.js'
 import { BoardError } from './board-types.js'
 import type { KanbanTaskActivity, TaskActivityInput } from './board-types.js'
 
@@ -6,6 +7,7 @@ export async function listTaskActivities(
   prisma: PrismaClient,
   input: TaskActivityInput,
 ): Promise<KanbanTaskActivity[]> {
+  await assertBoardPermission(prisma, input, 'ViewBoard', (message) => new BoardError(message))
   await assertTaskBelongsToCompany(prisma, input)
 
   const activities = await prisma.taskActivity.findMany({

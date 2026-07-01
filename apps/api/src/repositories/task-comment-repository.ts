@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import { assertCompanyPermission } from '../permissions.js'
+import { assertBoardPermission } from '../scoped-permissions.js'
 import { BoardError } from './board-types.js'
 import type { CreateTaskCommentInput, KanbanTaskComment, TaskCommentInput } from './board-types.js'
 import { createTaskActivity } from './task-activity-writer.js'
@@ -8,6 +8,7 @@ export async function listTaskComments(
   prisma: PrismaClient,
   input: TaskCommentInput,
 ): Promise<KanbanTaskComment[]> {
+  await assertBoardPermission(prisma, input, 'ViewBoard', (message) => new BoardError(message))
   await assertTaskBelongsToCompany(prisma, input)
 
   const comments = await prisma.taskComment.findMany({
@@ -34,7 +35,7 @@ export async function createTaskComment(
   prisma: PrismaClient,
   input: CreateTaskCommentInput,
 ): Promise<KanbanTaskComment> {
-  assertCompanyPermission(input.companyRole, 'CommentTask', (message) => new BoardError(message))
+  await assertBoardPermission(prisma, input, 'CommentTask', (message) => new BoardError(message))
   await assertTaskBelongsToCompany(prisma, input)
 
   const comment = await prisma.$transaction(async (transaction) => {

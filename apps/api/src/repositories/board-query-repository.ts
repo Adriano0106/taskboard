@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+import { assertBoardPermission } from '../scoped-permissions.js'
 import { defaultBoardColumns } from './board-defaults.js'
 import { boardInclude, createRouteKeyBase, mapBoardToKanbanBoard } from './board-mappers.js'
 import { BoardError } from './board-types.js'
@@ -120,22 +121,13 @@ export async function getCompanyKanbanBoard(
   prisma: PrismaClient,
   input: GetCompanyKanbanBoardInput,
 ): Promise<KanbanBoard> {
+  await assertBoardPermission(prisma, input, 'ViewBoard', (message) => new BoardError(message))
+
   const board = await prisma.board.findFirst({
     where: {
       id: input.boardId,
       department: {
         companyId: input.companyId,
-        ...(input.allowPlatformAdmin
-          ? {}
-          : {
-              company: {
-                members: {
-                  some: {
-                    userId: input.userId,
-                  },
-                },
-              },
-            }),
       },
     },
     include: boardInclude,
@@ -152,6 +144,8 @@ export async function getKanbanTaskDetail(
   prisma: PrismaClient,
   input: GetKanbanTaskDetailInput,
 ): Promise<KanbanTaskDetail> {
+  await assertBoardPermission(prisma, input, 'ViewBoard', (message) => new BoardError(message))
+
   const task = await prisma.task.findFirst({
     where: {
       id: input.taskId,

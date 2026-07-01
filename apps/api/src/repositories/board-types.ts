@@ -164,13 +164,17 @@ export interface DeleteKanbanColumnInput {
 }
 
 export interface GetKanbanTaskDetailInput {
+  allowPlatformAdmin?: boolean
   companyId: string
+  companyRole: string
   taskId: string
+  userId: string
 }
 
 export interface GetCompanyKanbanBoardInput {
   allowPlatformAdmin?: boolean
   companyId: string
+  companyRole: string
   userId: string
   boardId: string
 }

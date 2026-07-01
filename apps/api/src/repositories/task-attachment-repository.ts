@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
-import { assertCompanyPermission } from '../permissions.js'
+import { assertBoardPermission } from '../scoped-permissions.js'
 import { BoardError } from './board-types.js'
 import type {
   CreateTaskAttachmentInput,
@@ -19,6 +19,7 @@ export async function listTaskAttachments(
   prisma: PrismaClient,
   input: TaskAttachmentInput,
 ): Promise<KanbanTaskAttachment[]> {
+  await assertBoardPermission(prisma, input, 'ViewBoard', (message) => new BoardError(message))
   await assertTaskBelongsToCompany(prisma, input)
 
   const attachments = await prisma.taskAttachment.findMany({
@@ -41,8 +42,9 @@ export async function createTaskAttachment(
   storageProvider: StorageProvider,
   input: CreateTaskAttachmentInput,
 ): Promise<KanbanTaskAttachment> {
-  assertCompanyPermission(
-    input.companyRole,
+  await assertBoardPermission(
+    prisma,
+    input,
     'ManageTaskAttachments',
     (message) => new BoardError(message),
   )
@@ -104,6 +106,7 @@ export async function downloadTaskAttachment(
   storageProvider: StorageProvider,
   input: DownloadTaskAttachmentInput,
 ): Promise<DownloadTaskAttachmentResult> {
+  await assertBoardPermission(prisma, input, 'ViewBoard', (message) => new BoardError(message))
   await assertTaskBelongsToCompany(prisma, input)
 
   const attachment = await prisma.taskAttachment.findFirst({
@@ -129,8 +132,9 @@ export async function deleteTaskAttachment(
   storageProvider: StorageProvider,
   input: DeleteTaskAttachmentInput,
 ): Promise<KanbanTaskAttachment[]> {
-  assertCompanyPermission(
-    input.companyRole,
+  await assertBoardPermission(
+    prisma,
+    input,
     'ManageTaskAttachments',
     (message) => new BoardError(message),
   )
