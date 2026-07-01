@@ -2,6 +2,7 @@ import type { AuthSession, CompanyWorkspace } from '../api.js'
 import { createCompanyPath, createCompanySlugPath } from '../routing.js'
 
 interface WorkspaceHeaderProps {
+  canAccessPlatformAdmin: boolean
   companyWorkspace: CompanyWorkspace | null
   session: AuthSession
   onLogout: () => void
@@ -9,6 +10,7 @@ interface WorkspaceHeaderProps {
 }
 
 export function WorkspaceHeader({
+  canAccessPlatformAdmin,
   companyWorkspace,
   session,
   onLogout,
@@ -44,13 +46,15 @@ export function WorkspaceHeader({
         <button type="button" className="secondary-button" onClick={() => onNavigate(companyPath)}>
           Empresa
         </button>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => onNavigate('/admin/companies')}
-        >
-          Admin geral
-        </button>
+        {canAccessPlatformAdmin ? (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => onNavigate('/admin/companies')}
+          >
+            Admin geral
+          </button>
+        ) : null}
         <button
           type="button"
           className="avatar-button"

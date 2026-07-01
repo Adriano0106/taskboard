@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import type { CompanyMember, CompanyRole, CreateCompanyMemberPayload } from '../api.js'
 import { Badge } from './ui/Badge.js'
 import { Button } from './ui/Button.js'
@@ -36,6 +36,23 @@ export function CompanyMembersPanel({
   onRemoveMember,
   onUpdateMemberRole,
 }: CompanyMembersPanelProps) {
+  const [memberSearch, setMemberSearch] = useState('')
+  const filteredCompanyMembers = useMemo(() => {
+    const normalizedSearch = memberSearch.trim().toLowerCase()
+
+    if (!normalizedSearch) {
+      return companyMembers
+    }
+
+    return companyMembers.filter((member) => {
+      return (
+        member.name.toLowerCase().includes(normalizedSearch) ||
+        member.email.toLowerCase().includes(normalizedSearch) ||
+        roleLabels[member.role].toLowerCase().includes(normalizedSearch)
+      )
+    })
+  }, [companyMembers, memberSearch])
+
   async function handleCreateMember(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
 
@@ -71,7 +88,16 @@ export function CompanyMembersPanel({
           <p className="eyebrow">Membros</p>
           <h3>Usuarios da empresa</h3>
         </div>
-        <Badge>{companyMembers.length}</Badge>
+        <div className="company-members-tools">
+          <TextInput
+            aria-label="Buscar membros"
+            type="search"
+            placeholder="Buscar membro"
+            value={memberSearch}
+            onChange={(event) => setMemberSearch(event.target.value)}
+          />
+          <Badge>{filteredCompanyMembers.length}</Badge>
+        </div>
       </div>
 
       {membersStatusMessage ? <p className="surface-message">{membersStatusMessage}</p> : null}
@@ -104,7 +130,7 @@ export function CompanyMembersPanel({
       ) : null}
 
       <div className="company-members-list">
-        {companyMembers.map((member) => {
+        {filteredCompanyMembers.map((member) => {
           const isCurrentUser = member.id === currentUserId
           const isUpdating = updatingMemberId === member.id
 
@@ -145,6 +171,9 @@ export function CompanyMembersPanel({
             </div>
           )
         })}
+        {filteredCompanyMembers.length === 0 ? (
+          <p className="surface-message">Nenhum membro encontrado.</p>
+        ) : null}
       </div>
     </Card>
   )

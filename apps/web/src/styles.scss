@@ -452,8 +452,26 @@ textarea {
 }
 
 .company-settings-readonly {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   color: colors.$text-strong;
   font-weight: 800;
+
+  strong {
+    display: block;
+    color: colors.$text-strong;
+    font-size: 1rem;
+  }
+}
+
+.company-url-display {
+  max-width: min(100%, 560px);
+  overflow: hidden;
+  color: colors.$text-default;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .company-members-panel {
@@ -474,6 +492,17 @@ textarea {
     margin: 0;
     color: colors.$text-strong;
     font-size: 1rem;
+  }
+}
+
+.company-members-tools {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) auto;
+  align-items: center;
+  gap: 8px;
+
+  input {
+    min-height: 38px;
   }
 }
 
@@ -1352,6 +1381,18 @@ textarea {
 
   .company-theme-fieldset {
     grid-template-columns: 1fr;
+  }
+
+  .company-settings-readonly,
+  .company-members-header,
+  .company-members-tools {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .company-settings-readonly,
+  .company-members-header {
+    flex-direction: column;
   }
 
   .form-grid {

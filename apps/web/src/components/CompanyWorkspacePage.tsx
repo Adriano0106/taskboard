@@ -69,12 +69,12 @@ export function CompanyWorkspacePage({
 }: CompanyWorkspacePageProps) {
   return (
     <section className="company-page">
-      <div className="page-section-header workspace-structure-header">
-        <div>
-          <p className="eyebrow">Empresa</p>
-          <h2>{companyWorkspace?.name ?? 'Empresa'}</h2>
-        </div>
-        {canManageWorkspace ? (
+      {canManageWorkspace ? (
+        <div className="page-section-header workspace-structure-header">
+          <div>
+            <p className="eyebrow">Empresa</p>
+            <h2>{companyWorkspace?.name ?? 'Empresa'}</h2>
+          </div>
           <form className="workspace-create-form" onSubmit={onCreateDepartment}>
             <TextInput
               name="name"
@@ -85,8 +85,8 @@ export function CompanyWorkspacePage({
             />
             <Button type="submit">Adicionar</Button>
           </form>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {companyWorkspace ? (
         <Card className="company-settings-card">
@@ -168,7 +168,11 @@ export function CompanyWorkspacePage({
             </form>
           ) : (
             <div className="company-settings-readonly">
-              <span>
+              <div>
+                <p className="eyebrow">Empresa</p>
+                <strong>{companyWorkspace.name}</strong>
+              </div>
+              <span className="company-url-display">
                 {window.location.origin}/{companyWorkspace.slug}
               </span>
             </div>
