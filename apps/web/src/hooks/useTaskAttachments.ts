@@ -65,6 +65,7 @@ export function useTaskAttachments({ taskId, token }: UseTaskAttachmentsInput) {
     try {
       const attachment = await createTaskAttachment(token, taskId, file)
       setAttachments((currentAttachments) => [...currentAttachments, attachment])
+      setAttachmentsStatusMessage('Anexo enviado.')
     } catch (error) {
       setAttachmentsStatusMessage(
         error instanceof Error ? error.message : 'Nao foi possivel enviar o anexo',
@@ -104,6 +105,7 @@ export function useTaskAttachments({ taskId, token }: UseTaskAttachmentsInput) {
     try {
       const updatedAttachments = await deleteTaskAttachment(token, taskId, attachmentId)
       setAttachments(updatedAttachments)
+      setAttachmentsStatusMessage('Anexo removido.')
     } catch (error) {
       setAttachmentsStatusMessage(
         error instanceof Error ? error.message : 'Nao foi possivel remover o anexo',

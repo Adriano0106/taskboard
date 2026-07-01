@@ -1,6 +1,7 @@
-import type { ChangeEvent } from 'react'
+import { type ChangeEvent, type DragEvent, useState } from 'react'
 import type { KanbanTaskAttachment } from '../api.js'
 import { formatDateTime } from '../kanban-helpers.js'
+import { Button } from './ui/Button.js'
 
 interface TaskAttachmentsProps {
   attachments: KanbanTaskAttachment[]
@@ -21,6 +22,8 @@ export function TaskAttachments({
   onRemoveAttachment,
   onUploadAttachment,
 }: TaskAttachmentsProps) {
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
+
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
 
@@ -32,6 +35,47 @@ export function TaskAttachments({
     event.target.value = ''
   }
 
+  function handleDragEnter(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+
+    if (!isUploading) {
+      setIsDraggingFile(true)
+    }
+  }
+
+  function handleDragOver(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLLabelElement>) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return
+    }
+
+    setIsDraggingFile(false)
+  }
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    setIsDraggingFile(false)
+
+    const file = event.dataTransfer.files[0]
+
+    if (!file || isUploading) {
+      return
+    }
+
+    onUploadAttachment(file)
+  }
+
+  function handleRemoveAttachment(attachment: KanbanTaskAttachment) {
+    if (!window.confirm(`Remover anexo "${attachment.fileName}"?`)) {
+      return
+    }
+
+    onRemoveAttachment(attachment.id)
+  }
+
   return (
     <section className="task-attachments">
       <div className="task-comments-header">
@@ -39,9 +83,23 @@ export function TaskAttachments({
         <span>{attachments.length}</span>
       </div>
 
-      <label className="task-attachment-upload">
+      <label
+        className={
+          isDraggingFile ? 'task-attachment-upload is-dragging-file' : 'task-attachment-upload'
+        }
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <input type="file" disabled={isUploading} onChange={handleFileChange} />
-        <span>{isUploading ? 'Enviando...' : 'Selecionar arquivo'}</span>
+        <span>
+          {isUploading
+            ? 'Enviando...'
+            : isDraggingFile
+              ? 'Solte o arquivo'
+              : 'Selecionar ou arrastar arquivo'}
+        </span>
         <small>Limite de 3 MB por arquivo</small>
       </label>
 
@@ -57,22 +115,22 @@ export function TaskAttachments({
                 </small>
               </div>
               <div className="task-attachment-actions">
-                <button
+                <Button
                   type="button"
-                  className="icon-button"
+                  variant="icon"
                   disabled={updatingAttachmentId === attachment.id}
                   onClick={() => onDownloadAttachment(attachment)}
                 >
                   Baixar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="icon-button"
+                  variant="danger"
                   disabled={updatingAttachmentId === attachment.id}
-                  onClick={() => onRemoveAttachment(attachment.id)}
+                  onClick={() => handleRemoveAttachment(attachment)}
                 >
                   Remover
-                </button>
+                </Button>
               </div>
             </article>
           ))}
@@ -81,9 +139,17 @@ export function TaskAttachments({
         <p className="muted">Nenhum anexo enviado.</p>
       )}
 
-      {statusMessage ? <p className="error-message">{statusMessage}</p> : null}
+      {statusMessage ? (
+        <p className={isAttachmentErrorMessage(statusMessage) ? 'error-message' : 'surface-message'}>
+          {statusMessage}
+        </p>
+      ) : null}
     </section>
   )
+}
+
+function isAttachmentErrorMessage(statusMessage: string) {
+  return statusMessage.startsWith('Nao') || statusMessage.startsWith('O anexo')
 }
 
 function formatFileSize(sizeBytes: number) {

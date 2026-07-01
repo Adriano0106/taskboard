@@ -1048,11 +1048,23 @@ textarea {
 }
 
 .task-attachment-upload {
+  display: grid;
+  gap: 4px;
   border: 1px dashed colors.$border-strong;
   border-radius: 8px;
   background: colors.$surface-soft;
   padding: 12px;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  &.is-dragging-file {
+    border-color: colors.$brand-primary;
+    background: colors.$brand-focus;
+    box-shadow: inset 0 0 0 1px colors.$brand-primary;
+  }
 
   input {
     display: none;
