@@ -5,6 +5,7 @@ import { config } from 'dotenv'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../../app.js'
+import type { StorageProvider } from '../../repositories/storage-provider.js'
 
 config({
   path: resolve(process.cwd(), '../../.env'),
@@ -586,6 +587,61 @@ describe('board routes', () => {
     await app.close()
   })
 
+  it('uses the configured storage provider for task attachments', async () => {
+    const storageProvider = new InMemoryStorageProvider()
+    const app = await createTestApp({
+      storageProvider,
+    })
+    const { token } = await registerOwnerSession(app)
+    const board = await getCurrentBoard(app, token)
+    const firstColumn = getBoardColumn(board, 0)
+    const createdTaskResponse = await app.inject({
+      method: 'POST',
+      url: '/boards/current/tasks',
+      headers: createAuthHeader(token),
+      payload: {
+        title: 'Task com storage injetado',
+        columnId: firstColumn.id,
+      },
+    })
+    const createdTask = createdTaskResponse
+      .json()
+      .columns[0].tasks.find((task: { title: string }) => {
+        return task.title === 'Task com storage injetado'
+      })
+    const uploadResponse = await app.inject({
+      method: 'POST',
+      url: `/tasks/${createdTask.id}/attachments`,
+      headers: createAuthHeader(token),
+      payload: {
+        fileName: 'memoria.txt',
+        contentType: 'text/plain',
+        contentBase64: Buffer.from('arquivo em memoria').toString('base64'),
+      },
+    })
+    const attachment = uploadResponse.json()
+    const downloadResponse = await app.inject({
+      method: 'GET',
+      url: `/tasks/${createdTask.id}/attachments/${attachment.id}/download`,
+      headers: createAuthHeader(token),
+    })
+    const deleteResponse = await app.inject({
+      method: 'DELETE',
+      url: `/tasks/${createdTask.id}/attachments/${attachment.id}`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(uploadResponse.statusCode).toBe(201)
+    expect(storageProvider.writeCount).toBe(1)
+    expect(downloadResponse.statusCode).toBe(200)
+    expect(downloadResponse.body).toBe('arquivo em memoria')
+    expect(deleteResponse.statusCode).toBe(200)
+    expect(storageProvider.deleteCount).toBe(1)
+    expect(storageProvider.storedFileCount).toBe(0)
+
+    await app.close()
+  })
+
   it('rejects task attachments larger than 3 MB', async () => {
     const app = await createTestApp()
     const { token } = await registerOwnerSession(app)
@@ -759,13 +815,44 @@ describe('board routes', () => {
   })
 })
 
-async function createTestApp() {
+async function createTestApp(options: { storageProvider?: StorageProvider } = {}) {
   return buildApp({
     jwtSecret: 'test-secret-with-enough-length',
     platformAdminEmails: [platformAdminEmail],
     webOrigin: 'http://localhost:5173',
     prismaClient: prisma,
+    storageProvider: options.storageProvider,
   })
+}
+
+class InMemoryStorageProvider implements StorageProvider {
+  private readonly files = new Map<string, Buffer>()
+  deleteCount = 0
+  writeCount = 0
+
+  get storedFileCount() {
+    return this.files.size
+  }
+
+  async delete(storageKey: string) {
+    this.deleteCount += 1
+    this.files.delete(storageKey)
+  }
+
+  async read(storageKey: string) {
+    const content = this.files.get(storageKey)
+
+    if (!content) {
+      throw new Error('Stored attachment not found')
+    }
+
+    return content
+  }
+
+  async write(storageKey: string, content: Buffer) {
+    this.writeCount += 1
+    this.files.set(storageKey, content)
+  }
 }
 
 async function registerOwnerSession(app: FastifyInstance) {

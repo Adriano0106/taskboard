@@ -8,6 +8,7 @@ import { companyRoutes } from './http/routes/company-routes.js'
 import { healthRoutes } from './http/routes/health-routes.js'
 import { userRoutes } from './http/routes/user-routes.js'
 import { prisma } from './prisma.js'
+import type { StorageProvider } from './repositories/storage-provider.js'
 import { type UserRepository, createPrismaUserRepository } from './repositories/user-repository.js'
 
 export interface BuildAppOptions {
@@ -15,6 +16,7 @@ export interface BuildAppOptions {
   platformAdminEmails?: string[]
   webOrigin: string
   prismaClient?: PrismaClient
+  storageProvider?: StorageProvider
   userRepository?: UserRepository
 }
 
@@ -41,6 +43,7 @@ export async function buildApp(options: BuildAppOptions) {
   await app.register(boardRoutes, {
     platformAdminEmails: options.platformAdminEmails ?? [],
     prismaClient,
+    storageProvider: options.storageProvider,
   })
   await app.register(userRoutes)
   await app.register(companyRoutes, {

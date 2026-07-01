@@ -45,10 +45,20 @@ Board:
 - `POST /boards/current/tasks`
 - `PATCH /tasks/:taskId/move`
 - `GET /tasks/:taskId`
+- `GET /tasks/:taskId/attachments`
+- `POST /tasks/:taskId/attachments`
+- `GET /tasks/:taskId/attachments/:attachmentId/download`
+- `DELETE /tasks/:taskId/attachments/:attachmentId`
 - `POST /boards/current/columns`
 - `PATCH /boards/current/columns/:columnId`
 - `PATCH /boards/current/columns/:columnId/reorder`
 - `DELETE /boards/current/columns/:columnId`
+
+Attachments:
+
+- Maximum file size: 3 MB
+- Local storage directory: `ATTACHMENT_STORAGE_DIR`, defaulting to `uploads`
+- Storage access goes through `StorageProvider` so remote providers can be plugged in later
 
 Health:
 

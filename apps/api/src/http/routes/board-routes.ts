@@ -26,7 +26,10 @@ import {
   reorderColumnInCompanyKanbanBoard,
   updateTaskInCompanyKanbanBoard,
 } from '../../repositories/board-repository.js'
-import { LocalStorageProvider } from '../../repositories/storage-provider.js'
+import {
+  LocalStorageProvider,
+  type StorageProvider,
+} from '../../repositories/storage-provider.js'
 import { authenticateRequest } from '../auth-guard.js'
 
 const createTaskBodySchema = z.object({
@@ -112,11 +115,13 @@ const boardParamsSchema = z.object({
 interface BoardRoutesOptions {
   platformAdminEmails?: string[]
   prismaClient?: PrismaClient
+  storageProvider?: StorageProvider
 }
 
 export async function boardRoutes(app: FastifyInstance, options: BoardRoutesOptions) {
   const prismaClient = options.prismaClient ?? prisma
-  const storageProvider = new LocalStorageProvider(resolve(process.cwd(), 'uploads'))
+  const storageProvider =
+    options.storageProvider ?? new LocalStorageProvider(resolve(process.cwd(), 'uploads'))
   const platformAdminEmails = new Set(
     (options.platformAdminEmails ?? []).map((adminEmail) => adminEmail.toLowerCase()),
   )
