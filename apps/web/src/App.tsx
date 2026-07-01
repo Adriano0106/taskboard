@@ -3,20 +3,12 @@ import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type AuthSession,
   type KanbanBoard,
-  type KanbanColumn,
   type KanbanTaskAttachment,
   type KanbanTaskCard,
-  type TaskPriority,
-  createColumn,
-  createTask,
-  deleteColumn,
   getCurrentSession,
   login,
   moveTask,
   registerAccount,
-  renameColumn,
-  reorderColumn,
-  updateTask,
 } from './api.js'
 import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
 import { AuthPage } from './components/AuthPage.js'
@@ -25,6 +17,7 @@ import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { ProfilePage } from './components/ProfilePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
+import { useBoardActions } from './hooks/useBoardActions.js'
 import { useCompanyMembersManagement } from './hooks/useCompanyMembersManagement.js'
 import { useTaskActivities } from './hooks/useTaskActivities.js'
 import { useTaskAttachments } from './hooks/useTaskAttachments.js'
@@ -51,13 +44,6 @@ export function App() {
   const { currentRoute, navigateTo } = useAppNavigation()
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isColumnOrganizerOpen, setIsColumnOrganizerOpen] = useState(false)
-  const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false)
-  const [creatingTaskColumnId, setCreatingTaskColumnId] = useState<string | null>(null)
-  const [editingColumnId, setEditingColumnId] = useState<string | null>(null)
-  const [deletingColumnId, setDeletingColumnId] = useState<string | null>(null)
-  const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
-  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState('')
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
   const {
@@ -121,6 +107,34 @@ export function App() {
   const { activities, activitiesStatusMessage, reloadActivities } = useTaskActivities({
     taskId: selectedTaskDetail?.id ?? null,
     token: session?.token ?? null,
+  })
+  const {
+    closeColumnOrganizer,
+    closeCreateTaskDialog,
+    createColumnFromForm,
+    createTaskFromForm,
+    creatingTaskColumnId,
+    deleteColumnByColumn,
+    deletingColumnId,
+    editingColumnId,
+    isColumnOrganizerOpen,
+    isCreateTaskDialogOpen,
+    isTaskUpdating,
+    openColumnOrganizer,
+    openCreateTaskDialog,
+    renameColumnFromForm,
+    reorderColumnById,
+    reorderingColumnId,
+    updateTaskFromForm,
+  } = useBoardActions({
+    currentRoute,
+    kanbanBoard,
+    reloadActivities,
+    selectedTaskDetail,
+    session,
+    setKanbanBoard,
+    setKanbanStatusMessage,
+    setSelectedTaskDetail,
   })
   const {
     attachments,
@@ -188,14 +202,6 @@ export function App() {
         )
       : null
 
-  function getActiveCompanyId() {
-    if (currentRoute.type === 'board' || currentRoute.type === 'task') {
-      return currentRoute.companyId
-    }
-
-    return session?.company.id ?? null
-  }
-
   async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
     setIsSubmitting(true)
@@ -236,202 +242,6 @@ export function App() {
     navigateTo('/', {
       replace: true,
     })
-  }
-
-  async function handleCreateTask(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault()
-
-    const formElement = formEvent.currentTarget
-    const firstColumn = kanbanBoard?.columns[0]
-
-    const companyId = getActiveCompanyId()
-
-    if (!session?.token || !kanbanBoard || !firstColumn || !companyId) {
-      return
-    }
-
-    const formData = new FormData(formEvent.currentTarget)
-    const title = String(formData.get('title') ?? '').trim()
-
-    if (!title) {
-      return
-    }
-
-    setCreatingTaskColumnId(firstColumn.id)
-    setKanbanStatusMessage('')
-
-    try {
-      const updatedBoard = await createTask(session.token, companyId, kanbanBoard.id, {
-        columnId: firstColumn.id,
-        title,
-        description: String(formData.get('description') ?? '').trim(),
-        priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
-        assigneeId: String(formData.get('assigneeId') ?? '') || undefined,
-      })
-
-      setKanbanBoard(updatedBoard)
-      formElement.reset()
-      setIsCreateTaskDialogOpen(false)
-    } catch (error) {
-      setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel criar a task',
-      )
-    } finally {
-      setCreatingTaskColumnId(null)
-    }
-  }
-
-  async function handleCreateColumn(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault()
-
-    const formElement = formEvent.currentTarget
-
-    const companyId = getActiveCompanyId()
-
-    if (!session?.token || !kanbanBoard || !companyId) {
-      return
-    }
-
-    const formData = new FormData(formEvent.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-
-    if (!name) {
-      return
-    }
-
-    setKanbanStatusMessage('')
-
-    try {
-      const updatedBoard = await createColumn(session.token, companyId, kanbanBoard.id, {
-        name,
-        position: kanbanBoard.columns.length + 1,
-      })
-
-      setKanbanBoard(updatedBoard)
-      formElement.reset()
-    } catch (error) {
-      setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel criar a coluna',
-      )
-    }
-  }
-
-  async function handleRenameColumn(formEvent: FormEvent<HTMLFormElement>, column: KanbanColumn) {
-    formEvent.preventDefault()
-
-    const companyId = getActiveCompanyId()
-
-    if (!session?.token || !kanbanBoard || !companyId) {
-      return
-    }
-
-    const formData = new FormData(formEvent.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-
-    if (!name || name === column.name) {
-      return
-    }
-
-    setEditingColumnId(column.id)
-    setKanbanStatusMessage('')
-
-    try {
-      const updatedBoard = await renameColumn(session.token, companyId, kanbanBoard.id, column.id, {
-        name,
-      })
-
-      setKanbanBoard(updatedBoard)
-    } catch (error) {
-      setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel renomear a coluna',
-      )
-    } finally {
-      setEditingColumnId(null)
-    }
-  }
-
-  async function handleDeleteColumn(column: KanbanColumn) {
-    const companyId = getActiveCompanyId()
-
-    if (!session?.token || !kanbanBoard || !companyId) {
-      return
-    }
-
-    setDeletingColumnId(column.id)
-    setKanbanStatusMessage('')
-
-    try {
-      const updatedBoard = await deleteColumn(session.token, companyId, kanbanBoard.id, column.id)
-      setKanbanBoard(updatedBoard)
-    } catch (error) {
-      setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel remover a coluna',
-      )
-    } finally {
-      setDeletingColumnId(null)
-    }
-  }
-
-  async function handleReorderColumn(columnId: string, position: number) {
-    const companyId = getActiveCompanyId()
-
-    if (!session?.token || !kanbanBoard || !companyId) {
-      return
-    }
-
-    setReorderingColumnId(columnId)
-    setKanbanStatusMessage('')
-
-    try {
-      const updatedBoard = await reorderColumn(session.token, companyId, kanbanBoard.id, columnId, {
-        position,
-      })
-
-      setKanbanBoard(updatedBoard)
-    } catch (error) {
-      setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel reorganizar as colunas',
-      )
-    } finally {
-      setReorderingColumnId(null)
-    }
-  }
-
-  async function handleUpdateTask(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault()
-
-    if (!session?.token || !selectedTaskDetail) {
-      return
-    }
-
-    const formData = new FormData(formEvent.currentTarget)
-    const title = String(formData.get('title') ?? '').trim()
-
-    if (!title) {
-      return
-    }
-
-    setUpdatingTaskId(selectedTaskDetail.id)
-    setKanbanStatusMessage('')
-
-    try {
-      const updatedTask = await updateTask(session.token, selectedTaskDetail.id, {
-        title,
-        description: String(formData.get('description') ?? '').trim(),
-        priority: String(formData.get('priority') ?? 'MEDIUM') as TaskPriority,
-        assigneeId: String(formData.get('assigneeId') ?? '') || null,
-      })
-
-      setKanbanBoard(updatedTask.board)
-      setSelectedTaskDetail(updatedTask.task)
-      await reloadActivities()
-    } catch (error) {
-      setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel atualizar a task',
-      )
-    } finally {
-      setUpdatingTaskId(null)
-    }
   }
 
   async function handleCreateComment(content: string) {
@@ -677,7 +487,7 @@ export function App() {
             isCommentSubmitting={isCommentSubmitting}
             isCreateTaskDialogOpen={isCreateTaskDialogOpen}
             isTaskDetailLoading={isTaskDetailLoading}
-            isTaskUpdating={updatingTaskId === selectedTaskDetail?.id}
+            isTaskUpdating={isTaskUpdating}
             kanbanBoard={kanbanBoard}
             reorderingColumnId={reorderingColumnId}
             selectedTaskDetail={selectedTaskDetail}
@@ -687,28 +497,28 @@ export function App() {
             watchers={watchers}
             watchersStatusMessage={watchersStatusMessage}
             onAddWatcher={handleAddWatcher}
-            onCloseColumnOrganizer={() => setIsColumnOrganizerOpen(false)}
-            onCloseCreateTaskDialog={() => setIsCreateTaskDialogOpen(false)}
+            onCloseColumnOrganizer={closeColumnOrganizer}
+            onCloseCreateTaskDialog={closeCreateTaskDialog}
             onCloseTaskDetail={handleCloseTaskDetail}
             onCloseTaskLoading={() => setIsTaskDetailLoading(false)}
             onCreateComment={handleCreateComment}
-            onCreateColumn={handleCreateColumn}
-            onCreateTask={handleCreateTask}
-            onDeleteColumn={handleDeleteColumn}
+            onCreateColumn={createColumnFromForm}
+            onCreateTask={createTaskFromForm}
+            onDeleteColumn={deleteColumnByColumn}
             onDownloadAttachment={handleDownloadAttachment}
             onDragCancel={handleDragCancel}
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
             onDragStart={handleDragStart}
-            onOpenColumnOrganizer={() => setIsColumnOrganizerOpen(true)}
-            onOpenCreateTaskDialog={() => setIsCreateTaskDialogOpen(true)}
+            onOpenColumnOrganizer={openColumnOrganizer}
+            onOpenCreateTaskDialog={openCreateTaskDialog}
             onOpenTask={handleOpenTask}
-            onRenameColumn={handleRenameColumn}
+            onRenameColumn={renameColumnFromForm}
             onRemoveAttachment={handleRemoveAttachment}
             onRemoveWatcher={handleRemoveWatcher}
-            onReorderColumn={handleReorderColumn}
+            onReorderColumn={reorderColumnById}
             onUploadAttachment={handleUploadAttachment}
-            onUpdateTask={handleUpdateTask}
+            onUpdateTask={updateTaskFromForm}
           />
         ) : null}
       </main>
