@@ -7,22 +7,15 @@ import {
   type KanbanTaskAttachment,
   type KanbanTaskCard,
   type TaskPriority,
-  createBoard,
   createColumn,
-  createDepartment,
   createTask,
-  deleteBoard,
   deleteColumn,
-  deleteDepartment,
   getCurrentSession,
   login,
   moveTask,
   registerAccount,
   renameColumn,
-  renameDepartment,
   reorderColumn,
-  updateBoard,
-  updateCompany,
   updateTask,
 } from './api.js'
 import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
@@ -38,6 +31,7 @@ import { useTaskAttachments } from './hooks/useTaskAttachments.js'
 import { useTaskComments } from './hooks/useTaskComments.js'
 import { useTaskWatchers } from './hooks/useTaskWatchers.js'
 import { useWorkspaceData } from './hooks/useWorkspaceData.js'
+import { useWorkspaceStructureActions } from './hooks/useWorkspaceStructureActions.js'
 import {
   areTaskLocationsEqual,
   createTaskMovePreview,
@@ -45,12 +39,7 @@ import {
   findTaskLocation,
 } from './kanban-helpers.js'
 import { hasCompanyPermission } from './permissions.js'
-import {
-  createBoardPath,
-  createCompanySlugPath,
-  createFriendlyBoardPath,
-  createFriendlyTaskPath,
-} from './routing.js'
+import { createBoardPath, createFriendlyBoardPath, createFriendlyTaskPath } from './routing.js'
 import { readStoredSession, sessionStorageKey } from './session-storage.js'
 import type { DragData } from './types/kanban.js'
 
@@ -69,11 +58,6 @@ export function App() {
   const [deletingColumnId, setDeletingColumnId] = useState<string | null>(null)
   const [reorderingColumnId, setReorderingColumnId] = useState<string | null>(null)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
-  const [editingDepartmentId, setEditingDepartmentId] = useState<string | null>(null)
-  const [deletingDepartmentId, setDeletingDepartmentId] = useState<string | null>(null)
-  const [editingBoardId, setEditingBoardId] = useState<string | null>(null)
-  const [deletingBoardId, setDeletingBoardId] = useState<string | null>(null)
-  const [workspaceStructureMessage, setWorkspaceStructureMessage] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
   const {
@@ -109,6 +93,26 @@ export function App() {
   } = useCompanyMembersManagement({
     setCompanyMembers,
     token: session?.token ?? null,
+  })
+  const {
+    createBoardFromForm,
+    createDepartmentFromForm,
+    deleteBoardById,
+    deleteDepartmentById,
+    deletingBoardId,
+    deletingDepartmentId,
+    editingBoardId,
+    editingDepartmentId,
+    renameDepartmentFromForm,
+    updateBoardFromForm,
+    updateCompanyFromForm,
+    workspaceStructureMessage,
+  } = useWorkspaceStructureActions({
+    currentRoute,
+    navigateTo,
+    session,
+    setCompanyWorkspace,
+    setSession,
   })
   const { addComment, comments, commentsStatusMessage, isCommentSubmitting } = useTaskComments({
     taskId: selectedTaskDetail?.id ?? null,
@@ -393,239 +397,6 @@ export function App() {
     }
   }
 
-  async function handleCreateDepartment(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault()
-
-    if (!session?.token) {
-      return
-    }
-
-    const formElement = formEvent.currentTarget
-    const formData = new FormData(formElement)
-    const name = String(formData.get('name') ?? '').trim()
-
-    if (!name) {
-      return
-    }
-
-    setWorkspaceStructureMessage('')
-
-    try {
-      const updatedWorkspace = await createDepartment(session.token, {
-        name,
-      })
-
-      setCompanyWorkspace(updatedWorkspace)
-      formElement.reset()
-    } catch (error) {
-      setWorkspaceStructureMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel criar o departamento',
-      )
-    }
-  }
-
-  async function handleUpdateCompany(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault()
-
-    if (!session?.token) {
-      return
-    }
-
-    const formData = new FormData(formEvent.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-    const slug = String(formData.get('slug') ?? '').trim()
-
-    if (!name || !slug) {
-      return
-    }
-
-    setWorkspaceStructureMessage('')
-
-    try {
-      const updatedWorkspace = await updateCompany(session.token, {
-        name,
-        slug,
-      })
-      const updatedSession = {
-        ...session,
-        company: {
-          ...session.company,
-          name: updatedWorkspace.name,
-          slug: updatedWorkspace.slug,
-        },
-      }
-
-      setCompanyWorkspace(updatedWorkspace)
-      setSession(updatedSession)
-      localStorage.setItem(sessionStorageKey, JSON.stringify(updatedSession))
-
-      if (currentRoute.type === 'companySlug') {
-        navigateTo(createCompanySlugPath(updatedWorkspace.slug), {
-          replace: true,
-        })
-      }
-    } catch (error) {
-      setWorkspaceStructureMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel atualizar a empresa',
-      )
-    }
-  }
-
-  async function handleRenameDepartment(
-    formEvent: FormEvent<HTMLFormElement>,
-    departmentId: string,
-  ) {
-    formEvent.preventDefault()
-
-    if (!session?.token) {
-      return
-    }
-
-    const formData = new FormData(formEvent.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-
-    if (!name) {
-      return
-    }
-
-    setEditingDepartmentId(departmentId)
-    setWorkspaceStructureMessage('')
-
-    try {
-      const updatedWorkspace = await renameDepartment(session.token, departmentId, {
-        name,
-      })
-
-      setCompanyWorkspace(updatedWorkspace)
-    } catch (error) {
-      setWorkspaceStructureMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel renomear o departamento',
-      )
-    } finally {
-      setEditingDepartmentId(null)
-    }
-  }
-
-  async function handleDeleteDepartment(departmentId: string, departmentName: string) {
-    if (!session?.token || !window.confirm(`Remover departamento "${departmentName}"?`)) {
-      return
-    }
-
-    setDeletingDepartmentId(departmentId)
-    setWorkspaceStructureMessage('')
-
-    try {
-      const updatedWorkspace = await deleteDepartment(session.token, departmentId)
-      setCompanyWorkspace(updatedWorkspace)
-    } catch (error) {
-      setWorkspaceStructureMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel remover o departamento',
-      )
-    } finally {
-      setDeletingDepartmentId(null)
-    }
-  }
-
-  async function handleCreateBoard(formEvent: FormEvent<HTMLFormElement>, departmentId: string) {
-    formEvent.preventDefault()
-
-    if (!session?.token) {
-      return
-    }
-
-    const formElement = formEvent.currentTarget
-    const formData = new FormData(formElement)
-    const name = String(formData.get('name') ?? '').trim()
-
-    if (!name) {
-      return
-    }
-
-    setWorkspaceStructureMessage('')
-
-    try {
-      const updatedWorkspace = await createBoard(session.token, departmentId, {
-        name,
-        description: String(formData.get('description') ?? '').trim(),
-      })
-
-      setCompanyWorkspace(updatedWorkspace)
-      formElement.reset()
-    } catch (error) {
-      setWorkspaceStructureMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel criar o quadro',
-      )
-    }
-  }
-
-  async function handleUpdateBoard(formEvent: FormEvent<HTMLFormElement>, boardId: string) {
-    formEvent.preventDefault()
-
-    if (!session?.token) {
-      return
-    }
-
-    const formData = new FormData(formEvent.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-
-    if (!name) {
-      return
-    }
-
-    setEditingBoardId(boardId)
-    setWorkspaceStructureMessage('')
-
-    try {
-      const updatedWorkspace = await updateBoard(session.token, boardId, {
-        name,
-        description: String(formData.get('description') ?? '').trim(),
-      })
-
-      setCompanyWorkspace(updatedWorkspace)
-    } catch (error) {
-      setWorkspaceStructureMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel atualizar o quadro',
-      )
-    } finally {
-      setEditingBoardId(null)
-    }
-  }
-
-  async function handleDeleteBoard(boardId: string, boardName: string) {
-    if (
-      !session?.token ||
-      !window.confirm(
-        `Remover quadro "${boardName}"? So sera possivel se nao houver tasks abertas.`,
-      )
-    ) {
-      return
-    }
-
-    setDeletingBoardId(boardId)
-    setWorkspaceStructureMessage('')
-
-    try {
-      const updatedWorkspace = await deleteBoard(session.token, boardId)
-      setCompanyWorkspace(updatedWorkspace)
-
-      if (
-        currentRoute.type === 'board' &&
-        currentRoute.boardId === boardId &&
-        updatedWorkspace.departments[0]?.boards[0]
-      ) {
-        navigateTo(
-          createBoardPath(updatedWorkspace.id, updatedWorkspace.departments[0].boards[0].id),
-        )
-      }
-    } catch (error) {
-      setWorkspaceStructureMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel remover o quadro',
-      )
-    } finally {
-      setDeletingBoardId(null)
-    }
-  }
-
   async function handleUpdateTask(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault()
 
@@ -870,17 +641,17 @@ export function App() {
             membersStatusMessage={membersStatusMessage}
             updatingMemberId={updatingMemberId}
             workspaceStructureMessage={workspaceStructureMessage}
-            onCreateBoard={handleCreateBoard}
-            onCreateDepartment={handleCreateDepartment}
+            onCreateBoard={createBoardFromForm}
+            onCreateDepartment={createDepartmentFromForm}
             onCreateMember={createMember}
-            onDeleteBoard={handleDeleteBoard}
-            onDeleteDepartment={handleDeleteDepartment}
+            onDeleteBoard={deleteBoardById}
+            onDeleteDepartment={deleteDepartmentById}
             onNavigate={navigateTo}
             onRemoveMember={removeMember}
-            onRenameDepartment={handleRenameDepartment}
+            onRenameDepartment={renameDepartmentFromForm}
             onUpdateMemberRole={updateMemberRole}
-            onUpdateCompany={handleUpdateCompany}
-            onUpdateBoard={handleUpdateBoard}
+            onUpdateCompany={updateCompanyFromForm}
+            onUpdateBoard={updateBoardFromForm}
           />
         ) : null}
 
