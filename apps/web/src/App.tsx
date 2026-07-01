@@ -417,7 +417,7 @@ export function App() {
     return (
       <main className="app-shell">
         <WorkspaceHeader
-          canAccessPlatformAdmin={session.company.role === 'PLATFORM_ADMIN'}
+          canAccessPlatformAdmin={session.isPlatformAdmin}
           companyWorkspace={companyWorkspace}
           session={session}
           onLogout={handleLogout}

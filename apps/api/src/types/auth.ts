@@ -30,5 +30,6 @@ export interface PublicCompany {
 export interface AuthSession {
   user: PublicUser
   company: PublicCompany
+  isPlatformAdmin: boolean
   token: string
 }

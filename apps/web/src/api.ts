@@ -16,6 +16,7 @@ export interface AuthSession {
     role: string
     permissions: CompanyPermission[]
   }
+  isPlatformAdmin: boolean
   token: string
 }
 

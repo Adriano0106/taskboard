@@ -26,9 +26,17 @@ export interface AuthenticatedAccount {
   authenticatedUser: AuthenticatedUser
   publicUser: PublicUser
   publicCompany: PublicCompany
+  isPlatformAdmin: boolean
 }
 
-export function createAuthService(userRepository: UserRepository) {
+export function createAuthService(
+  userRepository: UserRepository,
+  platformAdminEmails: string[] = [],
+) {
+  const platformAdminEmailSet = new Set(
+    platformAdminEmails.map((email) => email.trim().toLowerCase()).filter(Boolean),
+  )
+
   return {
     async registerAccount(input: RegisterAccountInput): Promise<AuthenticatedAccount> {
       const normalizedEmail = input.email.trim().toLowerCase()
@@ -46,7 +54,7 @@ export function createAuthService(userRepository: UserRepository) {
         companyName: input.companyName.trim(),
       })
 
-      return mapUserToAuthenticatedAccount(createdUser)
+      return mapUserToAuthenticatedAccount(createdUser, platformAdminEmailSet)
     },
     async login(input: LoginInput): Promise<AuthenticatedAccount> {
       const normalizedEmail = input.email.trim().toLowerCase()
@@ -62,7 +70,7 @@ export function createAuthService(userRepository: UserRepository) {
         throw new AuthError('Invalid email or password')
       }
 
-      return mapUserToAuthenticatedAccount(user)
+      return mapUserToAuthenticatedAccount(user, platformAdminEmailSet)
     },
     async getProfile(userId: string): Promise<AuthenticatedAccount> {
       const user = await userRepository.findById(userId)
@@ -71,12 +79,15 @@ export function createAuthService(userRepository: UserRepository) {
         throw new AuthError('User not found')
       }
 
-      return mapUserToAuthenticatedAccount(user)
+      return mapUserToAuthenticatedAccount(user, platformAdminEmailSet)
     },
   }
 }
 
-function mapUserToAuthenticatedAccount(user: UserWithPrimaryCompany): AuthenticatedAccount {
+function mapUserToAuthenticatedAccount(
+  user: UserWithPrimaryCompany,
+  platformAdminEmailSet: Set<string>,
+): AuthenticatedAccount {
   const primaryMembership = user.memberships[0]
 
   if (!primaryMembership) {
@@ -108,5 +119,6 @@ function mapUserToAuthenticatedAccount(user: UserWithPrimaryCompany): Authentica
       role: primaryMembership.role,
       permissions: getCompanyPermissions(primaryMembership.role),
     },
+    isPlatformAdmin: platformAdminEmailSet.has(user.email.toLowerCase()),
   }
 }

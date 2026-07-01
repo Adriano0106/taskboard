@@ -38,6 +38,7 @@ export async function buildApp(options: BuildAppOptions) {
 
   await app.register(healthRoutes)
   await app.register(authRoutes, {
+    platformAdminEmails: options.platformAdminEmails ?? [],
     userRepository,
   })
   await app.register(boardRoutes, {

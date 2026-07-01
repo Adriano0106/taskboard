@@ -34,8 +34,61 @@ describe('auth routes', () => {
         role: 'OWNER',
         permissions: expect.arrayContaining(['ManageWorkspace', 'ManageColumns', 'CreateTask']),
       },
+      isPlatformAdmin: false,
     })
     expect(response.json().token).toEqual(expect.any(String))
+
+    await app.close()
+  })
+
+  it('marks configured platform admins in auth responses', async () => {
+    const userRepository = createInMemoryUserRepository()
+    await seedUser(userRepository, {
+      name: 'Platform Admin',
+      email: 'platform-admin@example.com',
+      password: 'password123',
+      companyName: 'TaskBoard',
+    })
+
+    const app = await buildApp({
+      jwtSecret: 'test-secret-with-enough-length',
+      platformAdminEmails: ['platform-admin@example.com'],
+      webOrigin: 'http://localhost:5173',
+      userRepository,
+    })
+
+    const loginResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: {
+        email: 'platform-admin@example.com',
+        password: 'password123',
+      },
+    })
+
+    expect(loginResponse.statusCode).toBe(200)
+    expect(loginResponse.json()).toMatchObject({
+      user: {
+        email: 'platform-admin@example.com',
+      },
+      isPlatformAdmin: true,
+    })
+
+    const profileResponse = await app.inject({
+      method: 'GET',
+      url: '/auth/me',
+      headers: {
+        authorization: `Bearer ${loginResponse.json().token}`,
+      },
+    })
+
+    expect(profileResponse.statusCode).toBe(200)
+    expect(profileResponse.json()).toMatchObject({
+      user: {
+        email: 'platform-admin@example.com',
+      },
+      isPlatformAdmin: true,
+    })
 
     await app.close()
   })

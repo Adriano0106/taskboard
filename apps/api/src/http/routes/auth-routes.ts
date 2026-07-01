@@ -17,11 +17,12 @@ const loginBodySchema = z.object({
 })
 
 export interface AuthRoutesOptions {
+  platformAdminEmails?: string[]
   userRepository: UserRepository
 }
 
 export async function authRoutes(app: FastifyInstance, options: AuthRoutesOptions) {
-  const authService = createAuthService(options.userRepository)
+  const authService = createAuthService(options.userRepository, options.platformAdminEmails ?? [])
 
   app.post('/auth/register', async (request, reply) => {
     const bodyValidation = registerBodySchema.safeParse(request.body)
@@ -40,6 +41,7 @@ export async function authRoutes(app: FastifyInstance, options: AuthRoutesOption
       return reply.status(201).send({
         user: account.publicUser,
         company: account.publicCompany,
+        isPlatformAdmin: account.isPlatformAdmin,
         token,
       })
     } catch (error) {
@@ -70,6 +72,7 @@ export async function authRoutes(app: FastifyInstance, options: AuthRoutesOption
       return {
         user: account.publicUser,
         company: account.publicCompany,
+        isPlatformAdmin: account.isPlatformAdmin,
         token,
       }
     } catch (error) {
@@ -90,6 +93,7 @@ export async function authRoutes(app: FastifyInstance, options: AuthRoutesOption
       return {
         user: account.publicUser,
         company: account.publicCompany,
+        isPlatformAdmin: account.isPlatformAdmin,
       }
     } catch (error) {
       if (error instanceof AuthError) {

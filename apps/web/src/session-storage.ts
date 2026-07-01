@@ -10,7 +10,12 @@ export function readStoredSession(): AuthSession | null {
   }
 
   try {
-    return JSON.parse(storedSession) as AuthSession
+    const parsedSession = JSON.parse(storedSession) as AuthSession
+
+    return {
+      ...parsedSession,
+      isPlatformAdmin: parsedSession.isPlatformAdmin ?? false,
+    }
   } catch {
     localStorage.removeItem(sessionStorageKey)
     return null
