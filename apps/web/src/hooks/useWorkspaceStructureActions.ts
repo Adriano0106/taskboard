@@ -75,6 +75,10 @@ export function useWorkspaceStructureActions({
     const formData = new FormData(formEvent.currentTarget)
     const name = String(formData.get('name') ?? '').trim()
     const slug = String(formData.get('slug') ?? '').trim()
+    const primaryColor = String(formData.get('primaryColor') ?? '').trim()
+    const secondaryColor = String(formData.get('secondaryColor') ?? '').trim()
+    const accentColor = String(formData.get('accentColor') ?? '').trim()
+    const boardBackgroundColor = String(formData.get('boardBackgroundColor') ?? '').trim()
 
     if (!name || !slug) {
       return
@@ -86,6 +90,12 @@ export function useWorkspaceStructureActions({
       const updatedWorkspace = await updateCompany(session.token, {
         name,
         slug,
+        theme: {
+          primaryColor,
+          secondaryColor,
+          accentColor,
+          boardBackgroundColor,
+        },
       })
       const updatedSession = {
         ...session,
@@ -93,6 +103,7 @@ export function useWorkspaceStructureActions({
           ...session.company,
           name: updatedWorkspace.name,
           slug: updatedWorkspace.slug,
+          theme: updatedWorkspace.theme,
         },
       }
 

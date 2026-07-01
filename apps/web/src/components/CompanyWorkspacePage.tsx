@@ -119,6 +119,49 @@ export function CompanyWorkspacePage({
                   />
                 </div>
               </label>
+              <fieldset className="company-theme-fieldset">
+                <legend>Paleta</legend>
+                <label htmlFor="company-primary-color-input">
+                  Principal
+                  <TextInput
+                    id="company-primary-color-input"
+                    name="primaryColor"
+                    type="color"
+                    defaultValue={companyWorkspace.theme.primaryColor}
+                    required
+                  />
+                </label>
+                <label htmlFor="company-secondary-color-input">
+                  Secundaria
+                  <TextInput
+                    id="company-secondary-color-input"
+                    name="secondaryColor"
+                    type="color"
+                    defaultValue={companyWorkspace.theme.secondaryColor}
+                    required
+                  />
+                </label>
+                <label htmlFor="company-accent-color-input">
+                  Destaque
+                  <TextInput
+                    id="company-accent-color-input"
+                    name="accentColor"
+                    type="color"
+                    defaultValue={companyWorkspace.theme.accentColor}
+                    required
+                  />
+                </label>
+                <label htmlFor="company-board-background-color-input">
+                  Quadro
+                  <TextInput
+                    id="company-board-background-color-input"
+                    name="boardBackgroundColor"
+                    type="color"
+                    defaultValue={companyWorkspace.theme.boardBackgroundColor}
+                    required
+                  />
+                </label>
+              </fieldset>
               <Button type="submit" variant="primary">
                 Salvar empresa
               </Button>

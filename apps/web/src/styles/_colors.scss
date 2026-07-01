@@ -5,16 +5,22 @@ $text-muted: #637083;
 $surface-page: #eef2f6;
 $surface-panel: #ffffff;
 $surface-column: #f2f5f8;
-$surface-column-hover: #eef8f5;
+$surface-column-hover: var(--theme-column-hover-color, #e8f1fb);
 $surface-soft: #e7edf3;
-$surface-board: #d9e6f2;
+$surface-board: var(--theme-board-background-color, #d9e6f2);
 
 $border-default: #d5dde6;
 $border-strong: #c8d2dd;
 
-$brand-primary: #2e7d6f;
-$brand-secondary: #1e5d99;
-$brand-focus: rgba(46, 125, 111, 0.18);
+$brand-primary: var(--theme-primary-color, #07182f);
+$brand-secondary: var(--theme-secondary-color, #12335f);
+$brand-accent: var(--theme-accent-color, #1d4ed8);
+$brand-focus: var(--theme-focus-color, rgba(7, 24, 47, 0.18));
+$brand-primary-soft: var(--theme-primary-soft-color, rgba(7, 24, 47, 0.14));
+$brand-primary-wash: var(--theme-primary-wash-color, rgba(7, 24, 47, 0.12));
+$brand-secondary-soft: var(--theme-secondary-soft-color, rgba(18, 51, 95, 0.14));
+$brand-secondary-wash: var(--theme-secondary-wash-color, rgba(18, 51, 95, 0.16));
+$brand-accent-soft: var(--theme-accent-soft-color, rgba(29, 78, 216, 0.14));
 
 $danger: #b42318;
 $warning: #a15c07;

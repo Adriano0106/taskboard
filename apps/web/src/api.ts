@@ -12,6 +12,7 @@ export interface AuthSession {
     id: string
     name: string
     slug: string
+    theme: CompanyTheme
     role: string
     permissions: CompanyPermission[]
   }
@@ -120,6 +121,7 @@ export interface CompanyWorkspace {
   id: string
   name: string
   slug: string
+  theme: CompanyTheme
   role: string
   permissions: CompanyPermission[]
   departments: Array<{
@@ -133,6 +135,13 @@ export interface CompanyWorkspace {
       description: string | null
     }>
   }>
+}
+
+export interface CompanyTheme {
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  boardBackgroundColor: string
 }
 
 export interface PlatformCompanySummary {
@@ -201,6 +210,7 @@ export interface BoardPayload {
 export interface CompanyPayload {
   name: string
   slug: string
+  theme?: CompanyTheme
 }
 
 export interface CreateCompanyMemberPayload {

@@ -19,6 +19,7 @@ import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
 import { useBoardActions } from './hooks/useBoardActions.js'
 import { useCompanyMembersManagement } from './hooks/useCompanyMembersManagement.js'
+import { useCompanyTheme } from './hooks/useCompanyTheme.js'
 import { useTaskActivities } from './hooks/useTaskActivities.js'
 import { useTaskAttachments } from './hooks/useTaskAttachments.js'
 import { useTaskComments } from './hooks/useTaskComments.js'
@@ -153,6 +154,7 @@ export function App() {
       taskId: selectedTaskDetail?.id ?? null,
       token: session?.token ?? null,
     })
+  useCompanyTheme(companyWorkspace?.theme ?? session?.company.theme)
 
   useEffect(() => {
     if (!session?.token) {

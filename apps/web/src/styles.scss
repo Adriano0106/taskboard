@@ -48,7 +48,7 @@ textarea:disabled {
   place-items: center;
   background:
     linear-gradient(135deg, colors.$brand-focus, transparent 42%),
-    linear-gradient(315deg, rgba(colors.$brand-secondary, 0.16), transparent 36%),
+    linear-gradient(315deg, colors.$brand-secondary-wash, transparent 36%),
     colors.$surface-page;
 }
 
@@ -173,7 +173,7 @@ select {
   }
 
   option:checked {
-    background: rgba(colors.$brand-primary, 0.14);
+    background: colors.$brand-primary-soft;
     color: colors.$brand-primary;
     font-weight: 900;
   }
@@ -217,7 +217,7 @@ textarea {
   max-width: none;
   overflow: hidden;
   background:
-    radial-gradient(circle at 72% 18%, rgba(colors.$brand-primary, 0.12), transparent 22%),
+    radial-gradient(circle at 72% 18%, colors.$brand-primary-wash, transparent 22%),
     linear-gradient(135deg, colors.$surface-page 0%, colors.$surface-board 100%);
 }
 
@@ -379,9 +379,47 @@ textarea {
 
 .company-settings-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr);
   align-items: end;
   gap: 12px;
+
+  .primary-button {
+    justify-self: start;
+  }
+}
+
+.company-theme-fieldset {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid colors.$border-default;
+  border-radius: 8px;
+  padding: 14px;
+  background: colors.$surface-soft;
+
+  legend {
+    padding: 0 6px;
+    color: colors.$text-default;
+    font-size: 0.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  label {
+    gap: 6px;
+    min-width: 0;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+  }
+
+  input[type='color'] {
+    min-height: 44px;
+    padding: 4px;
+    cursor: pointer;
+  }
 }
 
 .slug-input-group {
@@ -897,7 +935,7 @@ textarea {
 }
 
 .priority-low {
-  background: rgba(colors.$brand-secondary, 0.14);
+  background: colors.$brand-secondary-soft;
   color: colors.$brand-secondary;
 }
 
@@ -1309,6 +1347,10 @@ textarea {
   }
 
   .task-detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .company-theme-fieldset {
     grid-template-columns: 1fr;
   }
 
