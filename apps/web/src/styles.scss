@@ -418,6 +418,87 @@ textarea {
   font-weight: 800;
 }
 
+.company-members-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid colors.$border-default;
+  background: colors.$surface-panel;
+  padding: 18px 20px;
+}
+
+.company-members-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    color: colors.$text-strong;
+    font-size: 1rem;
+  }
+}
+
+.company-member-create-form {
+  display: grid;
+  grid-template-columns:
+    minmax(140px, 1fr)
+    minmax(180px, 1.2fr)
+    minmax(140px, 0.9fr)
+    minmax(120px, 0.7fr)
+    auto;
+  align-items: end;
+  gap: 10px;
+
+  label {
+    gap: 6px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+  }
+}
+
+.company-members-list {
+  display: grid;
+  gap: 10px;
+}
+
+.company-member-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid colors.$border-default;
+  border-radius: 8px;
+  background: colors.$surface-soft;
+  padding: 12px;
+
+  select {
+    min-height: 40px;
+  }
+}
+
+.company-member-identity {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+
+  strong,
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: colors.$text-strong;
+  }
+
+  span {
+    color: colors.$text-muted;
+    font-weight: 700;
+  }
+}
+
 .department-section {
   display: grid;
   gap: 14px;
@@ -1193,6 +1274,8 @@ textarea {
   .task-watcher-form,
   .workspace-create-form,
   .company-settings-form,
+  .company-member-create-form,
+  .company-member-row,
   .department-header,
   .department-title-form,
   .board-create-form,

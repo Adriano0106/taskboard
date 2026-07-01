@@ -32,6 +32,7 @@ import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { ProfilePage } from './components/ProfilePage.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
+import { useCompanyMembersManagement } from './hooks/useCompanyMembersManagement.js'
 import { useTaskActivities } from './hooks/useTaskActivities.js'
 import { useTaskAttachments } from './hooks/useTaskAttachments.js'
 import { useTaskComments } from './hooks/useTaskComments.js'
@@ -87,6 +88,7 @@ export function App() {
     platformCompanies,
     selectedTaskDetail,
     resetWorkspaceData,
+    setCompanyMembers,
     setCompanyWorkspace,
     setIsTaskDetailLoading,
     setKanbanBoard,
@@ -96,6 +98,17 @@ export function App() {
     currentRoute,
     navigateTo,
     session,
+  })
+  const {
+    createMember,
+    isCreatingMember,
+    membersStatusMessage,
+    removeMember,
+    updateMemberRole,
+    updatingMemberId,
+  } = useCompanyMembersManagement({
+    setCompanyMembers,
+    token: session?.token ?? null,
   })
   const { addComment, comments, commentsStatusMessage, isCommentSubmitting } = useTaskComments({
     taskId: selectedTaskDetail?.id ?? null,
@@ -858,19 +871,27 @@ export function App() {
           <CompanyWorkspacePage
             canManageWorkspace={canManageWorkspace}
             canDeleteBoard={canDeleteBoard}
+            companyMembers={companyMembers}
             companyWorkspace={companyWorkspace}
+            currentUserId={session.user.id}
             deletingBoardId={deletingBoardId}
             deletingDepartmentId={deletingDepartmentId}
             editingBoardId={editingBoardId}
             editingDepartmentId={editingDepartmentId}
+            isCreatingMember={isCreatingMember}
             isLoading={isCompanyLoading}
+            membersStatusMessage={membersStatusMessage}
+            updatingMemberId={updatingMemberId}
             workspaceStructureMessage={workspaceStructureMessage}
             onCreateBoard={handleCreateBoard}
             onCreateDepartment={handleCreateDepartment}
+            onCreateMember={createMember}
             onDeleteBoard={handleDeleteBoard}
             onDeleteDepartment={handleDeleteDepartment}
             onNavigate={navigateTo}
+            onRemoveMember={removeMember}
             onRenameDepartment={handleRenameDepartment}
+            onUpdateMemberRole={updateMemberRole}
             onUpdateCompany={handleUpdateCompany}
             onUpdateBoard={handleUpdateBoard}
           />

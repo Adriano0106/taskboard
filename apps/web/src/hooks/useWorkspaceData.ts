@@ -316,6 +316,7 @@ export function useWorkspaceData({ currentRoute, session, navigateTo }: UseWorks
     platformCompanies,
     selectedTaskDetail,
     resetWorkspaceData,
+    setCompanyMembers,
     setIsTaskDetailLoading,
     setCompanyWorkspace,
     setKanbanBoard,

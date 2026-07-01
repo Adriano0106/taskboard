@@ -150,8 +150,10 @@ export interface CompanyMember {
   id: string
   name: string
   email: string
-  role: string
+  role: CompanyRole
 }
+
+export type CompanyRole = 'OWNER' | 'ADMIN' | 'MEMBER'
 
 export interface CreateTaskPayload {
   title: string
@@ -199,6 +201,17 @@ export interface BoardPayload {
 export interface CompanyPayload {
   name: string
   slug: string
+}
+
+export interface CreateCompanyMemberPayload {
+  name: string
+  email: string
+  password: string
+  role: CompanyRole
+}
+
+export interface UpdateCompanyMemberPayload {
+  role: CompanyRole
 }
 
 export async function registerAccount(payload: RegisterAccountPayload): Promise<AuthSession> {
@@ -380,6 +393,45 @@ export async function deleteBoard(token: string, boardId: string): Promise<Compa
 export async function getCurrentCompanyMembers(token: string): Promise<CompanyMember[]> {
   return sendRequest<CompanyMember[]>('/companies/current/members', {
     method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function createCompanyMember(
+  token: string,
+  payload: CreateCompanyMemberPayload,
+): Promise<CompanyMember[]> {
+  return sendRequest<CompanyMember[]>('/companies/current/members', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateCompanyMemberRole(
+  token: string,
+  userId: string,
+  payload: UpdateCompanyMemberPayload,
+): Promise<CompanyMember[]> {
+  return sendRequest<CompanyMember[]>(`/companies/current/members/${userId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteCompanyMember(
+  token: string,
+  userId: string,
+): Promise<CompanyMember[]> {
+  return sendRequest<CompanyMember[]>(`/companies/current/members/${userId}`, {
+    method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
     },

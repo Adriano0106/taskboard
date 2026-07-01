@@ -1,6 +1,12 @@
 import type { FormEvent } from 'react'
-import type { CompanyWorkspace } from '../api.js'
+import type {
+  CompanyMember,
+  CompanyRole,
+  CompanyWorkspace,
+  CreateCompanyMemberPayload,
+} from '../api.js'
 import { createFriendlyBoardPath } from '../routing.js'
+import { CompanyMembersPanel } from './CompanyMembersPanel.js'
 import { Badge } from './ui/Badge.js'
 import { Button } from './ui/Button.js'
 import { Card } from './ui/Card.js'
@@ -9,19 +15,27 @@ import { TextInput } from './ui/TextInput.js'
 interface CompanyWorkspacePageProps {
   canDeleteBoard: boolean
   canManageWorkspace: boolean
+  companyMembers: CompanyMember[]
   companyWorkspace: CompanyWorkspace | null
+  currentUserId: string
   deletingBoardId: string | null
   deletingDepartmentId: string | null
   editingBoardId: string | null
   editingDepartmentId: string | null
+  isCreatingMember: boolean
   isLoading: boolean
+  membersStatusMessage: string
+  updatingMemberId: string | null
   workspaceStructureMessage: string
   onCreateBoard: (formEvent: FormEvent<HTMLFormElement>, departmentId: string) => void
   onCreateDepartment: (formEvent: FormEvent<HTMLFormElement>) => void
+  onCreateMember: (payload: CreateCompanyMemberPayload) => Promise<void>
   onDeleteBoard: (boardId: string, boardName: string) => void
   onDeleteDepartment: (departmentId: string, departmentName: string) => void
   onNavigate: (path: string) => void
+  onRemoveMember: (userId: string) => Promise<void>
   onRenameDepartment: (formEvent: FormEvent<HTMLFormElement>, departmentId: string) => void
+  onUpdateMemberRole: (userId: string, role: CompanyRole) => Promise<void>
   onUpdateCompany: (formEvent: FormEvent<HTMLFormElement>) => void
   onUpdateBoard: (formEvent: FormEvent<HTMLFormElement>, boardId: string) => void
 }
@@ -29,19 +43,27 @@ interface CompanyWorkspacePageProps {
 export function CompanyWorkspacePage({
   canDeleteBoard,
   canManageWorkspace,
+  companyMembers,
   companyWorkspace,
+  currentUserId,
   deletingBoardId,
   deletingDepartmentId,
   editingBoardId,
   editingDepartmentId,
+  isCreatingMember,
   isLoading,
+  membersStatusMessage,
+  updatingMemberId,
   workspaceStructureMessage,
   onCreateBoard,
   onCreateDepartment,
+  onCreateMember,
   onDeleteBoard,
   onDeleteDepartment,
   onNavigate,
+  onRemoveMember,
   onRenameDepartment,
+  onUpdateMemberRole,
   onUpdateCompany,
   onUpdateBoard,
 }: CompanyWorkspacePageProps) {
@@ -109,6 +131,18 @@ export function CompanyWorkspacePage({
         </Card>
       ) : null}
 
+      <CompanyMembersPanel
+        canManageWorkspace={canManageWorkspace}
+        companyMembers={companyMembers}
+        currentUserId={currentUserId}
+        isCreatingMember={isCreatingMember}
+        membersStatusMessage={membersStatusMessage}
+        updatingMemberId={updatingMemberId}
+        onCreateMember={onCreateMember}
+        onRemoveMember={onRemoveMember}
+        onUpdateMemberRole={onUpdateMemberRole}
+      />
+
       {isLoading ? <p className="surface-message">Carregando empresa...</p> : null}
       {workspaceStructureMessage ? (
         <p className="surface-message error-message">{workspaceStructureMessage}</p>
@@ -174,7 +208,9 @@ export function CompanyWorkspacePage({
                     type="button"
                     className="board-open-button"
                     onClick={() =>
-                      onNavigate(createFriendlyBoardPath(companyWorkspace.slug, department.key, board.key))
+                      onNavigate(
+                        createFriendlyBoardPath(companyWorkspace.slug, department.key, board.key),
+                      )
                     }
                   >
                     <Badge>{board.key}</Badge>

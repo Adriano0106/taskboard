@@ -21,6 +21,24 @@ Auth:
 - `POST /auth/login`
 - `GET /auth/me`
 
+Company:
+
+- `GET /companies/current`
+- `PATCH /companies/current`
+- `GET /companies/current/members`
+- `POST /companies/current/members`
+- `PATCH /companies/current/members/:userId`
+- `DELETE /companies/current/members/:userId`
+- `POST /companies/current/departments`
+- `PATCH /companies/current/departments/:departmentId`
+- `DELETE /companies/current/departments/:departmentId`
+- `POST /companies/current/departments/:departmentId/boards`
+- `PATCH /companies/current/boards/:boardId`
+- `DELETE /companies/current/boards/:boardId`
+- `GET /companies/:companyId`
+- `GET /companies/by-slug/:companySlug`
+- `GET /admin/companies`
+
 Board:
 
 - `GET /boards/current/kanban`

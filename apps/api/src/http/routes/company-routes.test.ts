@@ -112,6 +112,101 @@ describe('company routes', () => {
     await app.close()
   })
 
+  it('creates, updates and deletes company members for owners', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const memberEmail = `managed-member-${randomUUID()}@${testEmailDomain}`
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/companies/current/members',
+      headers: createAuthHeader(token),
+      payload: {
+        name: 'Managed Member',
+        email: memberEmail,
+        password: 'password123',
+        role: 'MEMBER',
+      },
+    })
+    const createdMember = createResponse
+      .json()
+      .find((member: { email: string }) => member.email === memberEmail)
+    const updateResponse = await app.inject({
+      method: 'PATCH',
+      url: `/companies/current/members/${createdMember.id}`,
+      headers: createAuthHeader(token),
+      payload: {
+        role: 'ADMIN',
+      },
+    })
+    const deleteResponse = await app.inject({
+      method: 'DELETE',
+      url: `/companies/current/members/${createdMember.id}`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(createResponse.statusCode).toBe(201)
+    expect(createdMember).toMatchObject({
+      name: 'Managed Member',
+      email: memberEmail,
+      role: 'MEMBER',
+    })
+    expect(updateResponse.statusCode).toBe(200)
+    expect(updateResponse.json()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: createdMember.id,
+          role: 'ADMIN',
+        }),
+      ]),
+    )
+    expect(deleteResponse.statusCode).toBe(200)
+    expect(deleteResponse.json()).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: createdMember.id,
+        }),
+      ]),
+    )
+
+    await app.close()
+  })
+
+  it('protects the current member from self-management', async () => {
+    const app = await createTestApp()
+    const { token } = await registerOwnerSession(app)
+    const membersResponse = await app.inject({
+      method: 'GET',
+      url: '/companies/current/members',
+      headers: createAuthHeader(token),
+    })
+    const owner = membersResponse.json()[0]
+    const selfRoleResponse = await app.inject({
+      method: 'PATCH',
+      url: `/companies/current/members/${owner.id}`,
+      headers: createAuthHeader(token),
+      payload: {
+        role: 'ADMIN',
+      },
+    })
+    const selfDeleteResponse = await app.inject({
+      method: 'DELETE',
+      url: `/companies/current/members/${owner.id}`,
+      headers: createAuthHeader(token),
+    })
+
+    expect(selfRoleResponse.statusCode).toBe(409)
+    expect(selfRoleResponse.json()).toMatchObject({
+      message: 'You cannot change your own role',
+    })
+    expect(selfDeleteResponse.statusCode).toBe(409)
+    expect(selfDeleteResponse.json()).toMatchObject({
+      message: 'You cannot remove yourself from the company',
+    })
+
+    await app.close()
+  })
+
   it('updates company name and URL slug for owners', async () => {
     const app = await createTestApp()
     const { company, token } = await registerOwnerSession(app)
@@ -430,9 +525,24 @@ describe('company routes', () => {
         name: 'Bloqueado',
       },
     })
+    const memberResponse = await app.inject({
+      method: 'POST',
+      url: '/companies/current/members',
+      headers: createAuthHeader(memberToken),
+      payload: {
+        name: 'Bloqueado',
+        email: `blocked-${randomUUID()}@${testEmailDomain}`,
+        password: 'password123',
+        role: 'MEMBER',
+      },
+    })
 
     expect(response.statusCode).toBe(403)
     expect(response.json()).toMatchObject({
+      message: 'Only company owners and admins can manage workspace structure',
+    })
+    expect(memberResponse.statusCode).toBe(403)
+    expect(memberResponse.json()).toMatchObject({
       message: 'Only company owners and admins can manage workspace structure',
     })
 

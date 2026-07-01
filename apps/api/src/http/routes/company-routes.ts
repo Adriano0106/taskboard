@@ -6,7 +6,9 @@ import {
   CompanyError,
   createBoard,
   createDepartment,
+  createCompanyMember,
   deleteBoard,
+  deleteCompanyMember,
   deleteDepartment,
   getCompanyWorkspace,
   getCompanyWorkspaceBySlug,
@@ -15,6 +17,7 @@ import {
   renameDepartment,
   updateBoard,
   updateCompany,
+  updateCompanyMemberRole,
 } from '../../repositories/company-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
@@ -34,6 +37,10 @@ const boardParamsSchema = z.object({
   boardId: z.string().min(1),
 })
 
+const memberParamsSchema = z.object({
+  userId: z.string().min(1),
+})
+
 const departmentBodySchema = z.object({
   name: z.string().trim().min(2),
 })
@@ -46,6 +53,19 @@ const boardBodySchema = z.object({
 const companyBodySchema = z.object({
   name: z.string().trim().min(2),
   slug: z.string().trim().min(2).max(48),
+})
+
+const companyRoleSchema = z.enum(['OWNER', 'ADMIN', 'MEMBER'])
+
+const createMemberBodySchema = z.object({
+  name: z.string().trim().min(2),
+  email: z.string().trim().email(),
+  password: z.string().min(8),
+  role: companyRoleSchema,
+})
+
+const updateMemberBodySchema = z.object({
+  role: companyRoleSchema,
 })
 
 interface CompanyRoutesOptions {
@@ -110,6 +130,109 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
       userId: request.user.userId,
     })
   })
+
+  app.post(
+    '/companies/current/members',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const bodyValidation = createMemberBodySchema.safeParse(request.body)
+
+      if (!bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid company member payload',
+          issues: bodyValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return reply.status(201).send(
+          await createCompanyMember(prismaClient, {
+            companyId: request.user.companyId,
+            userId: request.user.userId,
+            name: bodyValidation.data.name,
+            email: bodyValidation.data.email,
+            password: bodyValidation.data.password,
+            role: bodyValidation.data.role,
+          }),
+        )
+      } catch (error) {
+        if (error instanceof CompanyError) {
+          return reply.status(getCompanyErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.patch(
+    '/companies/current/members/:userId',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = memberParamsSchema.safeParse(request.params)
+      const bodyValidation = updateMemberBodySchema.safeParse(request.body)
+
+      if (!paramsValidation.success || !bodyValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid company member payload',
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
+        })
+      }
+
+      try {
+        return await updateCompanyMemberRole(prismaClient, {
+          companyId: request.user.companyId,
+          userId: request.user.userId,
+          memberUserId: paramsValidation.data.userId,
+          role: bodyValidation.data.role,
+        })
+      } catch (error) {
+        if (error instanceof CompanyError) {
+          return reply.status(getCompanyErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
+
+  app.delete(
+    '/companies/current/members/:userId',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const paramsValidation = memberParamsSchema.safeParse(request.params)
+
+      if (!paramsValidation.success) {
+        return reply.status(400).send({
+          message: 'Invalid company member params',
+          issues: paramsValidation.error.flatten().fieldErrors,
+        })
+      }
+
+      try {
+        return await deleteCompanyMember(prismaClient, {
+          companyId: request.user.companyId,
+          userId: request.user.userId,
+          memberUserId: paramsValidation.data.userId,
+        })
+      } catch (error) {
+        if (error instanceof CompanyError) {
+          return reply.status(getCompanyErrorStatus(error)).send({
+            message: error.message,
+          })
+        }
+
+        throw error
+      }
+    },
+  )
 
   app.post(
     '/companies/current/departments',
@@ -387,7 +510,11 @@ function getCompanyErrorStatus(error: CompanyError) {
   if (
     error.message.includes('empty departments') ||
     error.message.includes('without open tasks') ||
-    error.message.includes('already in use')
+    error.message.includes('already in use') ||
+    error.message.includes('already a company member') ||
+    error.message.includes('at least one owner') ||
+    error.message.includes('your own role') ||
+    error.message.includes('remove yourself')
   ) {
     return 409
   }
