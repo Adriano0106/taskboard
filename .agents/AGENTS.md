@@ -8,7 +8,9 @@
 
 ## Context Budget Rules
 
+- Treat the session context as finite. A new task should start from a small context plan, not from broad repository reading.
 - Start with `docs/context.md` when general project context is needed.
+- Use the "index, then chapter" rule: read the light index first, then open only the specific doc/skill/file needed for the current slice.
 - Do not read all skills automatically.
 - Read only the one skill that directly matches the current task.
 - Do not read `docs/*` broadly. Use the official source for the topic:
@@ -21,7 +23,22 @@
   - deployment: `docs/deployment.md`
 - Prefer targeted file reads over broad searches.
 - Avoid `rg` across the whole project unless the target location is unknown.
+- Cap command output with focused paths, exact symbols, `-TotalCount`, or tool output limits.
+- If a command produces noisy output, rerun only the narrower command needed to answer the question.
 - Do not run build, lint, tests, Prisma generate, Prisma format, or commit unless the task asks for validation/commit or the change requires it.
+
+## Session Management
+
+- Before a large task, state the smallest deliverable slice and the files/docs expected to be read.
+- If the task changes domain, stop and ask whether to continue in a new slice instead of carrying unrelated context forward.
+- If the session becomes long, produce a resume checkpoint before continuing:
+  - decisions made
+  - files changed
+  - commands run and results
+  - open risks/blockers
+  - exact next step
+- Do not rely on old conversation context when repo files can answer with less ambiguity.
+- When resuming after compaction, verify the newest user request before acting.
 
 ## Code Style
 

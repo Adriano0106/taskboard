@@ -2,6 +2,17 @@
 
 This project can become expensive for agentic coding because it has API, web, Prisma, docs, tests, and skills. Prefer small scoped prompts.
 
+## Session Model
+
+Treat a Codex session as a limited working set:
+
+- every file read competes with the current task for attention
+- long command outputs are as expensive as long source files
+- old decisions can become weak after long sessions or compaction
+- a new task should normally start with a fresh small context plan
+
+Use `docs/context.md` as the light memory index. Open deeper docs only when the task needs them.
+
 ## Good Prompt Pattern
 
 ```text
@@ -34,6 +45,23 @@ That forces the agent to read many skills, docs, API files, repositories, UI fil
 8. Ask for validation.
 9. Ask for commit.
 
+## Codex Operating Rules
+
+- Ask Codex to state the expected read set before large work.
+- Prefer "read only these files" over "understand the project".
+- Prefer one layer per prompt: schema, repository, route, test, frontend API, hook, UI, or docs.
+- Ask for a resume checkpoint before switching topics.
+- If Codex starts reading broad areas, stop it and restate the slice.
+- Keep outputs small: request summaries, not full command logs.
+
+## Resume Prompt
+
+```text
+Antes de compactar ou encerrar, gere um checkpoint curto com:
+objetivo atual, decisoes tomadas, arquivos alterados, validacoes rodadas,
+riscos pendentes e o proximo passo exato.
+```
+
 ## Command Budget
 
 Ask Codex to avoid commands unless needed. Examples:
@@ -52,4 +80,4 @@ Ask Codex to avoid commands unless needed. Examples:
 - "Read only the files you must edit."
 - "Stop before validation."
 - "Do not commit."
-
+- "Give me a checkpoint before continuing."

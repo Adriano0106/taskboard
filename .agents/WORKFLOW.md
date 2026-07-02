@@ -5,10 +5,11 @@ Use this file to reduce unnecessary repository exploration and quota usage.
 ## Default Mode
 
 1. Identify the smallest deliverable slice.
-2. Read at most one matching skill.
-3. Read only files that are necessary for the slice.
-4. Implement the smallest safe diff.
-5. Stop and summarize the diff unless validation or commit was requested.
+2. Write a tiny context plan: skill, docs, and files expected to be read.
+3. Read at most one matching skill.
+4. Read only files that are necessary for the slice.
+5. Implement the smallest safe diff.
+6. Stop and summarize the diff unless validation or commit was requested.
 
 ## Do Not Do By Default
 
@@ -20,6 +21,7 @@ Use this file to reduce unnecessary repository exploration and quota usage.
 - Do not commit unless asked.
 - Do not start frontend work during backend-only tasks.
 - Do not start backend work during frontend-only tasks.
+- Do not continue a new task in the old mental model. Re-check the current request and only then proceed.
 
 ## When to Read Each Skill
 
@@ -54,6 +56,14 @@ rg "ExactSymbol" apps/api/src/repositories -n
 npm run test --workspace @taskboard/api -- --run src/http/routes/specific-routes.test.ts
 ```
 
+Prefer small outputs:
+
+```powershell
+git diff --stat
+git diff -- path/to/file.ts
+Select-String -Path path\to\file.ts -Pattern "ExactSymbol" -Context 2,4
+```
+
 Avoid broad commands unless necessary:
 
 ```powershell
@@ -71,3 +81,13 @@ Stop after a slice when:
 - The next step requires schema generation, build, tests, or commit not explicitly requested.
 - The agent would need to read a large unrelated area of the project.
 
+## Resume Checkpoint
+
+Before compaction, handoff, or a long pause, summarize only:
+
+- current objective
+- committed/uncommitted changes
+- files changed
+- validation already run
+- known blockers
+- next exact command or file to edit

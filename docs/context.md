@@ -95,4 +95,5 @@ Viewer is read-only.
 - `docs/kanban.md`: board/task UX behavior.
 - `docs/notifications.md`: notification direction.
 - `docs/deployment.md`: local/deploy notes.
-
+- `docs/codex-performance.md`: prompt and token-budget guidance.
+- `docs/session-management.md`: checkpoints, compaction, and low-context session habits.
