@@ -1,31 +1,34 @@
-# TaskBoard Database
+﻿# TaskBoard Database
 
-## Current Models
+## Current Boundary
 
-The current Prisma schema contains the MVP foundation:
-
-- `User`
-- `Company`
-- `CompanyMember`
-- `Department`
-- `Board`
-- `BoardColumn`
-- `BoardMember`
-- `Task`
-
-The company boundary is the current tenant boundary. Every query that exposes business data must be scoped by company, department, board, or membership.
+Company is the current tenant boundary. Every query exposing business data must be scoped through company, department, board, task, membership, or another resource relation.
 
 ## Core Relationships
 
 ```text
 Company 1 -> N CompanyMember
 Company 1 -> N Department
+Department 1 -> N DepartmentMember
 Department 1 -> N Board
 Board 1 -> N BoardColumn
-Board 1 -> N Task
 Board 1 -> N BoardMember
+Board 1 -> N Task
 BoardColumn 1 -> N Task
 User 1 -> N assigned Task
+```
+
+Expanding relationships:
+
+```text
+Department 1 -> N Epic
+Epic 1 -> N EpicTaskLink
+Task 1 -> N EpicTaskLink
+Task 1 -> N TaskComment
+Task 1 -> N TaskAttachment
+Task 1 -> N TaskActivity
+Task 1 -> N TaskWatcher
+User 1 -> N AccessRequest
 ```
 
 ## Friendly Task IDs
@@ -34,57 +37,49 @@ Tasks use `friendlyId` for display, such as `TB-1`, `DEV-50`, or `SUP-120`.
 
 Rules:
 
-- `id` remains the internal UUID/CUID identifier
-- `friendlyId` is shown in the interface
-- `friendlyId` is unique per board, not globally
-- `sequenceNumber` is unique per board
-- `Board.nextTaskNumber` controls the next sequence
-
-This allows multiple boards to have `TB-1` without conflicting in the database.
+- Internal `id` remains the database identifier.
+- `friendlyId` is shown in the UI.
+- `friendlyId` is unique per board.
+- `sequenceNumber` is unique per board.
+- `Board.nextTaskNumber` controls the next sequence.
 
 ## Kanban Ordering
 
-Current MVP ordering:
+- `BoardColumn.position` orders columns inside a board.
+- `Task.position` orders tasks inside a column.
+- Index tasks by board, column, and position.
+- Direct reordering is acceptable for MVP.
+- Revisit ranking strategy before scaling to very large boards.
 
-- `BoardColumn.position` orders columns inside a board
-- `Task.position` orders tasks inside a column
-- `Task` has an index on `boardId`, `columnId`, and `position`
+## Scoped Permission Models
 
-The MVP may reorder affected tasks directly. Before scaling to large boards, evaluate a ranking strategy that avoids updating many rows on each drag, such as decimal positions or lexicographic rank strings.
+Use scoped memberships to avoid relying only on global company roles:
 
-## Planned Models
+- `CompanyMember`: company relationship and company-level role.
+- `DepartmentMember`: department role: `MANAGER`, `MEMBER`, `VIEWER`.
+- `BoardMember`: board role: `MANAGER`, `MEMBER`, `VIEWER`.
+- `AccessRequest`: request access to board/task/epic.
+- `Epic`: owned by a department.
+- `EpicTaskLink`: links epics to tasks across boards/departments.
 
-Add these models incrementally:
-
-- `TaskComment`
-- `TaskAttachment`
-- `TaskActivity`
-- `AuditLog`
-- `Notification`
-- `TaskWatcher`
-- `Label`
-- `Priority`
-- `CustomFieldDefinition`
-- `CustomFieldValue`
-- `Permission`
-- `Role`
-
-## Indexing Guidelines
+## Index Guidelines
 
 Prefer indexes that match access patterns:
 
-- company membership lookup by `userId` and `companyId`
+- company membership by `userId` + `companyId`
+- department membership by `departmentId` + `userId`
+- board membership by `boardId` + `userId`
 - boards by `departmentId`
-- columns by `boardId` and `position`
-- tasks by `boardId`, `columnId`, and `position`
-- notifications by `userId`, `readAt`, and `createdAt`
-- activities by `taskId` and `createdAt`
-
-Avoid global queries for tenant-scoped data.
+- columns by `boardId` + `position`
+- tasks by `boardId`, `columnId`, `position`
+- access requests by requester/status/target
+- epics by owner department/company
+- epic task links by `epicId` and `taskId`
+- notifications by `userId`, `readAt`, `createdAt`
 
 ## Migration Rules
 
-- Every schema change must include a Prisma migration.
-- Run `npm run prisma:generate` after schema changes.
-- Local PostgreSQL uses port `5432` by default, with documented fallback to `5433`.
-- Apply migrations locally with the `DATABASE_URL` from `.env`.
+- Every schema change must include a migration.
+- Include backfill for existing data when introducing required relations/roles.
+- Avoid destructive changes unless explicitly requested.
+- Run Prisma format/generate only when implementing or validating schema changes.

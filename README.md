@@ -1,6 +1,6 @@
 # TaskBoard
 
-Aplicação web para gestão de tarefas, quadros Kanban e suporte corporativo.
+Aplicacao web para gestao de tarefas, quadros Kanban e suporte corporativo.
 
 ## Stack
 
@@ -36,7 +36,7 @@ Se algum processo local ficar preso segurando portas de desenvolvimento, rode:
 npm run dev:stop
 ```
 
-PostgreSQL local usa a porta `5432` por padrão. Se a porta estiver ocupada, altere no `.env`:
+PostgreSQL local usa a porta `5432` por padrao. Se a porta estiver ocupada, altere no `.env`:
 
 ```bash
 POSTGRES_HOST_PORT="5433"
@@ -53,6 +53,16 @@ docker compose up -d postgres
 
 - `npm run dev`: inicia os workspaces em modo desenvolvimento
 - `npm run build`: compila API e web
-- `npm run lint`: valida formatação e regras estáticas
+- `npm run lint`: valida formatacao e regras estaticas
 - `npm run test`: executa testes dos workspaces
 - `npm run prisma:generate`: gera o Prisma Client da API
+
+## Docs E Agentes
+
+Este projeto usa guias curtos para reduzir leitura desnecessaria por agentes.
+
+- `.agents/AGENTS.md`: regras principais para agentes.
+- `.agents/WORKFLOW.md`: fluxo recomendado de baixo contexto.
+- `docs/context.md`: primeiro resumo para entender o projeto.
+- `docs/codex-performance.md`: prompts e praticas para economizar contexto.
+- `docs/api.md`, `docs/database.md`, `docs/permissions.md`: fontes especificas por assunto.

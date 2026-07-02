@@ -1,143 +1,32 @@
----
-name: add-frontend-feature
-description: Add a new feature or page component to the TaskBoard React frontend following established patterns for state management, API client calls, hooks, and SCSS styling.
----
+﻿# Skill: Add Frontend Feature
 
-# Skill: Add Frontend Feature
+Use this skill only for React/Vite frontend work.
 
-## Context
+## Read First
 
-The TaskBoard frontend is **React 19 + Vite + TypeScript + SCSS**.
+- `docs/kanban.md` for board/task UX behavior.
+- `docs/permissions.md` only if controls depend on authorization.
+- Existing component/hook/API files in the same feature area.
 
-Key files:
-- `apps/web/src/App.tsx` — root orchestrator with global state and handlers
-- `apps/web/src/api.ts` — typed API client functions (fetch-based)
-- `apps/web/src/hooks/` — custom hooks for data fetching and mutations
-- `apps/web/src/components/` — page components and UI primitives
-- `apps/web/src/styles.scss` — global styles imported from `./styles/colors`
+Do not read backend repositories or Prisma schema for frontend-only work. Use the API contract provided by the task or `apps/web/src/api.ts`.
 
-## API Client Pattern
+## Checklist
 
-All backend calls go through `apps/web/src/api.ts`. Each function:
-1. Accepts a `token: string` (from session) plus domain-specific input.
-2. Makes a `fetch()` to `${apiUrl}/...`.
-3. Throws `Error` with the response `message` if not ok.
-4. Returns typed data.
+1. Add/update API client function in `apps/web/src/api.ts` when needed.
+2. Add/update custom hook in `apps/web/src/hooks/` for remote state.
+3. Keep components focused on rendering and user interaction.
+4. Pass explicit props.
+5. Hide or disable controls based on effective permissions.
+6. Preserve Viewer read-only behavior.
+7. Use existing SCSS conventions.
+8. Do not introduce new state libraries without explicit request.
 
-```ts
-export async function myDomainAction(token: string, input: MyInput): Promise<MyResult> {
-  const response = await fetch(`${apiUrl}/my-resource`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(input),
-  })
+## UI Permission Rules
 
-  if (!response.ok) {
-    const { message } = await response.json()
-    throw new Error(message ?? 'Erro inesperado')
-  }
+- Hiding a control is not security; backend must still authorize.
+- Viewer can view boards/tasks but cannot create, edit, move, comment, attach files, change watchers, or manage members.
+- If the user lacks access to a linked board/task, show a request-access CTA when the API supports it.
 
-  return response.json()
-}
-```
+## Stop Point
 
-## Custom Hook Pattern
-
-Hooks wrap API calls with local state. They live in `apps/web/src/hooks/`.
-
-```ts
-interface UseMyFeatureOptions {
-  token: string | null
-  someId: string | null
-}
-
-export function useMyFeature({ token, someId }: UseMyFeatureOptions) {
-  const [items, setItems] = useState<MyItem[]>([])
-  const [statusMessage, setStatusMessage] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (!token || !someId) return
-    myApiListFunction(token, someId).then(setItems).catch(() => {})
-  }, [token, someId])
-
-  async function createItem(input: CreateMyItemInput) {
-    if (!token || !someId) return
-    setIsSubmitting(true)
-    setStatusMessage('')
-    try {
-      const result = await myApiCreateFunction(token, someId, input)
-      setItems(result)
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : 'Erro inesperado')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return { items, statusMessage, isSubmitting, createItem }
-}
-```
-
-## Component Pattern
-
-Page components receive props from `App.tsx` and are never aware of global session state directly.
-
-```tsx
-interface MyFeatureProps {
-  token: string
-  currentUserId: string
-  items: MyItem[]
-  isSubmitting: boolean
-  onCreateItem: (input: CreateMyItemInput) => Promise<void>
-}
-
-export function MyFeature({ token, items, isSubmitting, onCreateItem }: MyFeatureProps) {
-  // local UI state only
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-
-  return (
-    <div className="my-feature">
-      {/* ... */}
-    </div>
-  )
-}
-```
-
-## Permissions
-
-Use `hasCompanyPermission(session?.company.permissions, 'PermissionName')` from `apps/web/src/permissions.ts` to conditionally render admin controls.
-
-```tsx
-const canManageWorkspace = hasCompanyPermission(session?.company.permissions, 'ManageWorkspace')
-
-{canManageWorkspace && <button>Admin action</button>}
-```
-
-## Styling
-
-- Use SCSS in `apps/web/src/styles.scss` — follow the BEM-like class naming already in place.
-- Colors come from `apps/web/src/styles/colors.scss` via `@use './styles/colors' as colors`.
-- Never use inline styles or Tailwind. All styles go in `.scss` files.
-
-## Routing
-
-Navigation uses `apps/web/src/routing.ts` path creators:
-- `createBoardPath(companyId, boardId)` → `/company/:id/board/:id`
-- `createFriendlyBoardPath(slug, deptKey, boardKey)` → `/:slug/:deptKey/:boardKey`
-- `createFriendlyTaskPath(slug, deptKey, boardKey, friendlyId)` → adds `/tasks/:id`
-
-Navigation is done via `navigateTo()` from `useAppNavigation`.
-
-## Integration checklist
-
-When adding a new feature:
-1. Add API function(s) to `api.ts` with full TypeScript types.
-2. Create a hook in `hooks/` if the feature needs data fetching or mutation state.
-3. Create the component in `components/` with typed props.
-4. Wire up the hook in `App.tsx` and pass props down.
-5. Add SCSS classes in `styles.scss`.
-6. Gate admin-only UI with `hasCompanyPermission`.
+Stop after frontend changes unless the user requested backend work, validation, tests, or commit.

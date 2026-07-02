@@ -1,65 +1,82 @@
-# TaskBoard — Regras do Agente
+﻿# TaskBoard â€” Agent Rules
 
-## Linguagem e Comunicação
+## Communication
 
-- Responda sempre em **português brasileiro**.
-- Use terminologia técnica em inglês (ex: "endpoint", "hook", "migration", "commit") quando for a convenção do projeto.
+- Respond in Brazilian Portuguese.
+- Keep technical terms in English when they are project conventions: endpoint, hook, migration, commit, repository, service.
+- Be direct about what changed, what was validated, and what still needs attention.
 
-## Código
+## Context Budget Rules
 
-- Usar **TypeScript** em todos os arquivos `.ts` e `.tsx`.
-- Indentação: **2 espaços**.
-- Sem ponto e vírgula (`;`) no final das linhas.
-- Usar nomes auto-descritivos — evitar variáveis genéricas como `i`, `j`, `data`, `item`.
-- Priorizar legibilidade e manutenibilidade sobre brevidade.
-- Não criar abstrações desnecessárias.
-- Separar responsabilidades: rotas validam HTTP, repositories acessam Prisma, componentes renderizam UI.
+- Start with `docs/context.md` when general project context is needed.
+- Do not read all skills automatically.
+- Read only the one skill that directly matches the current task.
+- Do not read `docs/*` broadly. Use the official source for the topic:
+  - architecture: `docs/architecture.md`
+  - database: `docs/database.md`
+  - permissions: `docs/permissions.md`
+  - API conventions: `docs/api.md`
+  - frontend/Kanban behavior: `docs/kanban.md`
+  - notifications: `docs/notifications.md`
+  - deployment: `docs/deployment.md`
+- Prefer targeted file reads over broad searches.
+- Avoid `rg` across the whole project unless the target location is unknown.
+- Do not run build, lint, tests, Prisma generate, Prisma format, or commit unless the task asks for validation/commit or the change requires it.
+
+## Code Style
+
+- Use TypeScript in `.ts` and `.tsx` files.
+- Indentation: 2 spaces.
+- No semicolons.
+- Prefer descriptive names over short names. Avoid `i`, `j`, `data`, `item` when a clearer name exists.
+- Prioritize readability and maintainability.
+- Do not create abstractions before there is a clear need.
+
+## Project Boundaries
+
+- API routes validate HTTP input and map errors/status codes.
+- Services contain business orchestration when needed.
+- Repositories own Prisma access.
+- Components render UI and receive explicit props.
+- Hooks own frontend remote state and API orchestration.
+- API calls from the frontend go through `apps/web/src/api.ts`.
+- Components must not call `fetch()` directly.
+- Do not access Prisma outside repository/service infrastructure already used by the API.
+
+## Backend Rules
+
+- Protected Fastify routes must use `authenticateRequest`.
+- Validate request bodies and params with Zod and `.safeParse()`.
+- Do not compare role strings directly in route handlers.
+- Use permission helpers from the backend authorization layer.
+- Use `prisma.$transaction()` for multi-table changes that must be atomic.
+- Use domain errors such as `BoardError` and `CompanyError` when the domain already has them.
+
+## Frontend Rules
+
+- Remote state belongs in custom hooks under `apps/web/src/hooks/`.
+- Keep `App.tsx` focused on root orchestration. Extract large feature sections.
+- Hide or disable controls based on effective permissions from the current context.
+- Viewer mode is read-only: no create, edit, move, comment, attach, watcher changes, or permission changes.
+- Use SCSS project conventions. Do not introduce Tailwind or inline styles unless explicitly requested.
+
+## Database Rules
+
+- IDs use the project Prisma convention already present in the schema.
+- Add indexes that match access patterns.
+- Tenant/company-scoped data must be queried with a company/resource boundary.
+- Every schema change must include a migration unless explicitly doing planning only.
+- Run Prisma commands only when asked or when the current task explicitly includes schema/migration implementation.
 
 ## Commits
 
-- Commits **pequenos e focados** — nunca acumular mudanças para commitar no final.
-- Formato: `tipo: descrição curta em inglês` (ex: `feat: add task due dates`, `fix: prevent drag loop`).
-- Separar em commits distintos: documentação, configuração, backend, frontend, testes, refatorações.
+- Commit only when the user asks for commits or when the current plan explicitly says to commit.
+- Commit format: `feat: short description`, `fix: short description`, `chore: short description`, `docs: short description`.
+- Keep commits small and scoped by layer or feature.
 
-## Backend (API)
+## Validation
 
-- Rotas Fastify sempre com `{ preHandler: authenticateRequest }` para endpoints protegidos.
-- Validação de entrada com **Zod** via `.safeParse()` — nunca confiar em `request.body` sem validar.
-- Permissões verificadas via `assertCompanyPermission` de `permissions.ts` — nunca comparar strings de role diretamente nas rotas.
-- Lógica de negócio vai nos **repositories**, não nas rotas.
-- Usar `prisma.$transaction()` para operações multi-tabela.
-- Erros de domínio com classes específicas (`BoardError`, `CompanyError`) — não usar `Error` genérico no domínio.
-
-## Frontend (Web)
-
-- Estado remoto deve usar hooks customizados em `apps/web/src/hooks/`.
-- Chamadas à API sempre via funções de `apps/web/src/api.ts` — nunca fazer `fetch()` direto em componentes.
-- Controles de admin protegidos com `hasCompanyPermission` de `permissions.ts`.
-- Estilos em SCSS em `styles.scss` ou módulos SCSS — nunca inline styles ou Tailwind.
-- Componentes recebem props explícitas — nunca acessam `localStorage` ou estado global diretamente.
-
-## Banco de Dados
-
-- IDs: `String @id @default(cuid())`.
-- Todos os modelos com `createdAt DateTime @default(now())` e `updatedAt DateTime @updatedAt` (exceto modelos imutáveis como `TaskWatcher`).
-- Cascades: `onDelete: Cascade` para filhos, `onDelete: SetNull` para referências opcionais.
-- Sempre rodar `npm run prisma:generate` após alterar o schema.
-
-## Testes
-
-- Testes de integração com **Vitest** + `app.inject()` + PostgreSQL real (porta 5433 para testes).
-- Usar prefixo/domínio único por test suite para cleanup seguro no `afterEach`.
-- Cobrir: sucesso (owner), sucesso (admin), erro 400, 401, 403, 404, 409.
-
-## Limites de Arquivo
-
-- Anexos: máximo **3 MB** por arquivo.
-- Tasks criadas sempre na **primeira coluna** do board.
-
-## Referências
-
-- Arquitetura: `docs/architecture.md`
-- Permissões: `docs/permissions.md`
-- Guidelines de dev: `docs/development-guidelines.md`
-- API: `docs/api.md`
-- Banco: `docs/database.md`
+- Prefer focused validation over full-project validation.
+- For API route changes, run the focused route test when requested.
+- For frontend-only changes, run the web build only when requested or when type contracts changed.
+- For schema changes, run Prisma format/generate only when requested or when implementing the migration.

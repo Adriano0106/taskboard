@@ -1,69 +1,43 @@
-# TaskBoard Notifications And Events
+﻿# TaskBoard Notifications
 
 ## Direction
 
-TaskBoard should use internal domain events to decouple business operations from side effects.
+Notifications should be event-driven and introduced incrementally.
 
-Examples:
+Potential event sources:
 
-- task creation should not directly know how notifications are stored
-- task movement should not directly know how WebSocket messages are sent
-- comments should not directly know how task activity is written
+- task created
+- task assigned
+- task moved
+- task updated
+- comment created
+- attachment added
+- watcher added
+- access request created
+- access request approved/rejected
+- epic linked to task
+- epic updated
 
-## Planned Domain Events
+## Recipients
 
-Initial events:
+Potential recipients:
 
-- `TaskCreated`
-- `TaskUpdated`
-- `TaskMoved`
-- `CommentCreated`
-- `AttachmentCreated`
-- `NotificationCreated`
-- `BoardColumnCreated`
-- `BoardColumnRenamed`
-- `BoardColumnReordered`
-- `BoardColumnDeleted`
+- task assignee
+- task author
+- task watchers
+- epic owner/participants
+- department managers
+- board managers
+- access request requester
 
-## Consumers
+Being a notification recipient does not grant permission to manage the resource.
 
-Events can be consumed by:
+## Delivery
 
-- `ActivityModule`
-- `NotificationModule`
-- `RealtimeModule`
-- `AuditModule`
-- `AutomationModule`
+MVP can start with in-app notifications. Later extensions can include email, realtime/websocket, digest, or external integrations.
 
-The MVP does not need asynchronous infrastructure. A simple in-process event publisher is enough when the first event-driven feature is implemented.
+## Data Rules
 
-## Notification Rules
-
-Initial notification triggers:
-
-- task assigned to user
-- comment added to watched task
-- task moved to another column
-- user mentioned in a comment
-- task priority changed
-
-Notification records should be scoped by company and user.
-
-## Realtime Direction
-
-REST remains the write interface.
-
-WebSocket should broadcast events to scoped rooms:
-
-- company room
-- board room
-- task room
-- user notification room
-
-WebSocket payloads should be small and should not replace REST detail endpoints.
-
-## Future Email
-
-Email notifications should be added after internal notifications are stable.
-
-Email delivery should be handled by a background job, not inline with HTTP requests.
+- Notifications should be scoped to the user.
+- Include enough metadata to render a useful message.
+- Do not expose restricted resource details to users without access.

@@ -1,95 +1,124 @@
-# TaskBoard Permissions
+﻿# TaskBoard Permissions
 
 ## Direction
 
-The MVP currently uses company roles for some decisions. This is acceptable temporarily, but the product must evolve to permission-based authorization.
+TaskBoard is moving from global company roles to scoped roles resolved into atomic effective permissions.
 
-Roles should become named bundles of permissions. Business actions should check permissions, not role names.
+## Platform Admin
 
-## Initial Roles
+- Defined by config/env for now.
+- Session/API exposes `isPlatformAdmin: boolean`.
+- Only platform admins can access global platform administration and list all companies.
+- Platform admin is separate from company membership.
 
-Current roles:
+## Scoped Roles
 
-- `OWNER`
-- `ADMIN`
-- `MEMBER`
+Company scope:
 
-Current behavior:
+- Company Admin/Owner manages company data, departments, boards, members, and company permissions.
 
-- `OWNER` and `ADMIN` can manage board columns
-- `MEMBER` cannot manage board columns
+Department scope:
 
-## Target Permissions
+- `MANAGER`: manages department members, department boards, and permissions inside that department.
+- `MEMBER`: can participate in department boards/tasks according to permission rules.
+- `VIEWER`: read-only access to department boards/tasks.
 
-Initial permission catalog:
+Board scope:
 
+- `MANAGER`: manages board configuration and board members.
+- `MEMBER`: can create/interact with tasks.
+- `VIEWER`: read-only access to the board.
+
+## Precedence
+
+Effective permissions should resolve using this precedence:
+
+```text
+PlatformAdmin > CompanyAdmin > DepartmentManager > BoardManager > Member > Viewer
+```
+
+Department membership grants default access to boards in that department. Board membership can grant board-specific access.
+
+## Viewer Rules
+
+Viewer can view board/task content but cannot:
+
+- create tasks
+- edit tasks
+- move tasks
+- comment
+- attach files
+- change watchers
+- manage members
+- manage columns
+- change permissions
+
+Backend must enforce this. Frontend should also hide or disable controls.
+
+## Permission Catalog
+
+Initial atomic permissions:
+
+- `ViewBoard`
+- `ManageBoard`
+- `ManageColumns`
+- `ViewTask`
 - `CreateTask`
 - `EditTask`
 - `MoveTask`
 - `DeleteTask`
-- `ViewTask`
 - `CommentTask`
 - `AttachFile`
-- `ManageBoard`
-- `ManageColumns`
-- `InviteUsers`
+- `ManageWatchers`
 - `ManageMembers`
-- `ViewReports`
 - `ManagePermissions`
-
-Permissions should be evaluated in a scope:
-
-- company
-- department
-- board
-- task when needed in the future
+- `ViewReports`
+- `CreateEpic`
+- `EditEpic`
+- `LinkEpicTask`
+- `ManageAccessRequests`
 
 ## Authorization Flow
 
-The target flow for protected actions:
-
 ```text
 Authenticated request
-Resolve active company
+Resolve active company/user
 Resolve target resource scope
 Load effective permissions
 Authorize action
-Run business operation
+Run operation
 Emit domain event when needed
 ```
 
-Routes must not embed complex permission rules. They should delegate authorization to domain services or permission helpers.
+Routes should delegate authorization to permission helpers/services.
 
-## Migration Path
+## Access Requests
 
-Step 1:
+A user without access can request entry to a board, task, or epic.
 
-- keep existing roles
-- centralize role checks in permission helpers
-- stop spreading `OWNER` and `ADMIN` checks through route code
+States:
 
-Step 2:
+- `PENDING`
+- `APPROVED`
+- `REJECTED`
 
-- add `Permission` and `Role` models
-- seed default roles
-- map existing roles to default permission bundles
+Approval should be handled by managers of the owner department of the requested resource. Approval normally creates a `DepartmentMember` or `BoardMember` link.
 
-Step 3:
+## Epics
 
-- allow board-specific members and permissions
-- update routes to check permissions by action name
-
-Step 4:
-
-- add UI for managing roles and board members
+- Epic belongs to one owner department.
+- Epic can link tasks from boards in multiple departments.
+- User sees linked tasks they can access.
+- For inaccessible linked tasks, show a request-access CTA when supported.
+- Being assigned/notified on an epic or task does not grant administrative permission.
 
 ## Testing Requirements
 
-Every sensitive action should have tests for:
+Sensitive actions should include focused tests for:
 
-- allowed owner/admin access
-- blocked member access
+- allowed manager/admin/platform admin behavior
+- blocked viewer mutation
+- blocked cross-department/board access
 - blocked unauthenticated access
-- blocked access across companies
-
-Column management already follows this direction and should be used as the first permission refactor target.
+- access request approve/reject permissions
+- epic aggregation respecting visible scope
