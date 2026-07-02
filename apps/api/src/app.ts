@@ -2,6 +2,7 @@ import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import type { PrismaClient } from '@prisma/client'
 import Fastify from 'fastify'
+import { accessRequestRoutes } from './http/routes/access-request-routes.js'
 import { authRoutes } from './http/routes/auth-routes.js'
 import { boardRoutes } from './http/routes/board-routes.js'
 import { companyRoutes } from './http/routes/company-routes.js'
@@ -37,6 +38,9 @@ export async function buildApp(options: BuildAppOptions) {
   })
 
   await app.register(healthRoutes)
+  await app.register(accessRequestRoutes, {
+    prismaClient,
+  })
   await app.register(authRoutes, {
     platformAdminEmails: options.platformAdminEmails ?? [],
     userRepository,
