@@ -111,6 +111,9 @@ async function createUniqueCompanySlug(
 
 const primaryCompanyInclude = {
   memberships: {
+    where: {
+      isActive: true,
+    },
     orderBy: {
       createdAt: 'asc',
     },

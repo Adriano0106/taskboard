@@ -21,7 +21,7 @@ interface CompanyMembersPanelProps {
   membersStatusMessage: string
   updatingMemberId: string | null
   onCreateMember: (payload: CreateCompanyMemberPayload) => Promise<void>
-  onRemoveMember: (userId: string) => Promise<void>
+  onUpdateMemberStatus: (userId: string, isActive: boolean) => Promise<void>
   onUpdateMemberRole: (userId: string, role: CompanyRole) => Promise<void>
 }
 
@@ -33,7 +33,7 @@ export function CompanyMembersPanel({
   membersStatusMessage,
   updatingMemberId,
   onCreateMember,
-  onRemoveMember,
+  onUpdateMemberStatus,
   onUpdateMemberRole,
 }: CompanyMembersPanelProps) {
   const [memberSearch, setMemberSearch] = useState('')
@@ -73,12 +73,14 @@ export function CompanyMembersPanel({
     formElement.reset()
   }
 
-  async function handleRemoveMember(member: CompanyMember) {
-    if (!window.confirm(`Remover ${member.name} da empresa?`)) {
+  async function handleStatusChange(member: CompanyMember) {
+    const action = member.isActive ? 'desativar' : 'reativar'
+
+    if (!window.confirm(`Deseja ${action} ${member.name}?`)) {
       return
     }
 
-    await onRemoveMember(member.id)
+    await onUpdateMemberStatus(member.id, !member.isActive)
   }
 
   return (
@@ -139,6 +141,7 @@ export function CompanyMembersPanel({
               <div className="company-member-identity">
                 <strong>{member.name}</strong>
                 <span>{member.email}</span>
+                <Badge>{member.isActive ? 'Ativo' : 'Inativo'}</Badge>
               </div>
               {canManageWorkspace ? (
                 <>
@@ -160,9 +163,9 @@ export function CompanyMembersPanel({
                     type="button"
                     variant="danger"
                     disabled={isCurrentUser || isUpdating}
-                    onClick={() => handleRemoveMember(member)}
+                    onClick={() => handleStatusChange(member)}
                   >
-                    Remover
+                    {member.isActive ? 'Desativar' : 'Reativar'}
                   </Button>
                 </>
               ) : (

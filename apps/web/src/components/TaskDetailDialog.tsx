@@ -140,11 +140,13 @@ export function TaskDetailDialog({
                   Responsavel
                   <select name="assigneeId" defaultValue={taskDetail.assigneeId ?? ''}>
                     <option value="">Sem responsavel</option>
-                    {companyMembers.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
+                    {companyMembers
+                      .filter((member) => member.isActive)
+                      .map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                        </option>
+                      ))}
                   </select>
                 </label>
               </div>

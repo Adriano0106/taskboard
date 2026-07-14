@@ -23,6 +23,34 @@ API: `http://localhost:3333`
 
 Web: `http://localhost:5173`
 
+## Aplicacao Completa Com Docker
+
+Copie as variaveis de ambiente e suba banco, API e web:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+```
+
+A aplicacao fica disponivel em `http://localhost:5173` e a API em
+`http://localhost:3333`. As migrations e o seed local sao aplicados
+automaticamente antes da API iniciar. Os dados do PostgreSQL e os anexos ficam
+persistidos em volumes. As credenciais de teste estao em `test.md`.
+
+O seed e idempotente e pode ser executado manualmente com
+`npm run prisma:seed --workspace @taskboard/api`. Em ambientes que nao devem
+possuir usuarios de teste, defina `SEED_DATABASE=false`.
+
+Para acompanhar os containers ou encerrar a aplicacao:
+
+```bash
+docker compose logs -f
+docker compose down
+```
+
+Antes de usar em producao, defina um `JWT_SECRET` forte e ajuste `WEB_ORIGIN` e
+`VITE_API_URL` para os enderecos publicos do ambiente.
+
 O comando `npm run dev` inicia backend e frontend juntos. Para rodar separadamente:
 
 ```bash

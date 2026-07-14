@@ -46,6 +46,7 @@ export interface CompanyMemberSummary {
   name: string
   email: string
   role: string
+  isActive: boolean
 }
 
 export interface CreateCompanyMemberInput extends CompanyMutationInput {
@@ -60,8 +61,9 @@ export interface UpdateCompanyMemberInput extends CompanyMutationInput {
   role: CompanyRole
 }
 
-export interface DeleteCompanyMemberInput extends CompanyMutationInput {
+export interface UpdateCompanyMemberStatusInput extends CompanyMutationInput {
   memberUserId: string
+  isActive: boolean
 }
 
 export interface CompanyMutationInput {
@@ -390,14 +392,14 @@ export async function updateCompanyMemberRole(
   return listCompanyMembers(prisma, input)
 }
 
-export async function deleteCompanyMember(
+export async function updateCompanyMemberStatus(
   prisma: PrismaClient,
-  input: DeleteCompanyMemberInput,
+  input: UpdateCompanyMemberStatusInput,
 ): Promise<CompanyMemberSummary[]> {
   await assertCanManageCompanyWorkspace(prisma, input)
 
   if (input.memberUserId === input.userId) {
-    throw new CompanyError('You cannot remove yourself from the company')
+    throw new CompanyError('You cannot change your own status')
   }
 
   const membership = await findCompanyMember(prisma, input.companyId, input.memberUserId)
@@ -406,16 +408,19 @@ export async function deleteCompanyMember(
     throw new CompanyError('Company member was not found')
   }
 
-  if (membership.role === 'OWNER') {
+  if (!input.isActive && membership.role === 'OWNER') {
     await assertCompanyHasAnotherOwner(prisma, input.companyId, input.memberUserId)
   }
 
-  await prisma.companyMember.delete({
+  await prisma.companyMember.update({
     where: {
       userId_companyId: {
         userId: input.memberUserId,
         companyId: input.companyId,
       },
+    },
+    data: {
+      isActive: input.isActive,
     },
   })
 
@@ -617,6 +622,7 @@ async function assertCompanyHasAnotherOwner(
   const otherOwner = await prisma.companyMember.findFirst({
     where: {
       companyId,
+      isActive: true,
       role: 'OWNER',
       userId: {
         not: ignoredUserId,
@@ -831,5 +837,6 @@ export async function listCompanyMembers(
     name: member.user.name,
     email: member.user.email,
     role: member.role,
+    isActive: member.isActive,
   }))
 }

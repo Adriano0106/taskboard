@@ -33,7 +33,7 @@ interface CompanyWorkspacePageProps {
   onDeleteBoard: (boardId: string, boardName: string) => void
   onDeleteDepartment: (departmentId: string, departmentName: string) => void
   onNavigate: (path: string) => void
-  onRemoveMember: (userId: string) => Promise<void>
+  onUpdateMemberStatus: (userId: string, isActive: boolean) => Promise<void>
   onRenameDepartment: (formEvent: FormEvent<HTMLFormElement>, departmentId: string) => void
   onUpdateMemberRole: (userId: string, role: CompanyRole) => Promise<void>
   onUpdateCompany: (formEvent: FormEvent<HTMLFormElement>) => void
@@ -61,7 +61,7 @@ export function CompanyWorkspacePage({
   onDeleteBoard,
   onDeleteDepartment,
   onNavigate,
-  onRemoveMember,
+  onUpdateMemberStatus,
   onRenameDepartment,
   onUpdateMemberRole,
   onUpdateCompany,
@@ -188,7 +188,7 @@ export function CompanyWorkspacePage({
         membersStatusMessage={membersStatusMessage}
         updatingMemberId={updatingMemberId}
         onCreateMember={onCreateMember}
-        onRemoveMember={onRemoveMember}
+        onUpdateMemberStatus={onUpdateMemberStatus}
         onUpdateMemberRole={onUpdateMemberRole}
       />
 

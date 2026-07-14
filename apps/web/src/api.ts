@@ -161,6 +161,7 @@ export interface CompanyMember {
   name: string
   email: string
   role: CompanyRole
+  isActive: boolean
 }
 
 export type CompanyRole = 'OWNER' | 'ADMIN' | 'MEMBER'
@@ -437,12 +438,17 @@ export async function updateCompanyMemberRole(
   })
 }
 
-export async function deleteCompanyMember(token: string, userId: string): Promise<CompanyMember[]> {
-  return sendRequest<CompanyMember[]>(`/companies/current/members/${userId}`, {
-    method: 'DELETE',
+export async function updateCompanyMemberStatus(
+  token: string,
+  userId: string,
+  isActive: boolean,
+): Promise<CompanyMember[]> {
+  return sendRequest<CompanyMember[]>(`/companies/current/members/${userId}/status`, {
+    method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    body: JSON.stringify({ isActive }),
   })
 }
 

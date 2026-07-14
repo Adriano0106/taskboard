@@ -74,7 +74,7 @@ export function App() {
     createMember,
     isCreatingMember,
     membersStatusMessage,
-    removeMember,
+    updateMemberStatus,
     updateMemberRole,
     updatingMemberId,
   } = useCompanyMembersManagement({
@@ -460,7 +460,7 @@ export function App() {
             onDeleteBoard={deleteBoardById}
             onDeleteDepartment={deleteDepartmentById}
             onNavigate={navigateTo}
-            onRemoveMember={removeMember}
+            onUpdateMemberStatus={updateMemberStatus}
             onRenameDepartment={renameDepartmentFromForm}
             onUpdateMemberRole={updateMemberRole}
             onUpdateCompany={updateCompanyFromForm}

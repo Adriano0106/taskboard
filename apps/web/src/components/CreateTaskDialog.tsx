@@ -78,11 +78,13 @@ export function CreateTaskDialog({
               Responsavel
               <select name="assigneeId" defaultValue={currentUserId}>
                 {companyMembers.length === 0 ? <option value={currentUserId}>Voce</option> : null}
-                {companyMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
+                {companyMembers
+                  .filter((member) => member.isActive)
+                  .map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
               </select>
             </label>
           </div>

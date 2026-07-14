@@ -90,6 +90,7 @@ model Company {
 model CompanyMember {
   id        String      @id @default(cuid())
   role      CompanyRole @default(MEMBER)
+  isActive  Boolean     @default(true)
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   company   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)

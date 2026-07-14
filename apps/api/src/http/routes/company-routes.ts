@@ -8,7 +8,6 @@ import {
   createCompanyMember,
   createDepartment,
   deleteBoard,
-  deleteCompanyMember,
   deleteDepartment,
   getCompanyWorkspace,
   getCompanyWorkspaceBySlug,
@@ -18,6 +17,7 @@ import {
   updateBoard,
   updateCompany,
   updateCompanyMemberRole,
+  updateCompanyMemberStatus,
 } from '../../repositories/company-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
@@ -86,6 +86,10 @@ const createMemberBodySchema = z.object({
 
 const updateMemberBodySchema = z.object({
   role: companyRoleSchema,
+})
+
+const updateMemberStatusBodySchema = z.object({
+  isActive: z.boolean(),
 })
 
 interface CompanyRoutesOptions {
@@ -224,24 +228,29 @@ export async function companyRoutes(app: FastifyInstance, options: CompanyRoutes
     },
   )
 
-  app.delete(
-    '/companies/current/members/:userId',
+  app.patch(
+    '/companies/current/members/:userId/status',
     { preHandler: authenticateRequest },
     async (request, reply) => {
       const paramsValidation = memberParamsSchema.safeParse(request.params)
+      const bodyValidation = updateMemberStatusBodySchema.safeParse(request.body)
 
-      if (!paramsValidation.success) {
+      if (!paramsValidation.success || !bodyValidation.success) {
         return reply.status(400).send({
           message: 'Invalid company member params',
-          issues: paramsValidation.error.flatten().fieldErrors,
+          issues: {
+            ...paramsValidation.error?.flatten().fieldErrors,
+            ...bodyValidation.error?.flatten().fieldErrors,
+          },
         })
       }
 
       try {
-        return await deleteCompanyMember(prismaClient, {
+        return await updateCompanyMemberStatus(prismaClient, {
           companyId: request.user.companyId,
           userId: request.user.userId,
           memberUserId: paramsValidation.data.userId,
+          isActive: bodyValidation.data.isActive,
         })
       } catch (error) {
         if (error instanceof CompanyError) {

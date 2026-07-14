@@ -5,8 +5,6 @@ coverage/
 .env
 .env.local
 .env.*.local
-test.md
-
 .vscode/
 
 apps/web/dist/

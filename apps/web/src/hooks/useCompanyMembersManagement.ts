@@ -4,8 +4,8 @@ import {
   type CompanyRole,
   type CreateCompanyMemberPayload,
   createCompanyMember,
-  deleteCompanyMember,
   updateCompanyMemberRole,
+  updateCompanyMemberStatus,
 } from '../api.js'
 
 interface UseCompanyMembersManagementInput {
@@ -65,7 +65,7 @@ export function useCompanyMembersManagement({
     }
   }
 
-  async function removeMember(userId: string) {
+  async function updateMemberStatus(userId: string, isActive: boolean) {
     if (!token) {
       return
     }
@@ -74,12 +74,12 @@ export function useCompanyMembersManagement({
     setMembersStatusMessage('')
 
     try {
-      const members = await deleteCompanyMember(token, userId)
+      const members = await updateCompanyMemberStatus(token, userId, isActive)
       setCompanyMembers(members)
-      setMembersStatusMessage('Membro removido da empresa.')
+      setMembersStatusMessage(isActive ? 'Membro reativado.' : 'Membro desativado.')
     } catch (error) {
       setMembersStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel remover o membro',
+        error instanceof Error ? error.message : 'Nao foi possivel atualizar o status do membro',
       )
     } finally {
       setUpdatingMemberId(null)
@@ -90,7 +90,7 @@ export function useCompanyMembersManagement({
     createMember,
     isCreatingMember,
     membersStatusMessage,
-    removeMember,
+    updateMemberStatus,
     updateMemberRole,
     updatingMemberId,
   }

@@ -45,8 +45,8 @@ export async function createTaskInCompanyKanbanBoard(
       },
     })
 
-    if (!assigneeMembership) {
-      throw new BoardError('Assignee does not belong to the current company')
+    if (!assigneeMembership?.isActive) {
+      throw new BoardError('Assignee must be an active member of the current company')
     }
 
     const boardWithNextNumber = await transaction.board.update({
@@ -229,8 +229,8 @@ export async function updateTaskInCompanyKanbanBoard(
       },
     })
 
-    if (!assigneeMembership) {
-      throw new BoardError('Assignee does not belong to the current company')
+    if (!assigneeMembership?.isActive) {
+      throw new BoardError('Assignee must be an active member of the current company')
     }
   }
 

@@ -17,5 +17,53 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: .
+      target: api
+    container_name: taskboard-api
+    restart: unless-stopped
+    environment:
+      API_PORT: 3333
+      ATTACHMENT_STORAGE_DIR: /app/uploads
+      DATABASE_URL: postgresql://taskboard:taskboard@postgres:5432/taskboard?schema=public
+      JWT_SECRET: ${JWT_SECRET:-replace-with-a-strong-local-secret}
+      PLATFORM_ADMIN_EMAILS: ${PLATFORM_ADMIN_EMAILS:-}
+      SEED_DATABASE: ${SEED_DATABASE:-true}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+    ports:
+      - "${API_HOST_PORT:-3333}:3333"
+    volumes:
+      - taskboard-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3333}
+    container_name: taskboard-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_HOST_PORT:-5173}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   taskboard-postgres-data:
+  taskboard-uploads:

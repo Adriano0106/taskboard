@@ -994,7 +994,7 @@ function getBoardErrorStatus(error: BoardError) {
     error.message.includes('at least one column') ||
     error.message.includes('Protected board columns') ||
     error.message.includes('New tasks can only') ||
-    error.message.includes('Assignee does not belong') ||
+    error.message.includes('Assignee') ||
     error.message.includes('Attachment exceeds') ||
     error.message.includes('Attachment file is empty')
   ) {
