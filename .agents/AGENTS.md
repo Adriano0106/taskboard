@@ -54,6 +54,12 @@
 - API routes validate HTTP input and map errors/status codes.
 - Services contain business orchestration when needed.
 - Repositories own Prisma access.
+- Organize repositories by business domain under `apps/api/src/repositories/<domain>/`, not by technical artifact type.
+- Every repository file must have one primary responsibility. Split files that mix aggregates or unrelated workflows.
+- Domains with multiple repositories must expose a `<domain>-repository.ts` facade. Routes should import from that facade instead of internal repository files.
+- Keep domain-specific types, errors, mappers, defaults, and helpers inside the domain folder.
+- Prefer another domain's public facade for cross-domain imports. Import an internal module only when the dependency is intentionally infrastructure-like and the facade does not expose it.
+- Extract shared repository code only after at least two domains have a concrete need for it.
 - Components render UI and receive explicit props.
 - Hooks own frontend remote state and API orchestration.
 - API calls from the frontend go through `apps/web/src/api.ts`.
@@ -62,6 +68,7 @@
 
 ## Backend Rules
 
+- Before adding backend persistence, identify the affected domain and decide whether the responsibility belongs in an existing focused repository or a new one.
 - Protected Fastify routes must use `authenticateRequest`.
 - Validate request bodies and params with Zod and `.safeParse()`.
 - Do not compare role strings directly in route handlers.
@@ -89,6 +96,8 @@
 
 - Commit only when the user asks for commits or when the current plan explicitly says to commit.
 - Commit format: `feat: short description`, `fix: short description`, `chore: short description`, `docs: short description`.
+- Before staging, review the diff and decide whether one commit is genuinely the clearest option.
+- Split changes into separate commits when they cover distinct layers, responsibilities, or independently reversible concerns.
 - Keep commits small and scoped by layer or feature.
 
 ## Validation

@@ -6,6 +6,7 @@ Use this file to reduce unnecessary repository exploration and quota usage.
 
 1. Identify the smallest deliverable slice.
 2. Write a tiny context plan: skill, docs, and files expected to be read.
+   For backend features, name the affected domain and expected files under `apps/api/src/repositories/<domain>/`.
 3. Read at most one matching skill.
 4. Read only files that are necessary for the slice.
 5. Implement the smallest safe diff.
@@ -26,7 +27,7 @@ Use this file to reduce unnecessary repository exploration and quota usage.
 ## When to Read Each Skill
 
 - `add-prisma-migration`: Prisma schema and migration only.
-- `add-repository-function`: repository/service persistence logic only.
+- `add-repository-function`: domain repository/service persistence logic only.
 - `add-api-route`: Fastify route contract and HTTP behavior only.
 - `write-route-tests`: route tests only.
 - `add-frontend-feature`: React/API/hook/component UI work only.
@@ -44,7 +45,8 @@ For large features, split in this order:
 7. Frontend hooks and components.
 8. Styling and UX polish.
 9. Final focused validation.
-10. Commit.
+10. Review the diff and choose one or more small commits grouped by layer or responsibility.
+11. Commit.
 
 ## Command Policy
 
@@ -52,7 +54,7 @@ Use targeted commands first:
 
 ```powershell
 Get-Content path\to\file.ts | Select-Object -First 120
-rg "ExactSymbol" apps/api/src/repositories -n
+rg "ExactSymbol" apps/api/src/repositories/<domain> -n
 npm run test --workspace @taskboard/api -- --run src/http/routes/specific-routes.test.ts
 ```
 
@@ -80,6 +82,17 @@ Stop after a slice when:
 - The next step requires another layer.
 - The next step requires schema generation, build, tests, or commit not explicitly requested.
 - The agent would need to read a large unrelated area of the project.
+
+## Repository Domain Check
+
+Before implementing repository changes:
+
+1. Identify the business domain and start in `apps/api/src/repositories/<domain>/`.
+2. Reuse a focused repository only when the new behavior matches its primary responsibility.
+3. Create a focused repository when the behavior represents a separate aggregate or workflow.
+4. Add public exports to `<domain>-repository.ts` when the domain has multiple repository files.
+5. Keep routes dependent on the facade and domain internals behind it.
+6. Keep types, errors, mappers, defaults, and helpers local to their domain unless multiple domains already require them.
 
 ## Resume Checkpoint
 
