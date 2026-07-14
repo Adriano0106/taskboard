@@ -25,8 +25,11 @@ import {
   renameColumnInCompanyKanbanBoard,
   reorderColumnInCompanyKanbanBoard,
   updateTaskInCompanyKanbanBoard,
-} from '../../repositories/board-repository.js'
-import { LocalStorageProvider, type StorageProvider } from '../../repositories/storage-provider.js'
+} from '../../repositories/board/board-repository.js'
+import {
+  LocalStorageProvider,
+  type StorageProvider,
+} from '../../repositories/storage/storage-provider.js'
 import { authenticateRequest } from '../auth-guard.js'
 
 const createTaskBodySchema = z.object({

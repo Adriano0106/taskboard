@@ -5,7 +5,7 @@ import { config } from 'dotenv'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../../app.js'
-import type { StorageProvider } from '../../repositories/storage-provider.js'
+import type { StorageProvider } from '../../repositories/storage/storage-provider.js'
 
 config({
   path: resolve(process.cwd(), '../../.env'),

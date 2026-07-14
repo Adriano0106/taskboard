@@ -9,8 +9,11 @@ import { companyRoutes } from './http/routes/company-routes.js'
 import { healthRoutes } from './http/routes/health-routes.js'
 import { userRoutes } from './http/routes/user-routes.js'
 import { prisma } from './prisma.js'
-import type { StorageProvider } from './repositories/storage-provider.js'
-import { type UserRepository, createPrismaUserRepository } from './repositories/user-repository.js'
+import type { StorageProvider } from './repositories/storage/storage-provider.js'
+import {
+  type UserRepository,
+  createPrismaUserRepository,
+} from './repositories/user/user-repository.js'
 
 export interface BuildAppOptions {
   jwtSecret: string

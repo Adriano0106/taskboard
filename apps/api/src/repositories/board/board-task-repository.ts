@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import { assertBoardPermission } from '../scoped-permissions.js'
+import { assertBoardPermission } from '../../scoped-permissions.js'
 import { boardInclude, mapBoardToKanbanBoard } from './board-mappers.js'
 import {
   getCompanyKanbanBoard,

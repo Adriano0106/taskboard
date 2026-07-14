@@ -8,7 +8,7 @@ import {
   createAccessRequest,
   listAccessRequests,
   rejectAccessRequest,
-} from '../../repositories/access-request-repository.js'
+} from '../../repositories/access-request/access-request-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
 const accessRequestBodySchema = z

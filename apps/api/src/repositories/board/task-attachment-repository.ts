@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
-import { assertBoardPermission } from '../scoped-permissions.js'
+import { assertBoardPermission } from '../../scoped-permissions.js'
+import type { StorageProvider } from '../storage/storage-provider.js'
 import { BoardError } from './board-types.js'
 import type {
   CreateTaskAttachmentInput,
@@ -10,7 +11,6 @@ import type {
   KanbanTaskAttachment,
   TaskAttachmentInput,
 } from './board-types.js'
-import type { StorageProvider } from './storage-provider.js'
 import { createTaskActivity } from './task-activity-writer.js'
 
 export const taskAttachmentMaxSizeBytes = 3 * 1024 * 1024

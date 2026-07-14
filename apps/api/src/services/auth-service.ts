@@ -1,6 +1,9 @@
 import bcrypt from 'bcryptjs'
 import { getCompanyPermissions } from '../permissions.js'
-import type { UserRepository, UserWithPrimaryCompany } from '../repositories/user-repository.js'
+import type {
+  UserRepository,
+  UserWithPrimaryCompany,
+} from '../repositories/user/user-repository.js'
 import type { AuthenticatedUser, PublicCompany, PublicUser } from '../types/auth.js'
 
 export class AuthError extends Error {

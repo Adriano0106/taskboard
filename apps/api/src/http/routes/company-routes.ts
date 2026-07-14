@@ -18,7 +18,7 @@ import {
   updateCompany,
   updateCompanyMemberRole,
   updateCompanyMemberStatus,
-} from '../../repositories/company-repository.js'
+} from '../../repositories/company/company-repository.js'
 import { authenticateRequest } from '../auth-guard.js'
 
 const companyParamsSchema = z.object({

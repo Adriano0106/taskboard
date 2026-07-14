@@ -3,7 +3,7 @@ import type {
   CreateUserWithCompanyInput,
   UserRepository,
   UserWithPrimaryCompany,
-} from '../repositories/user-repository.js'
+} from '../repositories/user/user-repository.js'
 
 export function createInMemoryUserRepository(): UserRepository {
   const users: UserWithPrimaryCompany[] = []

@@ -1,7 +1,7 @@
 import { buildApp } from './app.js'
 import { environment } from './env.js'
 import { prisma } from './prisma.js'
-import { LocalStorageProvider } from './repositories/storage-provider.js'
+import { LocalStorageProvider } from './repositories/storage/storage-provider.js'
 
 const app = await buildApp({
   jwtSecret: environment.JWT_SECRET,

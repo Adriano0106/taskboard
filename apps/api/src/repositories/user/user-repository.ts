@@ -1,5 +1,5 @@
 import type { CompanyRole, Prisma, PrismaClient } from '@prisma/client'
-import { createCompanySlugFromName } from './company-slug.js'
+import { createCompanySlugFromName } from '../company/company-slug.js'
 
 export interface UserWithPrimaryCompany {
   id: string

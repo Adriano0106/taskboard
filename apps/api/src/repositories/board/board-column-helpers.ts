@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
-import { type BoardPermissionContext, assertBoardPermission } from '../scoped-permissions.js'
+import { type BoardPermissionContext, assertBoardPermission } from '../../scoped-permissions.js'
 import { BoardError } from './board-types.js'
 
 export async function assertCanManageColumns(prisma: PrismaClient, input: BoardPermissionContext) {

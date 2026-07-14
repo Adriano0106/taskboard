@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import { assertBoardPermission } from '../scoped-permissions.js'
+import { assertBoardPermission } from '../../scoped-permissions.js'
 import { BoardError } from './board-types.js'
 import type { KanbanTaskActivity, TaskActivityInput } from './board-types.js'
 

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import type { UserRepository } from '../../repositories/user-repository.js'
+import type { UserRepository } from '../../repositories/user/user-repository.js'
 import { AuthError, createAuthService } from '../../services/auth-service.js'
 import { authenticateRequest } from '../auth-guard.js'
 
