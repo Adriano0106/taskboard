@@ -1,5 +1,8 @@
 ﻿# TaskBoard Architecture
 
+> Os diagramas completos e versionáveis da aplicação estão em
+> [`docs/application-diagrams.md`](application-diagrams.md).
+
 TaskBoard is a multi-company work management platform for Kanban boards, tasks, bugs, stories, epics, internal tickets, and corporate support.
 
 ## Monorepo

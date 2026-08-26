@@ -104,7 +104,9 @@ Este projeto usa guias curtos para reduzir leitura desnecessaria por agentes.
 
 - `.agents/AGENTS.md`: regras principais para agentes.
 - `.agents/WORKFLOW.md`: fluxo recomendado de baixo contexto.
+- `docs/application-diagrams.md`: diagramas completos da aplicacao.
 - `docs/context.md`: primeiro resumo para entender o projeto.
+- `docs/roadmap.md`: proximas implementacoes planejadas e sua ordem sugerida.
 - `docs/codex-performance.md`: prompts e praticas para economizar contexto.
 - `docs/session-management.md`: checkpoints e habitos de sessao para Codex.
 - `docs/api.md`, `docs/database.md`, `docs/permissions.md`: fontes especificas por assunto.
