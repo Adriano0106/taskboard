@@ -184,6 +184,7 @@ export async function getKanbanTaskDetail(
     departmentKey: createRouteKeyBase(task.board.department.name),
     boardKey: task.board.key,
     boardName: task.board.name,
+    columnId: task.column.id,
     columnName: task.column.name,
     assigneeId: task.assigneeId,
     assigneeName: task.assignee?.name ?? null,

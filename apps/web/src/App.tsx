@@ -15,6 +15,7 @@ import { AuthPage } from './components/AuthPage.js'
 import { BoardPage } from './components/BoardPage.js'
 import { CompanyWorkspacePage } from './components/CompanyWorkspacePage.js'
 import { ProfilePage } from './components/ProfilePage.js'
+import { TaskDetailDialog } from './components/TaskDetailDialog.js'
 import { WorkspaceHeader } from './components/WorkspaceHeader.js'
 import { useAppNavigation } from './hooks/useAppNavigation.js'
 import { useBoardActions } from './hooks/useBoardActions.js'
@@ -44,6 +45,7 @@ export function App() {
   const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
   const { currentRoute, navigateTo } = useAppNavigation()
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
+  const [statusUpdatingTaskId, setStatusUpdatingTaskId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   const dragTargetLocationRef = useRef<ReturnType<typeof findTaskLocation>>(null)
@@ -191,9 +193,10 @@ export function App() {
   const shouldShowKanbanBoard =
     currentRoute.type === 'home' ||
     currentRoute.type === 'board' ||
-    currentRoute.type === 'task' ||
-    currentRoute.type === 'friendlyBoard' ||
-    currentRoute.type === 'friendlyTask'
+    currentRoute.type === 'friendlyBoard'
+  const shouldShowTaskPage = currentRoute.type === 'task' || currentRoute.type === 'friendlyTask'
+  const canMoveTask = hasCompanyPermission(session?.company.permissions, 'MoveTask')
+  const canEditTask = hasCompanyPermission(session?.company.permissions, 'EditTask')
   const selectedTaskUrl =
     selectedTaskDetail && kanbanBoard
       ? createFriendlyTaskPath(
@@ -273,6 +276,35 @@ export function App() {
   async function handleRemoveWatcher(userId: string) {
     await removeWatcher(userId)
     await reloadActivities()
+  }
+
+  async function handleTaskStatusChange(columnId: string) {
+    if (!session?.token || !kanbanBoard || !selectedTaskDetail) return
+
+    const targetColumn = kanbanBoard.columns.find((column) => column.id === columnId)
+    if (!targetColumn || targetColumn.id === selectedTaskDetail.columnId) return
+
+    setKanbanStatusMessage('')
+    setStatusUpdatingTaskId(selectedTaskDetail.id)
+    try {
+      const updatedBoard = await moveTask(session.token, selectedTaskDetail.id, {
+        columnId,
+        position: targetColumn.tasks.length + 1,
+      })
+      setKanbanBoard(updatedBoard)
+      setSelectedTaskDetail({
+        ...selectedTaskDetail,
+        columnId: targetColumn.id,
+        columnName: targetColumn.name,
+      })
+      await reloadActivities()
+    } catch (error) {
+      setKanbanStatusMessage(
+        error instanceof Error ? error.message : 'Nao foi possivel alterar o status',
+      )
+    } finally {
+      setStatusUpdatingTaskId(null)
+    }
   }
 
   function handleOpenTask(taskId: string) {
@@ -522,6 +554,43 @@ export function App() {
             onReorderColumn={reorderColumnById}
             onUploadAttachment={handleUploadAttachment}
             onUpdateTask={updateTaskFromForm}
+          />
+        ) : null}
+
+        {shouldShowTaskPage && kanbanBoard ? (
+          <TaskDetailDialog
+            activities={activities}
+            activitiesStatusMessage={activitiesStatusMessage}
+            attachments={attachments}
+            attachmentsStatusMessage={attachmentsStatusMessage}
+            columns={kanbanBoard.columns}
+            companyMembers={companyMembers}
+            comments={comments}
+            commentsStatusMessage={commentsStatusMessage}
+            isAttachmentUploading={isAttachmentUploading}
+            isCommentSubmitting={isCommentSubmitting}
+            isPage
+            isStatusUpdating={statusUpdatingTaskId === selectedTaskDetail?.id}
+            isTaskUpdating={isTaskUpdating}
+            onAddWatcher={handleAddWatcher}
+            onClose={handleCloseTaskDetail}
+            onCreateComment={handleCreateComment}
+            onDownloadAttachment={handleDownloadAttachment}
+            onRemoveAttachment={handleRemoveAttachment}
+            onRemoveWatcher={handleRemoveWatcher}
+            onStatusChange={canMoveTask ? handleTaskStatusChange : undefined}
+            onUpdateTask={canEditTask ? updateTaskFromForm : undefined}
+            onUploadAttachment={handleUploadAttachment}
+            taskDetail={selectedTaskDetail ?? undefined}
+            title={
+              selectedTaskDetail
+                ? `${selectedTaskDetail.friendlyId} - ${selectedTaskDetail.title}`
+                : 'Carregando task'
+            }
+            updatingAttachmentId={updatingAttachmentId}
+            updatingWatcherUserId={updatingWatcherUserId}
+            watchers={watchers}
+            watchersStatusMessage={watchersStatusMessage}
           />
         ) : null}
       </main>

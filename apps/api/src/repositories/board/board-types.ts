@@ -33,6 +33,7 @@ export interface KanbanTaskDetail {
   departmentKey: string
   boardKey: string
   boardName: string
+  columnId: string
   columnName: string
   assigneeId: string | null
   assigneeName: string | null

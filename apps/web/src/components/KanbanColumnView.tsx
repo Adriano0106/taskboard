@@ -42,7 +42,7 @@ export function KanbanColumnView({
         <>
           <form className="column-title-form" onSubmit={(event) => onRenameColumn(event, column)}>
             <input
-              aria-label={`Nome da coluna ${column.name}`}
+              aria-label={`Nome do status ${column.name}`}
               defaultValue={column.name}
               disabled={editingColumnId === column.id}
               name="name"
@@ -50,7 +50,7 @@ export function KanbanColumnView({
               minLength={2}
               required
             />
-            <button type="submit" className="icon-button" title="Renomear coluna">
+            <button type="submit" className="icon-button" title="Renomear status">
               Renomear
             </button>
           </form>

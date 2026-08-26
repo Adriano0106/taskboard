@@ -31,7 +31,7 @@ export function WorkspaceHeader({
   return (
     <nav className="workspace">
       <div className="workspace-brand">
-        <button type="button" className="brand-button" onClick={() => onNavigate('/')}>
+        <button type="button" className="brand-button" onClick={() => onNavigate(companyPath)}>
           TaskBoard
         </button>
         <button
@@ -44,7 +44,7 @@ export function WorkspaceHeader({
       </div>
       <div className="workspace-actions">
         <button type="button" className="secondary-button" onClick={() => onNavigate(companyPath)}>
-          Empresa
+          Quadros
         </button>
         {canAccessPlatformAdmin ? (
           <button

@@ -122,7 +122,7 @@ export function useBoardActions({
       formElement.reset()
     } catch (error) {
       setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel criar a coluna',
+        error instanceof Error ? error.message : 'Nao foi possivel criar o status',
       )
     }
   }
@@ -154,7 +154,7 @@ export function useBoardActions({
       setKanbanBoard(updatedBoard)
     } catch (error) {
       setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel renomear a coluna',
+        error instanceof Error ? error.message : 'Nao foi possivel renomear o status',
       )
     } finally {
       setEditingColumnId(null)
@@ -176,7 +176,7 @@ export function useBoardActions({
       setKanbanBoard(updatedBoard)
     } catch (error) {
       setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel remover a coluna',
+        error instanceof Error ? error.message : 'Nao foi possivel remover o status',
       )
     } finally {
       setDeletingColumnId(null)
@@ -201,7 +201,7 @@ export function useBoardActions({
       setKanbanBoard(updatedBoard)
     } catch (error) {
       setKanbanStatusMessage(
-        error instanceof Error ? error.message : 'Nao foi possivel reorganizar as colunas',
+        error instanceof Error ? error.message : 'Nao foi possivel reorganizar os status',
       )
     } finally {
       setReorderingColumnId(null)

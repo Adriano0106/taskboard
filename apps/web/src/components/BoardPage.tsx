@@ -229,13 +229,13 @@ export function BoardPage({
           {canManageColumns ? (
             <div className="column-management">
               <form className="column-create-form" onSubmit={onCreateColumn}>
-                <input name="name" type="text" minLength={2} placeholder="Nova coluna" required />
+                <input name="name" type="text" minLength={2} placeholder="Novo status" required />
                 <button type="submit" className="secondary-button">
-                  Adicionar coluna
+                  Adicionar status
                 </button>
               </form>
               <button type="button" className="secondary-button" onClick={onOpenColumnOrganizer}>
-                Reorganizar colunas
+                Reorganizar status
               </button>
             </div>
           ) : null}

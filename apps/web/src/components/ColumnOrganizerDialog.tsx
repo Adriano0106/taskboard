@@ -49,7 +49,7 @@ export function ColumnOrganizerDialog({
         <div className="modal-header">
           <div>
             <p className="eyebrow">Quadro</p>
-            <h2>Reorganizar colunas</h2>
+            <h2>Reorganizar status</h2>
           </div>
           <button type="button" className="icon-button" onClick={onClose}>
             Fechar
@@ -109,10 +109,10 @@ function SortableColumnOrderRow({
   const isProtectedColumn = protectedColumnNames.includes(column.name)
   const canDeleteColumn = column.tasks.length === 0 && !isProtectedColumn
   const removeColumnTitle = isProtectedColumn
-    ? 'Coluna obrigatoria'
+    ? 'Status obrigatorio'
     : column.tasks.length > 0
       ? 'Remova os cards antes'
-      : 'Remover coluna vazia'
+      : 'Remover status vazio'
 
   return (
     <div

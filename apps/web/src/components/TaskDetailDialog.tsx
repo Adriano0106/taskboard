@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import type {
   CompanyMember,
+  KanbanColumn,
   KanbanTaskActivity,
   KanbanTaskAttachment,
   KanbanTaskComment,
@@ -46,6 +47,10 @@ interface TaskDetailDialogProps {
   onRemoveAttachment?: (attachmentId: string) => void
   onUploadAttachment?: (file: File) => void
   onUpdateTask?: (formEvent: FormEvent<HTMLFormElement>) => void
+  columns?: KanbanColumn[]
+  isPage?: boolean
+  isStatusUpdating?: boolean
+  onStatusChange?: (columnId: string) => void
 }
 
 export function TaskDetailDialog({
@@ -74,10 +79,14 @@ export function TaskDetailDialog({
   updatingWatcherUserId = null,
   watchers = [],
   watchersStatusMessage = '',
+  columns = [],
+  isPage = false,
+  isStatusUpdating = false,
+  onStatusChange,
 }: TaskDetailDialogProps) {
   return (
     <div
-      className="modal-backdrop"
+      className={isPage ? 'task-page' : 'modal-backdrop'}
       role="presentation"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
@@ -90,27 +99,54 @@ export function TaskDetailDialog({
         }
       }}
     >
-      <dialog aria-modal="true" className="task-detail-modal" open>
+      <dialog
+        aria-modal={!isPage}
+        className={isPage ? 'task-detail-modal task-detail-page' : 'task-detail-modal'}
+        open
+      >
         <div className="modal-header">
           <h2>{title}</h2>
-          <div className="modal-header-actions">
-            {taskUrl ? (
-              <a
-                aria-label="Abrir task em nova aba"
-                className="icon-button"
-                href={taskUrl}
-                rel="noreferrer"
-                target="_blank"
-                title="Abrir em nova aba"
-              >
-                Abrir
-              </a>
-            ) : null}
-            <button type="button" className="icon-button" onClick={onClose}>
-              Fechar
+          {isPage ? (
+            <button type="button" className="secondary-button" onClick={onClose}>
+              Voltar ao quadro
             </button>
-          </div>
+          ) : (
+            <div className="modal-header-actions">
+              {taskUrl ? (
+                <a
+                  aria-label="Abrir task em nova aba"
+                  className="icon-button"
+                  href={taskUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                  title="Abrir em nova aba"
+                >
+                  Abrir
+                </a>
+              ) : null}
+              <button type="button" className="icon-button" onClick={onClose}>
+                Fechar
+              </button>
+            </div>
+          )}
         </div>
+        {taskDetail && columns.length > 0 ? (
+          <label className="task-status-field">
+            Status
+            <select
+              value={taskDetail.columnId}
+              disabled={isStatusUpdating || !onStatusChange}
+              title={onStatusChange ? 'Alterar status' : 'Sem permissao para alterar status'}
+              onChange={(event) => onStatusChange?.(event.target.value)}
+            >
+              {columns.map((column) => (
+                <option key={column.id} value={column.id}>
+                  {column.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         {taskDetail ? (
           <>
             <form className="task-edit-form" key={taskDetail.updatedAt} onSubmit={onUpdateTask}>
@@ -164,7 +200,7 @@ export function TaskDetailDialog({
                 <dd>{taskDetail.boardName}</dd>
               </div>
               <div>
-                <dt>Coluna</dt>
+                <dt>Status</dt>
                 <dd>{taskDetail.columnName}</dd>
               </div>
               <div>

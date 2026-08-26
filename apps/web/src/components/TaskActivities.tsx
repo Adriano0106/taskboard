@@ -61,8 +61,8 @@ function renderActivityDetail(activity: KanbanTaskActivity) {
   if (activity.type === 'MOVED') {
     return (
       <p>
-        {activity.metadata.fromColumn ?? 'Sem coluna'} {'->'}{' '}
-        {activity.metadata.toColumn ?? 'Sem coluna'}
+        {activity.metadata.fromColumn ?? 'Sem status'} {'->'}{' '}
+        {activity.metadata.toColumn ?? 'Sem status'}
       </p>
     )
   }
