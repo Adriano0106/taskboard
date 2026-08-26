@@ -1,6 +1,21 @@
+import {
+  createDemoSession,
+  downloadDemoAttachment,
+  handleDemoRequest,
+  resetDemoData,
+} from './demo-api.js'
 import type { CompanyPermission } from './permissions.js'
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3333'
+export const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true'
+
+export function getDemoInitialSession() {
+  return isDemoMode ? createDemoSession() : null
+}
+
+export function resetDemo() {
+  if (isDemoMode) resetDemoData()
+}
 
 export interface AuthSession {
   user: {
@@ -577,6 +592,11 @@ export async function downloadTaskAttachment(
   attachmentId: string,
   fileName: string,
 ) {
+  if (isDemoMode) {
+    downloadDemoAttachment(taskId, attachmentId, fileName)
+    return
+  }
+
   const response = await fetch(`${apiUrl}/tasks/${taskId}/attachments/${attachmentId}/download`, {
     method: 'GET',
     headers: {
@@ -719,6 +739,10 @@ export async function deleteColumn(
 }
 
 async function sendRequest<ResponseBody>(path: string, init: RequestInit): Promise<ResponseBody> {
+  if (isDemoMode) {
+    return handleDemoRequest<ResponseBody>(path, init)
+  }
+
   const requestHeaders = {
     ...(init.body ? { 'Content-Type': 'application/json' } : {}),
     ...init.headers,

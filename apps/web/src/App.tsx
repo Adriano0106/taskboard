@@ -6,9 +6,12 @@ import {
   type KanbanTaskAttachment,
   type KanbanTaskCard,
   getCurrentSession,
+  getDemoInitialSession,
+  isDemoMode,
   login,
   moveTask,
   registerAccount,
+  resetDemo,
 } from './api.js'
 import { AdminCompaniesPage } from './components/AdminCompaniesPage.js'
 import { AuthPage } from './components/AuthPage.js'
@@ -42,7 +45,9 @@ type AuthMode = 'login' | 'register'
 
 export function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
-  const [session, setSession] = useState<AuthSession | null>(() => readStoredSession())
+  const [session, setSession] = useState<AuthSession | null>(
+    () => readStoredSession() ?? getDemoInitialSession(),
+  )
   const { currentRoute, navigateTo } = useAppNavigation()
   const [activeTask, setActiveTask] = useState<KanbanTaskCard | null>(null)
   const [statusUpdatingTaskId, setStatusUpdatingTaskId] = useState<string | null>(null)
@@ -249,6 +254,12 @@ export function App() {
     })
   }
 
+  function handleResetDemo() {
+    resetDemo()
+    localStorage.removeItem(sessionStorageKey)
+    window.location.assign('/')
+  }
+
   async function handleCreateComment(content: string) {
     await addComment(content)
     await reloadActivities()
@@ -448,6 +459,16 @@ export function App() {
   if (session) {
     return (
       <main className="app-shell">
+        {isDemoMode ? (
+          <aside className="demo-banner">
+            <span>
+              <strong>Modo demonstração:</strong> os dados ficam somente neste navegador.
+            </span>
+            <button type="button" onClick={handleResetDemo}>
+              Restaurar dados
+            </button>
+          </aside>
+        ) : null}
         <WorkspaceHeader
           canAccessPlatformAdmin={session.isPlatformAdmin}
           companyWorkspace={companyWorkspace}

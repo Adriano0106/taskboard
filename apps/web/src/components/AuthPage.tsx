@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { isDemoMode } from '../api.js'
 
 type AuthMode = 'login' | 'register'
 
@@ -26,6 +27,11 @@ export function AuthPage({
           <p className="eyebrow">TaskBoard</p>
           <h1>{authModeLabels[authMode]}</h1>
           <p className="muted">Acesse sua empresa e prepare seus quadros de trabalho.</p>
+          {isDemoMode ? (
+            <p className="demo-credentials">
+              Demo: <strong>demo@taskboard.local</strong> / <strong>Demo@123456</strong>
+            </p>
+          ) : null}
         </div>
 
         <div className="mode-switch" aria-label="Modo de autenticacao">
@@ -61,11 +67,22 @@ export function AuthPage({
 
           <label>
             Email
-            <input name="email" type="email" required />
+            <input
+              name="email"
+              type="email"
+              defaultValue={isDemoMode ? 'demo@taskboard.local' : ''}
+              required
+            />
           </label>
           <label>
             Senha
-            <input name="password" type="password" minLength={8} required />
+            <input
+              name="password"
+              type="password"
+              minLength={8}
+              defaultValue={isDemoMode ? 'Demo@123456' : ''}
+              required
+            />
           </label>
 
           {statusMessage ? <p className="error-message">{statusMessage}</p> : null}

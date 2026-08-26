@@ -51,6 +51,19 @@ docker compose down
 Antes de usar em producao, defina um `JWT_SECRET` forte e ajuste `WEB_ORIGIN` e
 `VITE_API_URL` para os enderecos publicos do ambiente.
 
+## Demo Estatica Para Portfolio
+
+A versao de demonstracao funciona inteiramente no navegador, com dados locais e sem API ou
+banco hospedado:
+
+```bash
+npm run dev:demo
+npm run build:demo
+```
+
+O build publicavel fica em `apps/web/dist`. Consulte `docs/demo.md` para comportamento,
+validacao e configuracao de hospedagem estatica.
+
 O comando `npm run dev` inicia backend e frontend juntos. Para rodar separadamente:
 
 ```bash
