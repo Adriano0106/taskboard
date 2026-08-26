@@ -570,6 +570,57 @@ describe('company routes', () => {
 
     await app.close()
   })
+
+  it('lists only departments and boards accessible to a company member', async () => {
+    const app = await createTestApp()
+    const ownerSession = await registerOwnerSession(app)
+    const memberSession = await createMemberSession(app, ownerSession.company.id)
+    const departments = await prisma.department.findMany({
+      where: { companyId: ownerSession.company.id },
+      orderBy: { createdAt: 'asc' },
+      include: { boards: { orderBy: { createdAt: 'asc' } } },
+    })
+    const restrictedDepartment = await prisma.department.create({
+      data: {
+        companyId: ownerSession.company.id,
+        name: 'Restrito',
+        boards: { create: { key: 'RS', name: 'Board restrito' } },
+      },
+      include: { boards: true },
+    })
+    const accessibleBoard = departments[0]?.boards[0]
+
+    if (!accessibleBoard) {
+      throw new Error('Expected the default department to contain a board')
+    }
+
+    await prisma.boardMember.create({
+      data: {
+        boardId: accessibleBoard.id,
+        userId: memberSession.userId,
+        role: 'VIEWER',
+      },
+    })
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/companies/current',
+      headers: createAuthHeader(memberSession.token),
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json().departments).toEqual([
+      expect.objectContaining({
+        id: departments[0]?.id,
+        boards: [expect.objectContaining({ id: accessibleBoard.id })],
+      }),
+    ])
+    expect(response.json().departments).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: restrictedDepartment.id })]),
+    )
+
+    await app.close()
+  })
 })
 
 async function createTestApp() {
@@ -616,6 +667,10 @@ async function registerOwnerSession(
 }
 
 async function createMemberToken(app: FastifyInstance, companyId: string) {
+  return (await createMemberSession(app, companyId)).token
+}
+
+async function createMemberSession(app: FastifyInstance, companyId: string) {
   const testId = randomUUID()
   const user = await prisma.user.create({
     data: {
@@ -631,12 +686,15 @@ async function createMemberToken(app: FastifyInstance, companyId: string) {
     },
   })
 
-  return app.jwt.sign({
+  return {
     userId: user.id,
-    email: user.email,
-    companyId,
-    role: 'MEMBER',
-  })
+    token: app.jwt.sign({
+      userId: user.id,
+      email: user.email,
+      companyId,
+      role: 'MEMBER',
+    }),
+  }
 }
 
 async function getBoardColumnNames(

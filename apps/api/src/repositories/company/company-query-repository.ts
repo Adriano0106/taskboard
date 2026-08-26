@@ -13,7 +13,7 @@ export async function getCompanyWorkspace(
   input: { allowPlatformAdmin?: boolean; companyId: string; userId: string },
 ): Promise<CompanyWorkspace> {
   if (input.allowPlatformAdmin) {
-    const company = await findCompanyWithWorkspace(prisma, input.companyId)
+    const company = await findCompanyWithWorkspace(prisma, input.companyId, input.userId)
 
     if (!company) {
       throw new CompanyError('Company was not found')
@@ -29,7 +29,21 @@ export async function getCompanyWorkspace(
         include: {
           departments: {
             orderBy: { createdAt: 'asc' },
-            include: { boards: { orderBy: { createdAt: 'asc' } } },
+            include: {
+              members: {
+                where: { userId: input.userId },
+                select: { id: true },
+              },
+              boards: {
+                orderBy: { createdAt: 'asc' },
+                include: {
+                  members: {
+                    where: { userId: input.userId },
+                    select: { id: true },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -114,13 +128,27 @@ export async function listCompanyMembers(
   }))
 }
 
-async function findCompanyWithWorkspace(prisma: PrismaClient, companyId: string) {
+async function findCompanyWithWorkspace(prisma: PrismaClient, companyId: string, userId: string) {
   return prisma.company.findUnique({
     where: { id: companyId },
     include: {
       departments: {
         orderBy: { createdAt: 'asc' },
-        include: { boards: { orderBy: { createdAt: 'asc' } } },
+        include: {
+          members: {
+            where: { userId },
+            select: { id: true },
+          },
+          boards: {
+            orderBy: { createdAt: 'asc' },
+            include: {
+              members: {
+                where: { userId },
+                select: { id: true },
+              },
+            },
+          },
+        },
       },
     },
   })
@@ -129,6 +157,23 @@ async function findCompanyWithWorkspace(prisma: PrismaClient, companyId: string)
 type CompanyWithWorkspace = NonNullable<Awaited<ReturnType<typeof findCompanyWithWorkspace>>>
 
 function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): CompanyWorkspace {
+  const hasCompanyWideAccess = role === 'OWNER' || role === 'ADMIN' || role === 'PLATFORM_ADMIN'
+  const visibleDepartments = company.departments
+    .map((department) => {
+      const hasDepartmentAccess = department.members.length > 0
+      const visibleBoards = department.boards.filter((board) => {
+        return hasCompanyWideAccess || hasDepartmentAccess || board.members.length > 0
+      })
+
+      return {
+        ...department,
+        boards: visibleBoards,
+      }
+    })
+    .filter((department) => {
+      return hasCompanyWideAccess || department.members.length > 0 || department.boards.length > 0
+    })
+
   return {
     id: company.id,
     name: company.name,
@@ -141,7 +186,7 @@ function mapCompanyWorkspace(company: CompanyWithWorkspace, role: string): Compa
     },
     role,
     permissions: getCompanyPermissions(role),
-    departments: company.departments.map((department) => ({
+    departments: visibleDepartments.map((department) => ({
       id: department.id,
       key: createBoardKeyBase(department.name),
       name: department.name,
