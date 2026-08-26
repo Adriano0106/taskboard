@@ -18,7 +18,7 @@
   justify-content: space-between;
   gap: 16px;
   width: min(100%, 1180px);
-  margin: 0 auto 16px;
+  margin: 0 auto;
   border: 1px solid colors.$brand-accent;
   border-radius: 8px;
   padding: 10px 14px;
@@ -35,6 +35,11 @@
     color: colors.$brand-accent;
     font-weight: 700;
   }
+}
+
+.app-top {
+  display: grid;
+  gap: 16px;
 }
 
 .demo-credentials {

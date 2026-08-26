@@ -459,23 +459,25 @@ export function App() {
   if (session) {
     return (
       <main className="app-shell">
-        {isDemoMode ? (
-          <aside className="demo-banner">
-            <span>
-              <strong>Modo demonstração:</strong> os dados ficam somente neste navegador.
-            </span>
-            <button type="button" onClick={handleResetDemo}>
-              Restaurar dados
-            </button>
-          </aside>
-        ) : null}
-        <WorkspaceHeader
-          canAccessPlatformAdmin={session.isPlatformAdmin}
-          companyWorkspace={companyWorkspace}
-          session={session}
-          onLogout={handleLogout}
-          onNavigate={navigateTo}
-        />
+        <div className="app-top">
+          {isDemoMode ? (
+            <aside className="demo-banner">
+              <span>
+                <strong>Modo demonstração:</strong> os dados ficam somente neste navegador.
+              </span>
+              <button type="button" onClick={handleResetDemo}>
+                Restaurar dados
+              </button>
+            </aside>
+          ) : null}
+          <WorkspaceHeader
+            canAccessPlatformAdmin={session.isPlatformAdmin}
+            companyWorkspace={companyWorkspace}
+            session={session}
+            onLogout={handleLogout}
+            onNavigate={navigateTo}
+          />
+        </div>
 
         {isKanbanLoading ? <p className="surface-message">Carregando quadro...</p> : null}
 
